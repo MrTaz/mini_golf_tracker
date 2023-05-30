@@ -1,11 +1,11 @@
 class PlayerGameInfo {
-  final String playerId;
-  final String playerName;
+  final int playerId;
+  final int courseId;
   final List<int> scores;
 
   PlayerGameInfo({
     required this.playerId,
-    required this.playerName,
+    required this.courseId,
     required this.scores,
   });
 }

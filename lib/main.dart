@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -101,6 +102,25 @@ class MainScaffold extends State<HomePage> {
     });
   }
 
+  Image profileImage = Image.asset(
+    "assets/images/avatars_3d_avatar_28.png",
+    width: 120,
+  );
+
+  void changeProfileImage() async {
+    setState(() {
+      Future.microtask(() async {
+        debugPrint('Getting email');
+        SharedPreferences pref = await SharedPreferences.getInstance();
+        String loggedInEmail = pref.getString("email") as String;
+        if (loggedInEmail != "") {
+          String gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
+          profileImage = Image.network(gravatarImgUrl);
+        }
+      });
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +141,7 @@ class MainScaffold extends State<HomePage> {
               email: email,
               totalScore: 50);
           isLoggedIn(true);
+          changeProfileImage();
           body = const DashboardScreen();
         }
       });
@@ -199,10 +220,7 @@ class MainScaffold extends State<HomePage> {
           accountEmail: Text(loggedInPlayer?.email ?? ""),
           currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.teal,
-              child: Image.asset(
-                "assets/images/avatars_3d_avatar_28.png",
-                width: 120,
-              )),
+              child: ClipOval(child: profileImage)),
           otherAccountsPictures: <Widget>[
             GestureDetector(
               onTap: () => logout(),
@@ -793,7 +811,7 @@ Future<void> saveGameToDatabase(Game game) async {
       'players': game.players
           .map((player) => {
                 'playerId': player.playerId,
-                'playerName': player.playerName,
+                'courseId': player.courseId,
                 'scores': player.scores,
               })
           .toList(),
