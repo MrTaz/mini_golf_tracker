@@ -1,6 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.mini_golf_tracker">
-   <application
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
         android:label="mini_golf_tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

@@ -14,7 +14,7 @@ class PlayerListItem extends StatefulWidget {
 
 class _PlayerListItem extends State<PlayerListItem> {
   bool isSelected = false;
-  bool _enabled = true;
+  final bool _enabled = true;
 
   @override
   Widget build(BuildContext context) {

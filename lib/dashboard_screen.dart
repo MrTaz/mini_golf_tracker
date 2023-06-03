@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:mini_golf_tracker/playergameinfo.dart';
-import 'package:recase/recase.dart';
 import 'package:transparent_image/transparent_image.dart';
-import 'package:word_generator/word_generator.dart';
 
-import 'course.dart';
+// import 'course.dart';
 import 'create_game_screen.dart';
 import 'game.dart';
 import 'gravatar_image_view.dart';
+import 'past_game_details_screen.dart';
 import 'player.dart';
+// import 'playergameinfo.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -31,10 +30,11 @@ class DashboardScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     const NewGameCard(),
                     const FriendsCard(),
-                    GameHistoryCard(),
+                    PastGamesListView(),
                   ],
                 ),
               ),
@@ -64,8 +64,7 @@ class NewGameCard extends StatelessWidget {
                       FilledButton(
                         // onPressed: () {/* ... */},
                         onPressed: () {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (context) {
+                          Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                             return const CreateGameScreen();
                           }));
                         },
@@ -149,8 +148,7 @@ class FriendsCardState extends State<FriendsCard> {
                     title: Text('Friends'),
                   ),
                   SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(children: getPlayerFriends(context)))
+                      scrollDirection: Axis.horizontal, child: Row(children: getPlayerFriends(context)))
                 ]))));
   }
 
@@ -164,10 +162,7 @@ class FriendsCardState extends State<FriendsCard> {
           border: Border.all(color: getRankBorderColor(i), width: 2.0),
           color: Colors.white38,
           image: DecorationImage(
-              alignment: const Alignment(0.8, 0.8),
-              fit: BoxFit.none,
-              scale: 3,
-              image: getRankBackImg(i)),
+              alignment: const Alignment(0.8, 0.8), fit: BoxFit.none, scale: 3, image: getRankBackImg(i)),
           borderRadius: const BorderRadius.all(Radius.circular(8.0)),
           boxShadow: const [
             BoxShadow(
@@ -178,7 +173,7 @@ class FriendsCardState extends State<FriendsCard> {
             ),
           ],
         ),
-        margin: const EdgeInsets.all(8),
+        margin: const EdgeInsets.all(4),
         height: MediaQuery.of(context).size.height * 0.15,
         width: MediaQuery.of(context).size.width * 0.2,
         child: Column(
@@ -186,19 +181,19 @@ class FriendsCardState extends State<FriendsCard> {
           children: [
             FittedBox(
                 child: CircleAvatar(
-                    backgroundColor: Colors.teal,
-                    child: ClipOval(
-                        child: GravatarImageView(email: player.email!)))),
+                    backgroundColor: Colors.teal, child: ClipOval(child: GravatarImageView(email: player.email!)))),
             const SizedBox(
               height: 10.0,
             ),
-            FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(player.playerName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24.0,
-                    ))),
+            Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(player.nickname,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24.0,
+                        )))),
           ],
         ),
       ));
@@ -234,9 +229,9 @@ class FriendsCardState extends State<FriendsCard> {
   }
 }
 
-class GameHistoryCard extends StatelessWidget {
-  GameHistoryCard({super.key});
-  final List<Game> previousGames = [];
+class PastGamesListView extends StatelessWidget {
+  PastGamesListView({super.key});
+  List<Game> previousGames = [];
 
   @override
   Widget build(BuildContext context) {
@@ -249,11 +244,11 @@ class GameHistoryCard extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: <Widget>[
-                  const ListTile(title: Text('Previous games')),
+                  const ListTile(title: Text('Past games')),
                   Row(
                     // mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
-                      getGames(previousGames),
+                      getGames(context),
                     ],
                   )
                 ],
@@ -261,78 +256,47 @@ class GameHistoryCard extends StatelessWidget {
             )));
   }
 
-  createRandomGames(int count) {
-    final wordGenerator = WordGenerator();
-    for (var i = 0; i < count; i++) {
-      var name =
-          "${wordGenerator.randomNoun().titleCase} ${wordGenerator.randomNoun().titleCase} Club";
-      previousGames.add(Game(
-          course: Course(id: i, name: name, numberOfHoles: 9, parStrokes: {
-            1: 5,
-            2: 5,
-            3: 5,
-            4: 5,
-            5: 5,
-            6: 5,
-            7: 5,
-            8: 5,
-            9: 5
-          }),
-          players: [
-            PlayerGameInfo(
-                playerId: 1, courseId: 0, scores: [1, 2, 3, 4, 5, 6, 7, 8, 9])
-          ],
-          startTime: DateTime.now()));
-    }
-  }
-
-  getGames(previousGames) {
-    previousGames.add(Game(
-        course: Course(
-            id: 0,
-            name: "Atkinson Country Club",
-            numberOfHoles: 9,
-            parStrokes: {1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5, 8: 5, 9: 5}),
-        players: [
-          PlayerGameInfo(
-              playerId: 1, courseId: 0, scores: [1, 2, 3, 4, 5, 6, 7, 8, 9])
-        ],
-        startTime: DateTime.now()));
-    createRandomGames(15);
-    if (previousGames.length > 0) {
+  getGames(BuildContext context) {
+    previousGames = [...Game.generateRandomGames(15)];
+    if (previousGames.isNotEmpty) {
       return Expanded(
           child: ListView.separated(
-        scrollDirection: Axis.vertical,
         shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: previousGames.length,
         padding: const EdgeInsets.all(8),
-        // prototypeItem: ListTile(
-        //   title: Text(previousGames.first.course.name),
-        // ),
         itemBuilder: (context, index) {
           debugPrint("Current Game: ${previousGames[index].course.id}");
-          return SizedBox(
-              height: 50,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [Text(previousGames[index].course.name)]),
-                  Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(previousGames[index].startTime.toString())
-                      ])
-                ],
-              ));
+          debugPrint("Current Game: ${previousGames[index].toJson()}");
+          return InkWell(
+              onTap: () => {
+                    debugPrint("game tapped: $index"),
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                      return PastGameDetailsScreen(passedGame: previousGames[index]);
+                    }))
+                  },
+              child: SizedBox(
+                  height: 50,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [Text(previousGames[index].course.name)]),
+                      Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [Text(previousGames[index].startTime.toString())])
+                    ],
+                  )));
         },
         separatorBuilder: (BuildContext context, int index) => const Divider(),
       ));
     } else {
-      return const SizedBox(
-          height: 600, width: 300, child: Center(child: Text("Let's play!")));
+      return SizedBox(
+          height: MediaQuery.of(context).size.height,
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: const Align(alignment: Alignment.center, child: Text("Let's play!")));
     }
   }
 }

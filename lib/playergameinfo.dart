@@ -8,4 +8,12 @@ class PlayerGameInfo {
     required this.courseId,
     required this.scores,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'playerId': playerId,
+      'courseId': courseId,
+      'scores': [...scores]
+    };
+  }
 }

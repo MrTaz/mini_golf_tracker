@@ -19,4 +19,13 @@ class Course {
       parStrokes: Map<int, int>.from(map['parStrokes']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'numberOfHoles': numberOfHoles,
+      'parStrokes': parStrokes,
+    };
+  }
 }

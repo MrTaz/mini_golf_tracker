@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
 
 import 'create_game_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  // final Widget child;
-  // final String imageUrl;
-  // const android_large_3({required this.child, required this.imageUrl, Key? key})
-  //     : super(key: key);
-
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
@@ -39,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
+                      SizedBox(
                         width: 120,
                         height: 120,
                         child: Image.asset(
@@ -72,8 +67,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (context) {
+                          Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                             return const LoginScreen();
                           }));
                         },
@@ -89,8 +83,7 @@ class HomeScreen extends StatelessWidget {
                                   fontSize: 14,
                                 )),
                             onPressed: () {
-                              Navigator.of(context)
-                                  .push(MaterialPageRoute(builder: (context) {
+                              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                                 return const CreateGameScreen();
                               }));
                             },
@@ -101,7 +94,6 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // child
             ],
           )),
     );

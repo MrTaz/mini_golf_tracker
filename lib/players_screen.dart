@@ -26,7 +26,7 @@ class PlayersScreen extends StatelessWidget {
               itemCount: players.length,
               itemBuilder: (BuildContext context, int index) {
                 return PlayerListItem(
-                    key: Key('counter-${index}'), player: players[index]);
+                    key: Key('counter-$index'), player: players[index]);
               },
             ),
           ],

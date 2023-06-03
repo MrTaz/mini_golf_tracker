@@ -77,6 +77,8 @@ class LoginScreen extends StatelessWidget {
                 UserFormField(
                   keyName: 'Date Of Birth',
                   fieldValidator: (value) {
+                    return null;
+                  
                     //perform date validation here
                   },
                 ),
