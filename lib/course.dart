@@ -28,4 +28,12 @@ class Course {
       'parStrokes': parStrokes,
     };
   }
+
+  int getParValue(int holeNumber) {
+    if (parStrokes.containsKey(holeNumber)) {
+      return parStrokes[holeNumber]!;
+    } else {
+      throw Exception('Invalid hole number');
+    }
+  }
 }
