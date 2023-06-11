@@ -48,6 +48,9 @@ dependencies:
   uuid: ^3.0.7
   animated_background: ^2.0.0
   confetti: ^0.7.0
+  intl: ^0.18.1
+  holiday_event_api: ^1.0.1
+  calendarific_dart: ^1.0.2
 
 dev_dependencies:
   flutter_test:

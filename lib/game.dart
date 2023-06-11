@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:random_x/random_x.dart';
@@ -6,7 +7,7 @@ import 'package:recase/recase.dart';
 import 'package:word_generator/word_generator.dart';
 
 import 'course.dart';
-import 'playergameinfo.dart';
+import 'player_game_info.dart';
 
 class Game {
   final String name;
@@ -28,8 +29,8 @@ class Game {
   Map<String, dynamic> toJson() {
     return {
       'couse': course.toJson(),
-      'players': [...players],
-      'startTime': startTime
+      'players': players.map((player) => player.toJson()).toList(),
+      'startTime': startTime.toIso8601String()
     };
   }
 
@@ -61,7 +62,10 @@ class Game {
     }
 
     scores[player]![holeNumber] = strokes;
+    player.scores = scores[player]!.values.toList();
+    player.place = getPlayerPositionStr(player);
     calculateTotalScore(player);
+    debugPrint("Recorded Score ${player.toJson()}");
   }
 
   int calculateTotalScore(PlayerGameInfo player) {
@@ -107,6 +111,28 @@ class Game {
 
     playerScores.sort((a, b) => a.totalScore.compareTo(b.totalScore));
     return playerScores;
+  }
+
+  int getPlayerPosition(PlayerGameInfo player) {
+    final sortedPlayerScores = getSortedPlayerScores();
+    final position = sortedPlayerScores.indexWhere((p) => p.playerId == player.playerId);
+    return position + 1; // Add 1 to convert from zero-based index to position value
+  }
+
+  String getPlayerPositionStr(PlayerGameInfo player) {
+    final place = getPlayerPosition(player);
+
+    String suffix;
+    if (place % 10 == 1 && place % 100 != 11) {
+      suffix = 'st';
+    } else if (place % 10 == 2 && place % 100 != 12) {
+      suffix = 'nd';
+    } else if (place % 10 == 3 && place % 100 != 13) {
+      suffix = 'rd';
+    } else {
+      suffix = 'th';
+    }
+    return '$place$suffix';
   }
 
   static String generateRandomGameName([String? suffix = "Game"]) {

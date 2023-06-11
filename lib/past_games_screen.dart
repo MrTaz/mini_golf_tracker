@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'dashboard_screen.dart';
+import 'past_games_list_view.dart';
 
 class PastGamesScreen extends StatelessWidget {
   const PastGamesScreen({Key? key}) : super(key: key); // Use the correct constructor syntax

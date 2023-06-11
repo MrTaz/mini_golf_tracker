@@ -35,8 +35,7 @@ class MyApp extends StatelessWidget {
           primaryColor: const Color(0xFF009688),
           canvasColor: const Color(0xFFfafafa),
           fontFamily: 'Merriweather',
-          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal)
-              .copyWith(secondary: const Color(0xFF009688)),
+          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal).copyWith(secondary: const Color(0xFF009688)),
         ),
         home: const HomePage(),
         initialRoute: '/',
@@ -134,12 +133,7 @@ class MainScaffold extends State<HomePage> {
         if (email == null) {
           logout();
         } else {
-          loggedInPlayer = Player(
-              id: 1,
-              playerName: "Will",
-              nickname: "Dad",
-              email: email,
-              totalScore: 50);
+          loggedInPlayer = Player(id: 1, playerName: "Will", nickname: "Dad", ownerId: 1, email: email, totalScore: 50);
           isLoggedIn(true);
           changeProfileImage();
           body = const DashboardScreen();
@@ -156,9 +150,7 @@ class MainScaffold extends State<HomePage> {
         title: const Text('Mini Golf Tracker'),
       ),
       drawer: Drawer(
-        child: ListView(
-            padding: const EdgeInsets.all(0),
-            children: _buildDrawerList(context)),
+        child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
       ),
       body: body,
       bottomNavigationBar: BottomNavigationBar(
@@ -208,8 +200,7 @@ class MainScaffold extends State<HomePage> {
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                Text(loggedInPlayer?.playerName ?? "",
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(loggedInPlayer?.playerName ?? "", style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   loggedInPlayer?.nickname ?? "",
                   style: const TextStyle(fontStyle: FontStyle.italic),
@@ -218,9 +209,7 @@ class MainScaffold extends State<HomePage> {
             )
           ]),
           accountEmail: Text(loggedInPlayer?.email ?? ""),
-          currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.teal,
-              child: ClipOval(child: profileImage)),
+          currentAccountPicture: CircleAvatar(backgroundColor: Colors.teal, child: ClipOval(child: profileImage)),
           otherAccountsPictures: <Widget>[
             GestureDetector(
               onTap: () => logout(),
@@ -781,12 +770,7 @@ Future<List<String>> fetchCourses() async {
 
 Future<Course> fetchCourseDetails(String selectedCourseName) async {
   try {
-    final response = await supabase
-        .from('courses')
-        .select()
-        .eq('name', selectedCourseName)
-        .single()
-        .execute();
+    final response = await supabase.from('courses').select().eq('name', selectedCourseName).single().execute();
     final courseData = response.data;
     if (courseData == null) {
       throw DatabaseConnectionError('Course not found: $selectedCourseName');
