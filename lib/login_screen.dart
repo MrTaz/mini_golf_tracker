@@ -71,14 +71,12 @@ class LoginScreen extends StatelessWidget {
               onLogin: _authUser,
               onSignup: _signupUser,
               additionalSignupFields: [
-                const UserFormField(
-                    keyName: 'Username',
-                    icon: Icon(FontAwesomeIcons.userLarge)),
+                const UserFormField(keyName: 'Username', icon: Icon(FontAwesomeIcons.userLarge)),
                 UserFormField(
                   keyName: 'Date Of Birth',
                   fieldValidator: (value) {
                     return null;
-                  
+
                     //perform date validation here
                   },
                 ),

@@ -28,10 +28,10 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
         child: Text('No players selected.'),
       );
     }
-    widget.clickedPlayers
-        .forEach((element) => debugPrint('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
-    widget.clickedPlayerScores
-        .forEach((element) => debugPrint('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
+    // widget.clickedPlayers
+    //     .forEach((element) => debugPrint('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
+    // widget.clickedPlayerScores
+    //     .forEach((element) => debugPrint('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
 
     return Container(
         color: Colors.white.withOpacity(0.8),
@@ -65,7 +65,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       if (playerGameInfo != null) {
         columns.add(
           DataColumn(
-            label: Text('${player.nickname}\n${playerGameInfo.place}',
+            label: Text('${player.nickname}:${player.id}\n${playerGameInfo.place}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             numeric: true,
           ),
