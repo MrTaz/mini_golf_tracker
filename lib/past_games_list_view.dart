@@ -41,14 +41,14 @@ class PastGamesListView extends StatelessWidget {
         itemCount: previousGames.length,
         padding: const EdgeInsets.all(8),
         itemBuilder: (context, index) {
-          debugPrint("Current Game: ${previousGames[index].toJson()}");
+          // debugPrint("Current Game: ${previousGames[index].toJson()}");
           return FutureBuilder<String>(
             future: formatStartTime(previousGames[index].startTime),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return InkWell(
                     onTap: () => {
-                          debugPrint("game tapped: $index"),
+                          // debugPrint("game tapped: $index"),
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                             return PastGameDetailsScreen(passedGame: previousGames[index]);
                           }))

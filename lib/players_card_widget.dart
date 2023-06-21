@@ -59,7 +59,7 @@ class PlayersCardState extends State<PlayersCard> {
   List<Widget> getPlayerCards(BuildContext context) {
     List<Widget> playerCards = [];
 
-    sortedPlayers.forEach((element) => debugPrint('Sorted player ids: ${widget.sortedPlayerIds} ${element.toJson()}'));
+    // sortedPlayers.forEach((element) => debugPrint('Sorted player ids: ${widget.sortedPlayerIds} ${element.toJson()}'));
 
     for (var i = 0; i < sortedPlayers.length; i++) {
       var player = sortedPlayers[i];

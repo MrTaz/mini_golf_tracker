@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:mini_golf_tracker/player.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:random_x/random_x.dart';
@@ -61,13 +60,11 @@ class Game {
     if (!scores.containsKey(player)) {
       throw Exception('Player scores not initialized');
     }
-    debugPrint("CourseID: ${player.courseId}, Hole Number: $holeNumber, strokes: $strokes");
+    // debugPrint("CourseID: ${player.courseId}, Hole Number: $holeNumber, strokes: $strokes");
     scores[player]![holeNumber] = strokes;
     player.scores = scores[player]!.values.toList();
     calculateTotalScore(player);
-    // player.place = getPlayerPosition(player) as String?;
     getPlayerPosition(player);
-    // debugPrint("Recorded Score ${player.toJson()}");
   }
 
   int calculateTotalScore(PlayerGameInfo player) {
@@ -124,137 +121,54 @@ class Game {
   }
 
   int getPlayerPosition(PlayerGameInfo player) {
-    List<PlayerGameInfo> currentHolePlayers = [];
-
-    int currentHoleIndex = 0;
-    for (int i = 0; i < player.scores.length; i++) {
-      if (player.scores[i] == 0) {
-        currentHoleIndex = i;
-        break;
+    List<PlayerGameInfo> sortedPlayers = players.toList();
+    sortedPlayers.sort((a, b) {
+      int aTotalScore = calculateTotalScore(a);
+      int bTotalScore = calculateTotalScore(b);
+      if (aTotalScore != bTotalScore) {
+        return aTotalScore.compareTo(bTotalScore);
+      } else {
+        return a.playerId.compareTo(b.playerId);
       }
-    }
+    });
 
-    for (var otherPlayer in players) {
-      if (otherPlayer.playerId == player.playerId) {
-        // Skip the current player
-        continue;
-      }
-
-      if (otherPlayer.scores.length > currentHoleIndex && otherPlayer.scores[currentHoleIndex] != 0) {
-        // Player has played the current hole and recorded a score
-        currentHolePlayers.add(otherPlayer);
-      }
-    }
-
-    if (currentHolePlayers.length > 1) {
-      currentHolePlayers.sort((a, b) {
-        if (a.totalScore != b.totalScore) {
-          return a.totalScore.compareTo(b.totalScore);
-        } else {
-          return a.playerId.compareTo(b.playerId); // Sort by playerId when scores are tied
-        }
-      });
-    }
-
-    for (var i = 0; i < currentHolePlayers.length; i++) {
-      var currentPlayer = currentHolePlayers[i];
-      int playerScore = currentPlayer.totalScore;
-      int position = i + 1;
-
-      int tiedCount = 0;
-      for (final p in currentHolePlayers) {
-        if (p.totalScore == playerScore) {
-          tiedCount++;
-        } else {
+    for (var i = 0; i < sortedPlayers.length; i++) {
+      PlayerGameInfo currentPlayer = sortedPlayers[i];
+      int currentPosition = i + 1;
+      int currentHoleIndex = 0;
+      for (int j = 0; j < currentPlayer.scores.length; j++) {
+        if (currentPlayer.scores[j] == 0) {
+          currentHoleIndex = j;
           break;
         }
       }
 
-      if (tiedCount > 1) {
-        int calculatedPosition = position - tiedCount;
-        if (calculatedPosition <= 0) {
-          calculatedPosition = position;
+      List<PlayerGameInfo> tiedPlayers = [];
+      for (var j = 0; j < i; j++) {
+        PlayerGameInfo previousPlayer = sortedPlayers[j];
+        if (previousPlayer.scores.length <= currentHoleIndex) {
+          continue; // Skip players who haven't played the current hole yet
         }
-        currentPlayer.place = '$calculatedPosition${getOrdinalSuffix(calculatedPosition)} (tied)';
-      } else {
-        currentPlayer.place = getOrdinalString(position);
+        if (previousPlayer.totalScore == currentPlayer.totalScore) {
+          tiedPlayers.add(previousPlayer);
+        }
       }
+
+      if (tiedPlayers.isNotEmpty && currentPlayer.scores[currentHoleIndex] != 0) {
+        tiedPlayers.add(currentPlayer);
+        tiedPlayers.sort((a, b) => a.playerId.compareTo(b.playerId));
+        int tiedPosition = currentPosition - tiedPlayers.length + 1;
+        for (var tiedPlayer in tiedPlayers) {
+          tiedPlayer.place = '$tiedPosition${getOrdinalSuffix(tiedPosition)} (tied)';
+        }
+      } else {
+        currentPlayer.place = getOrdinalString(currentPosition);
+      }
+      tiedPlayers.clear(); // Clear tied players list for the next iteration
     }
 
-    return currentHolePlayers.indexWhere((p) => p.playerId == player.playerId) + 1;
+    return sortedPlayers.indexWhere((p) => p.playerId == player.playerId) + 1;
   }
-
-  // int getPlayerPosition(PlayerGameInfo player) {
-  //   debugPrint("getting player position: ${player.toJson()}");
-  //   List<PlayerGameInfo> currentHolePlayers = [];
-  //   int currentHole = player.scores.indexOf(0); // Find the current hole
-  //   if (currentHole == -1) {
-  //     currentHole =
-  //         player.scores.length; // Player hasn't played any holes yet, set currentHole to the length of scores list
-  //   }
-  //   debugPrint("Current Hole $currentHole");
-  //   // currentHolePlayers.add(player);
-  //   // debugPrint("Current hole players: ${currentHolePlayers.toString()}, length: ${currentHolePlayers.length}");
-  //   // debugPrint("Course info: ${course.id}, holes: ${course.numberOfHoles}");
-  //   // debugPrint("Players info: ${players.toList()}");
-  //   // for (var holeNumber = 0; holeNumber < course.numberOfHoles; holeNumber++) {
-  //   // debugPrint("current hole: $holeNumber");
-  //   for (var player in players) {
-  //     // debugPrint("current player: ${player.toJson()}, ${player.scores.length}");
-  //     // debugPrint("current hole: $holeNumber, ${player.scores[holeNumber]}");
-  //     if (player.scores.length > 1) {
-  //       // if (player.scores[holeNumber] == 0) {
-  //       if (player.scores[currentHole - 1] == 0) {
-  //         // debugPrint("skipping player... ${player.playerId}");
-  //         continue; // Skip players who haven't played the current hole
-  //       } else {
-  //         if (!currentHolePlayers.contains(player)) {
-  //           currentHolePlayers.add(player);
-  //         }
-  //       }
-  //     } else {
-  //       // debugPrint("skipping player... ${player.playerId}");
-  //     }
-  //   }
-  //   // }
-  //   // debugPrint("Current hole players: ${currentHolePlayers.toString()}");
-  //   if (currentHolePlayers.length > 1) {
-  //     // debugPrint("Sorting current players...");
-  //     currentHolePlayers.sort((a, b) {
-  //       if (a.totalScore != b.totalScore) {
-  //         return a.totalScore.compareTo(b.totalScore);
-  //       } else {
-  //         return a.playerId.compareTo(b.playerId); // Sort by playerId when scores are tied
-  //       }
-  //     });
-  //   }
-  //   int playerScore = currentHolePlayers.firstWhere((p) => p.playerId == player.playerId).totalScore;
-  //   int position =
-  //       currentHolePlayers.indexWhere((p) => p.playerId == player.playerId) + 1; // Add 1, because the array starts at 0
-
-  //   int tiedCount = 0;
-  //   for (final p in currentHolePlayers) {
-  //     if (p.totalScore == playerScore) {
-  //       tiedCount++;
-  //     } else {
-  //       break;
-  //     }
-  //   }
-
-  //   if (tiedCount > 1) {
-  //     // this player has the same score as at least 1 other player
-  //     int calculatedPosition = position - tiedCount;
-  //     if (calculatedPosition <= 0) {
-  //       calculatedPosition = position;
-  //     }
-  //     player.place = '$calculatedPosition${getOrdinalSuffix(calculatedPosition)} (tied)';
-  //   } else {
-  //     player.place = getOrdinalString(position);
-  //   }
-  //   debugPrint(
-  //       'tiedCount: $tiedCount, playerID: ${player.playerId}, courseID: ${player.courseId}, totalScore: ${player.totalScore}, playerScore: $playerScore, place: ${player.place}');
-  //   return position;
-  // }
 
   String getOrdinalSuffix(int number) {
     if (number % 10 == 1 && number % 100 != 11) {
@@ -271,72 +185,6 @@ class Game {
   String getOrdinalString(int number) {
     return '$number${getOrdinalSuffix(number)}';
   }
-
-  String getPlayerPositionStr(PlayerGameInfo player) {
-    final place = getPlayerPosition(player);
-    final sortedPlayerScores = getSortedPlayerScores();
-    final currentPlayerScore =
-        sortedPlayerScores[sortedPlayerScores.indexWhere((p) => p.playerId == player.playerId)].totalScore;
-    final tiedPlayers = sortedPlayerScores.where((p) => p.totalScore == currentPlayerScore).toList();
-    final tiedCount = tiedPlayers.length;
-
-    String suffix;
-    if (place % 10 == 1 && place % 100 != 11) {
-      suffix = 'st';
-    } else if (place % 10 == 2 && place % 100 != 12) {
-      suffix = 'nd';
-    } else if (place % 10 == 3 && place % 100 != 13) {
-      suffix = 'rd';
-    } else {
-      suffix = 'th';
-    }
-
-    if (tiedCount > 1) {
-      return '$place$suffix (tied)';
-    } else {
-      return '$place$suffix';
-    }
-  }
-  // List<PlayerGameInfo> getSortedPlayerScores() {
-  //   final List<PlayerGameInfo> playerScores = [];
-  //   for (PlayerGameInfo player in players) {
-  //     int totalScore = calculateTotalScore(player);
-  //     playerScores.add(PlayerGameInfo(
-  //       playerId: player.playerId,
-  //       courseId: player.courseId,
-  //       scores: scores[player]!.values.toList(), // Convert map values to a list
-  //       place: player.place,
-  //       totalScore: totalScore,
-  //     ));
-  //   }
-
-  //   playerScores.sort((a, b) => a.totalScore.compareTo(b.totalScore));
-  //   return playerScores;
-  // }
-
-  // int getPlayerPosition(PlayerGameInfo player) {
-  //   final sortedPlayerScores = getSortedPlayerScores();
-  //   final position = sortedPlayerScores.indexWhere((p) => p.playerId == player.playerId);
-  //   debugPrint(
-  //       'Player gameid:playerid:postion: $sortedPlayerScores} - ${player.courseId}:${player.playerId}:$position');
-  //   return position + 1; // Add 1 to convert from zero-based index to position value
-  // }
-
-  // String getPlayerPositionStr(PlayerGameInfo player) {
-  //   final place = getPlayerPosition(player);
-
-  //   String suffix;
-  //   if (place % 10 == 1 && place % 100 != 11) {
-  //     suffix = 'st';
-  //   } else if (place % 10 == 2 && place % 100 != 12) {
-  //     suffix = 'nd';
-  //   } else if (place % 10 == 3 && place % 100 != 13) {
-  //     suffix = 'rd';
-  //   } else {
-  //     suffix = 'th';
-  //   }
-  //   return '$place$suffix';
-  // }
 
   static String generateRandomGameName([String? suffix = "Game"]) {
     final wordGenerator = WordGenerator();

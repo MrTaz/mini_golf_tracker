@@ -34,6 +34,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
     //     .forEach((element) => debugPrint('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
 
     return Container(
+        height: 48.0 * (widget.game.course.numberOfHoles + 2),
         color: Colors.white.withOpacity(0.8),
         child: Align(
           alignment: Alignment.topLeft,
@@ -65,7 +66,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       if (playerGameInfo != null) {
         columns.add(
           DataColumn(
-            label: Text('${player.nickname}:${player.id}\n${playerGameInfo.place}',
+            label: Text('${player.nickname}\n${playerGameInfo.place}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             numeric: true,
           ),

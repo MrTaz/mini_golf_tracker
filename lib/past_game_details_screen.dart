@@ -25,6 +25,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   List<PlayerGameInfo> clickedPlayerScores = [];
   List<Player> gamePlayers = [];
   List<PlayerGameInfo> sortedPlayerScores = [];
+  ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
       setState(() {});
     });
     initializeDateFormatting(); // Initialize intl package
+    // _scrollController = ScrollController();
   }
 
   @override
@@ -62,10 +64,11 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return ListView(
+                controller: _scrollController,
                 children: [
                   Container(
                     width: double.infinity,
-                    height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+                    // height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
                     decoration: const BoxDecoration(
                       image: DecorationImage(
                         alignment: Alignment(1, 1),
@@ -74,6 +77,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         ListTile(
                           title: Text(
@@ -218,6 +222,11 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
 
   void handlePlayerClick(Player player) {
     setState(() {
+      _scrollController.animateTo(
+        100,
+        curve: Curves.fastOutSlowIn,
+        duration: const Duration(milliseconds: 500),
+      );
       if (clickedPlayer.contains(player)) {
         clickedPlayer.remove(player);
         clickedPlayerScores.remove(_getPlayerGameInfo(player.id));
