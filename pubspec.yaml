@@ -51,6 +51,7 @@ dependencies:
   intl: ^0.18.1
   holiday_event_api: ^1.0.1
   calendarific_dart: ^1.0.2
+  cached_network_image: ^3.2.3
 
 dev_dependencies:
   flutter_test:
