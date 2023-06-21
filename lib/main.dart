@@ -58,27 +58,10 @@ class MainScaffold extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Widget body = const HomeScreen();
   Player? loggedInPlayer;
-  final _pages = <Widget>[
-    const HomeScreen(),
-    PlayersScreen(),
-    const PastGamesScreen(),
-  ];
   bool _userLoggedIn = false;
   static late AssetImage backgroundImage;
 
   MainScaffold();
-  int _selectedIndex = 0;
-
-  void _onBottomNavigationButtonTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (index == 0 && _userLoggedIn) {
-        body = const DashboardScreen();
-      } else {
-        body = _pages.elementAt(_selectedIndex);
-      }
-    });
-  }
 
   void changeBodyCallback(Widget nextPage) {
     body = nextPage;
@@ -153,24 +136,6 @@ class MainScaffold extends State<HomePage> {
         child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
       ),
       body: body,
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Players',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder),
-            label: 'Past Games',
-          )
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onBottomNavigationButtonTapped,
-      ),
     );
   }
 
