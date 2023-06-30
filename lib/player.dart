@@ -1,13 +1,56 @@
 class Player {
   final int id;
-  final String playerName;
-  final String nickname;
-  final String? email;
-  final String? phoneNumber;
-  final String? status;
-  final num totalScore;
-  final String? avatarImageLocation;
-  final int ownerId;
+  String playerName;
+  String nickname;
+  String? email;
+  String? phoneNumber;
+  String? status;
+  num totalScore;
+  String? avatarImageLocation;
+  int ownerId;
+
+  static List<Player> players = [
+    Player(
+        id: 1,
+        playerName: "Will",
+        nickname: "Dad",
+        ownerId: 1,
+        totalScore: 50,
+        email: "mrtaz28@gmail.com",
+        avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
+    Player(
+        id: 2,
+        playerName: "Mandi",
+        nickname: "Mom",
+        ownerId: 1,
+        totalScore: 62,
+        email: "pumkey@gmail.com",
+        avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
+    Player(
+        id: 3,
+        playerName: "Ava",
+        nickname: "Aba",
+        ownerId: 2,
+        totalScore: 52,
+        email: "princessavajayde@gmail.com",
+        avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
+    Player(
+        id: 4,
+        playerName: "Brayden",
+        nickname: "Monkey",
+        ownerId: 1,
+        totalScore: 51,
+        email: "hunter15511@gmail.com",
+        avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
+    Player(
+        id: 5,
+        playerName: "Collin",
+        nickname: "Pumpkin",
+        ownerId: 1,
+        totalScore: 54,
+        email: "pumkey41@gmail.com",
+        avatarImageLocation: "assets/images/avatars_3d_avatar_28.png")
+  ];
 
   Player(
       {required this.id,
@@ -52,47 +95,14 @@ class Player {
   }
 
   static List<Player> getAllPlayers() {
-    return [
-      Player(
-          id: 1,
-          playerName: "Will",
-          nickname: "Dad",
-          ownerId: 1,
-          totalScore: 50,
-          email: "mrtaz28@gmail.com",
-          avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
-      Player(
-          id: 2,
-          playerName: "Mandi",
-          nickname: "Mom",
-          ownerId: 1,
-          totalScore: 62,
-          email: "pumkey@gmail.com",
-          avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
-      Player(
-          id: 3,
-          playerName: "Ava",
-          nickname: "Aba",
-          ownerId: 1,
-          totalScore: 52,
-          email: "princessavajayde@gmail.com",
-          avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
-      Player(
-          id: 4,
-          playerName: "Brayden",
-          nickname: "Monkey",
-          ownerId: 1,
-          totalScore: 51,
-          email: "hunter15511@gmail.com",
-          avatarImageLocation: "assets/images/avatars_3d_avatar_28.png"),
-      Player(
-          id: 5,
-          playerName: "Collin",
-          nickname: "Pumpkin",
-          ownerId: 1,
-          totalScore: 54,
-          email: "pumkey41@gmail.com",
-          avatarImageLocation: "assets/images/avatars_3d_avatar_28.png")
-    ];
+    return players;
+  }
+
+  static Player? getPlayerByEmail(String email) {
+    return players.firstWhere((player) => player.email == email, orElse: () => null as Player);
+  }
+
+  static void addPlayer(Player player) {
+    players.add(player);
   }
 }

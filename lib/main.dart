@@ -16,6 +16,7 @@ import 'players_screen.dart';
 import 'course.dart';
 import 'databaseconnectionerror.dart';
 import 'game.dart';
+
 // import 'gamestarted.dart';
 // import 'playerListItem.dart';
 // import 'playergameinfo.dart';
@@ -116,7 +117,7 @@ class MainScaffold extends State<HomePage> {
         if (email == null) {
           logout();
         } else {
-          loggedInPlayer = Player(id: 1, playerName: "Will", nickname: "Dad", ownerId: 1, email: email, totalScore: 50);
+          loggedInPlayer = Player.getPlayerByEmail(email);
           isLoggedIn(true);
           changeProfileImage();
           body = const DashboardScreen();

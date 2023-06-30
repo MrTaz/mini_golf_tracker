@@ -27,13 +27,20 @@ class PlayersCardState extends State<PlayersCard> {
   @override
   void initState() {
     super.initState();
+    playerFriends = Player.getAllPlayers();
     sortedPlayers = widget.sortedPlayerIds != null && widget.sortedPlayerIds!.isNotEmpty
         ? (widget.sortedPlayerIds!.map((id) => playerFriends.firstWhere((player) => player.id == id)).toList()
           ..sort((a, b) => widget.sortedPlayerIds!.indexOf(a.id).compareTo(widget.sortedPlayerIds!.indexOf(b.id))))
         : (List.from(playerFriends)
           ..sort((a, b) {
             if (a.totalScore != b.totalScore) {
-              return a.totalScore.compareTo(b.totalScore);
+              if (a.totalScore == 0) {
+                return 1; // Player a has total score 0, place it after player b
+              } else if (b.totalScore == 0) {
+                return -1; // Player b has total score 0, place it after player a
+              } else {
+                return a.totalScore.compareTo(b.totalScore);
+              }
             } else {
               return a.id.compareTo(b.id);
             }
