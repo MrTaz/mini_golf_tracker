@@ -27,6 +27,7 @@ class Game {
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
       'couse': course.toJson(),
       'players': players.map((player) => player.toJson()).toList(),
       'startTime': startTime.toIso8601String()

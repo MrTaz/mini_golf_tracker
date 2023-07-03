@@ -12,11 +12,14 @@ class Course {
   });
 
   factory Course.fromMap(Map<String, dynamic> map) {
+    final parStrokes =
+        (map['parStrokes'] as Map<String, dynamic>).map((key, value) => MapEntry(int.parse(key), value as int));
+
     return Course(
       id: map['id'] as int,
       name: map['name'] as String,
       numberOfHoles: map['numberOfHoles'] as int,
-      parStrokes: Map<int, int>.from(map['parStrokes']),
+      parStrokes: parStrokes,
     );
   }
 
@@ -25,7 +28,7 @@ class Course {
       'id': id,
       'name': name,
       'numberOfHoles': numberOfHoles,
-      'parStrokes': parStrokes,
+      'parStrokes': parStrokes.map((key, value) => MapEntry(key.toString(), value)),
     };
   }
 
