@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/dashboard_new_game_card_widget.dart';
 
 import 'create_game_screen.dart';
 import 'home_screen.dart';
@@ -60,7 +61,7 @@ class _DashBoardScreenState extends State<DashboardScreen> {
 }
 
 class DashBoardLayout extends StatelessWidget {
-  const DashBoardLayout({super.key});
+  const DashBoardLayout({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +81,7 @@ class DashBoardLayout extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const NewGameCard(),
+                const DashboardNewGameCard(),
                 const PlayersCard(),
                 PastGamesListView(),
               ],

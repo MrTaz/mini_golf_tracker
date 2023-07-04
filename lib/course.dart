@@ -28,8 +28,23 @@ class Course {
       'id': id,
       'name': name,
       'numberOfHoles': numberOfHoles,
-      'parStrokes': parStrokes.map((key, value) => MapEntry(key.toString(), value)),
+      'parStrokes': Map<String, int>.from(parStrokes.map((key, value) => MapEntry(key.toString(), value))),
     };
+  }
+
+  factory Course.fromJson(Map<String, dynamic> json) {
+    final int id = json['id'];
+    final String name = json['name'];
+    final int numberOfHoles = json['numberOfHoles'];
+    final Map<int, int> parStrokes =
+        (json['parStrokes'] as Map<String, dynamic>).map((key, value) => MapEntry(int.parse(key), value as int));
+
+    return Course(
+      id: id,
+      name: name,
+      numberOfHoles: numberOfHoles,
+      parStrokes: parStrokes,
+    );
   }
 
   int getParValue(int holeNumber) {

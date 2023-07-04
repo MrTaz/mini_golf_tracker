@@ -13,8 +13,24 @@ class PlayerGameInfo {
       'playerId': playerId,
       'courseId': courseId,
       'scores': [...scores],
-      'place': place,
-      'totalScore': totalScore
+      'place': place == null ? "" : place,
+      'totalScore': totalScore,
     };
+  }
+
+  factory PlayerGameInfo.fromJson(Map<String, dynamic> json) {
+    final int playerId = json['playerId'];
+    final int courseId = json['courseId'];
+    final List<int> scores = List<int>.from(json['scores']);
+    final String? place = json['place'];
+    final int totalScore = json['totalScore'];
+
+    return PlayerGameInfo(
+      playerId: playerId,
+      courseId: courseId,
+      scores: scores,
+      place: place,
+      totalScore: totalScore,
+    );
   }
 }

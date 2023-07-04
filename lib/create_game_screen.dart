@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'courses_screen.dart';
 import 'game.dart';
 import 'course.dart';
+import 'player.dart';
 import 'player_game_info.dart';
 import 'players_list_screen.dart';
 
@@ -20,7 +23,7 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   Course? _selectedCourse;
-  late List<PlayerGameInfo> _selectedPlayers;
+  late List<Player> _selectedPlayers;
   late DateTime _startTime;
   late bool _gameStarted;
 
@@ -45,9 +48,12 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
   }
 
   Future<void> _selectPlayers() async {
-    final List<PlayerGameInfo>? selectedPlayers = await Navigator.push<List<PlayerGameInfo>?>(
+    final List<Player>? selectedPlayers = await Navigator.push<List<Player>?>(
       context,
-      MaterialPageRoute(builder: (context) => PlayersScreen()),
+      MaterialPageRoute(
+          builder: (context) => PlayersScreen(
+                creatingGame: true,
+              )),
     );
     if (selectedPlayers != null && selectedPlayers.isNotEmpty) {
       setState(() {
@@ -75,12 +81,16 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
       final Game newGame = Game(
         name: name,
         course: _selectedCourse!,
-        players: _selectedPlayers,
+        players: [],
         startTime: _startTime,
       );
+      _selectedPlayers.forEach((player) {
+        PlayerGameInfo pgi = PlayerGameInfo(playerId: player.id, courseId: newGame.course.id, scores: []);
+        newGame.addPlayer(pgi);
+      });
 
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String gameJson = newGame.toJson().toString();
+      final String gameJson = jsonEncode(newGame); //newGame.toJson().toString();
       await prefs.setString('unstarted_game', gameJson);
 
       setState(() {
@@ -90,6 +100,7 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Game created successfully'),
       ));
+      Navigator.pop(context);
     }
   }
 

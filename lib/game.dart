@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:uuid/uuid.dart';
 
@@ -28,10 +29,26 @@ class Game {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'couse': course.toJson(),
+      'course': course.toJson(),
       'players': players.map((player) => player.toJson()).toList(),
-      'startTime': startTime.toIso8601String()
+      'startTime': '${startTime.toIso8601String()}'
     };
+  }
+
+  factory Game.fromJson(String json) {
+    final Map<String, dynamic> data = jsonDecode(json);
+    final String name = data['name'];
+    final Course course = Course.fromJson(data['course']);
+    final List<PlayerGameInfo> players =
+        List<PlayerGameInfo>.from(data['players'].map((playerData) => PlayerGameInfo.fromJson(playerData)));
+    final DateTime startTime = DateTime.parse(data['startTime']);
+
+    return Game(
+      name: name,
+      course: course,
+      players: players,
+      startTime: startTime,
+    );
   }
 
   static Map<PlayerGameInfo, Map<int, int>> _initializeScores(List<PlayerGameInfo> players, int numberOfHoles) {
