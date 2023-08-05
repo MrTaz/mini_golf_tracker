@@ -1,6 +1,6 @@
 class Course {
   final int id;
-  final String name;
+  String name;
   final int numberOfHoles;
   final Map<int, int> parStrokes; // Map to store par strokes for each hole
 

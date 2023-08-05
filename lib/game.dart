@@ -12,43 +12,58 @@ import 'player_game_info.dart';
 class Game {
   final String name;
   final String id;
-  final Course course;
+  Course course;
   final List<PlayerGameInfo> players;
-  DateTime startTime;
+  DateTime? startTime;
+  DateTime scheduledTime;
+  String status = "unstarted_game";
   late Map<PlayerGameInfo, Map<int, int>> scores;
 
-  Game({
-    required this.name,
-    required this.course,
-    required this.players,
-    required this.startTime,
-  }) : id = const Uuid().v4() {
+  Game(
+      {required this.name,
+      required this.course,
+      required this.players,
+      this.startTime,
+      required this.scheduledTime,
+      String? id,
+      String? status})
+      : id = id ?? const Uuid().v4(),
+        status = status ?? "unstarted_game" {
     scores = _initializeScores(players, course.numberOfHoles);
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'course': course.toJson(),
       'players': players.map((player) => player.toJson()).toList(),
-      'startTime': '${startTime.toIso8601String()}'
+      'startTime': startTime?.toIso8601String(),
+      'scheduledTime': scheduledTime.toIso8601String(),
+      'status': status
     };
   }
 
   factory Game.fromJson(String json) {
     final Map<String, dynamic> data = jsonDecode(json);
+    String? id = data['id'];
     final String name = data['name'];
     final Course course = Course.fromJson(data['course']);
     final List<PlayerGameInfo> players =
         List<PlayerGameInfo>.from(data['players'].map((playerData) => PlayerGameInfo.fromJson(playerData)));
-    final DateTime startTime = DateTime.parse(data['startTime']);
+    final DateTime? startTime = (data['startTime'] != null) ? DateTime.parse(data['startTime']) : null;
+    final DateTime scheduledTime =
+        (data['scheduledTime'] != null) ? DateTime.parse(data['scheduledTime']) : DateTime.now();
+    String? status = data['status'];
 
     return Game(
-      name: name,
-      course: course,
-      players: players,
-      startTime: startTime,
-    );
+        id: id,
+        name: name,
+        course: course,
+        players: players,
+        startTime: startTime,
+        scheduledTime: scheduledTime,
+        status: status);
   }
 
   static Map<PlayerGameInfo, Map<int, int>> _initializeScores(List<PlayerGameInfo> players, int numberOfHoles) {
@@ -232,16 +247,17 @@ class Game {
       }
 
       Game game = Game(
-        name: generateRandomGameName(),
-        course: Course(
-          id: i,
-          name: name,
-          numberOfHoles: courseNumberOfHoles,
-          parStrokes: parStrokes,
-        ),
-        players: [],
-        startTime: randomGameDateList[i],
-      );
+          name: generateRandomGameName(),
+          course: Course(
+            id: i,
+            name: name,
+            numberOfHoles: courseNumberOfHoles,
+            parStrokes: parStrokes,
+          ),
+          players: [],
+          startTime: randomGameDateList[i],
+          scheduledTime: randomGameDateList[i],
+          status: "completed");
 
       int numOfPlayers = 2 + rnd.nextInt((5 + 1 - 2));
       for (int l = 0; l < numOfPlayers; l++) {

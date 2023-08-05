@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/game_start_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'game.dart'; // Replace with the actual import path for the Game class
 
-import 'create_game_screen.dart';
+import 'game_create_screen.dart';
+import 'utilities.dart';
 
 class DashboardNewGameCard extends StatefulWidget {
   const DashboardNewGameCard({Key? key}) : super(key: key);
@@ -12,161 +17,210 @@ class DashboardNewGameCard extends StatefulWidget {
 }
 
 class _DashboardNewGameCardState extends State<DashboardNewGameCard> {
-  Future<bool> hasSavedGame() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey('unstarted_game'); // Assuming 'unstarted_game' is the key for the saved game
+  Future<void> _navigateToGameCreateScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) {
+        return const GameCreateScreen();
+      }),
+    );
+    setState(() {}); // Refresh the widget after creating a new game
   }
 
-  Future<Game?> getSavedGame() async {
+  Widget _buildCreateNewGameCard() {
+    return Card(
+      elevation: 6,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            ListTile(
+              title: const Text('Create a new game'),
+              trailing: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _navigateToGameCreateScreen,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<List<Game?>> getSavedGame() async {
+    List<Game> games = [];
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedGameJson = prefs.getString('unstarted_game');
-    if (savedGameJson != null && savedGameJson.isNotEmpty) {
-      return Game.fromJson(savedGameJson);
+    // Get all the keys
+    final Set<String> keys = prefs.getKeys().cast<String>();
+    // Iterate over the keys and check if the value is a JSON
+    for (String key in keys) {
+      dynamic value = prefs.get(key);
+      // debugPrint("Found shared preference: $key $value");
+      if (value is String) {
+        try {
+          // ignore: unused_local_variable
+          // var json = jsonDecode(value);
+          // debugPrint("It's a JSON-formatted string: $json");
+          Game savedGame = Game.fromJson(value);
+          // debugPrint("It's a Game-formatted string: ${savedGame.toJson()}");
+          if (savedGame.status == "unstarted_game" || savedGame.status == "started") {
+            games.add(savedGame);
+          }
+        } catch (e) {
+          // debugPrint("Not a JSON-formatted string. Plain value: $value");
+        }
+      } else if (value is List<String>) {
+        // debugPrint("It's a List of strings: $value");
+      } else {
+        // debugPrint("Value cannot be parsed. Type: ${value.runtimeType}");
+      }
     }
-    return null;
+    return games;
   }
 
-  Future<void> deleteSavedGame() async {
+  Future<void> deleteSavedGame({Game? gameToDelete}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('unstarted_game'); // Assuming 'unstarted_game' is the key for the saved game
+    if (gameToDelete != null) {
+      await prefs.remove(gameToDelete.id);
+    } else {
+      final Set<String> keys = prefs.getKeys().cast<String>();
+      for (String key in keys) {
+        dynamic value = prefs.get(key);
+        debugPrint("Found shared preference: $key $value");
+        if (value is String) {
+          try {
+            var _json = jsonDecode(value);
+            debugPrint("Deleting shared preference: $_json");
+            prefs.remove(key);
+          } catch (e) {
+            // debugPrint("Not a JSON-formatted string. Plain value: $value");
+          }
+        } else if (value is List<String>) {
+          // debugPrint("It's a List of strings: $value");
+        } else {
+          // debugPrint("Value cannot be parsed. Type: ${value.runtimeType}");
+        }
+      }
+    }
     setState(() {}); // Refresh the widget after deletion
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: hasSavedGame(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        } else if (snapshot.hasData && snapshot.data!) {
-          // If a saved game exists, show the game details
-          return FutureBuilder<Game?>(
+    return Center(
+      child: Card(
+        elevation: 6,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: FutureBuilder<List<Game?>>(
             future: getSavedGame(),
-            builder: (BuildContext context, AsyncSnapshot<Game?> gameSnapshot) {
+            builder: (BuildContext context, AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(
+                return const Center(
                   child: CircularProgressIndicator(),
                 );
-              } else if (gameSnapshot.hasData && gameSnapshot.data != null) {
-                Game game = gameSnapshot.data!;
-                return Center(
-                  child: Card(
-                    elevation: 6,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: <Widget>[
-                          ListTile(
-                            title: Text(
-                                "${game.name} - ${(DateTime.now().isAfter(game.startTime)) ? "Started at" : "Scheduled for"} ${game.startTime}"),
-                            subtitle: Text(
-                                'Course: ${game.course.name} (${game.course.numberOfHoles} holes) - ${game.players.length} players'),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Start the saved game
-                                },
-                                child: const Text('Start Game'),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: () {
-                                  deleteSavedGame().then((_) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Deleted saved game')),
-                                    );
-                                  });
-                                },
-                                child: const Text('Delete Game'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              } else {
-                // Handle the case when there's an error or the saved game data is invalid
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text('Error: Unable to load saved game data'),
-                      ElevatedButton(
-                        onPressed: () {
-                          deleteSavedGame().then((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Deleted saved game')),
-                            );
-                          });
-                        },
-                        child: const Text('Delete Game'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
-          );
-        } else {
-          // If no saved game exists, show the option to create a new game
-          return Center(
-            child: Card(
-              elevation: 6,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
+              } else if (gameSnapshot.hasError) {
+                debugPrint(gameSnapshot.error.toString());
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    ListTile(
-                      title: Text('Create a new game'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (context) {
-                                return const CreateGameScreen();
-                              }),
-                            ).then((_) {
-                              setState(() {}); // Refresh the widget after creating a new game
-                            });
-                          },
-                          child: Row(
-                            children: const [
-                              Icon(
-                                Icons.add,
-                                size: 24.0,
-                              ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              Text('New Game'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
+                    const Text('Error: Unable to load saved game data'),
+                    ElevatedButton(
+                      onPressed: () {
+                        deleteSavedGame().then((_) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Deleted saved game')),
+                          );
+                        });
+                      },
+                      child: const Text('Delete Game'),
                     ),
                   ],
-                ),
-              ),
-            ),
-          );
-        }
-      },
+                );
+              } else if (gameSnapshot.hasData && gameSnapshot.data != null && gameSnapshot.data!.isNotEmpty) {
+                return Column(
+                  children: <Widget>[
+                    ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(0.8),
+                        itemCount: gameSnapshot.data!.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          Game game = gameSnapshot.data![index]!;
+                          return Card(
+                              elevation: 6,
+                              child: Column(children: [
+                                ListTile(
+                                  title: Text(
+                                      "${game.name} - ${(game.status != "unstarted_game" && game.startTime != null) ? "Started at ${Utilities.formatStartTime(game.startTime!)}" : "Scheduled for ${Utilities.formatStartTime(game.scheduledTime)}"}"),
+                                  subtitle: Text(
+                                      'Course: ${game.course.name} (${game.course.numberOfHoles} holes) - ${game.players.length} players'),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    if (game.status == "unstarted_game") ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(builder: (context) {
+                                                return GameStartScreen(unstartedGame: game);
+                                              }),
+                                            ).then((_) {
+                                              setState(() {}); // Refresh the widget after creating a new game
+                                            });
+                                          },
+                                          child: const Text('Start Game'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    if (game.status == "started") ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(builder: (context) {
+                                                return GameInprogressScreen(currentGame: game);
+                                              }),
+                                            ).then((_) {
+                                              setState(() {}); // Refresh the widget after creating a new game
+                                            });
+                                          },
+                                          child: const Text('Continue Game'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0, right: 8.0),
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          deleteSavedGame(gameToDelete: game).then((_) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Deleted saved game')),
+                                            );
+                                          });
+                                        },
+                                        child: const Text('Delete Game'),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ]));
+                        }),
+                    _buildCreateNewGameCard(),
+                  ],
+                );
+              } else {
+                // If no saved game exists, show the option to create a new game
+                return Center(child: _buildCreateNewGameCard());
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 }

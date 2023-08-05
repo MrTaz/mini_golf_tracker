@@ -765,7 +765,7 @@ Future<void> saveGameToDatabase(Game game) async {
                 'scores': player.scores,
               })
           .toList(),
-      'startTime': game.startTime.toIso8601String(),
+      'scheduledTime': game.scheduledTime.toIso8601String(),
       // Include any other relevant game data
     };
 

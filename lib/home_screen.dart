@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'create_game_screen.dart';
+import 'game_create_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -84,7 +84,7 @@ class HomeScreen extends StatelessWidget {
                                 )),
                             onPressed: () {
                               Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                                return const CreateGameScreen();
+                                return const GameCreateScreen();
                               }));
                             },
                           )

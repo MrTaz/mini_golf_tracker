@@ -1,8 +1,7 @@
 import 'package:confetti/confetti.dart';
-import 'package:calendarific_dart/calendarific_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'package:mini_golf_tracker/utilities.dart';
+import 'course_list_item_widget.dart';
 import 'game.dart';
 import 'player.dart';
 import 'player_score_data_table_card.dart';
@@ -23,20 +22,17 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   static const routeName = '/gameDetails';
   List<Player> clickedPlayer = [];
   List<PlayerGameInfo> clickedPlayerScores = [];
-  List<Player> gamePlayers = [];
   List<PlayerGameInfo> sortedPlayerScores = [];
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    gamePlayers = Player.getAllPlayers();
     sortedPlayerScores = widget.passedGame.getSortedPlayerScores();
-
+    debugPrint("Passed in game: ${widget.passedGame.toJson()}");
     confettiController.addListener(() {
       setState(() {});
     });
-    initializeDateFormatting(); // Initialize intl package
     // _scrollController = ScrollController();
   }
 
@@ -48,34 +44,21 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
 
   @override
   Widget build(BuildContext context) {
-    // final passedGame = ModalRoute.of(context)!.settings.arguments as Game;
-    // final PlayerGameInfo winner = passedGame.getWinner();
-    // final int winningScore = passedGame.calculateTotalScore(winner);
-    // final formattedStartTime = formatStartTime(passedGame.startTime);
-    // final List<PlayerGameInfo> sortedPlayerScores = passedGame.getSortedPlayerScores();
-
     return Scaffold(
-        appBar: AppBar(
-          title: Text("${widget.passedGame.course.name} on ${widget.passedGame.startTime}"),
-        ),
         backgroundColor: Colors.white,
+        extendBodyBehindAppBar: false,
+        appBar: AppBar(
+          title: Text("${widget.passedGame.course.name} on ${widget.passedGame.startTime!}"),
+        ),
         body: FutureBuilder<String>(
-          future: formatStartTime(widget.passedGame.startTime),
+          future: Future.value(Utilities.formatStartTime(widget.passedGame.startTime!)),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
-              return ListView(
-                controller: _scrollController,
+              return Stack(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    // height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        alignment: Alignment(1, 1),
-                        image: AssetImage("assets/images/loggedin_background_2.png"),
-                      ),
-                    ),
-                    child: Column(
+                  Utilities.backdropImageContinerWidget(),
+                  ListView(controller: _scrollController, children: [
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -90,41 +73,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                                 const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
                           ),
                         ),
-                        ExpansionTile(
-                            title: Text(
-                              'Course: ${widget.passedGame.course.name}',
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            children: [
-                              ListTile(
-                                title: Text('Number of Holes: ${widget.passedGame.course.numberOfHoles}'),
-                              ),
-                              ListTile(
-                                  title: const Text('Par Values:', style: TextStyle(fontSize: 16)),
-                                  subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    GridView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: widget.passedGame.course.numberOfHoles,
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        mainAxisSpacing: 8.0,
-                                        crossAxisSpacing: 8.0,
-                                        childAspectRatio: 3.0,
-                                      ),
-                                      itemBuilder: (context, index) {
-                                        final holeNumber = index + 1;
-                                        final parValue = widget.passedGame.course.getParValue(holeNumber);
-                                        return Column(
-                                          children: [
-                                            Text('Hole $holeNumber', style: const TextStyle(fontSize: 12)),
-                                            Text('Par: $parValue', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          ],
-                                        );
-                                      },
-                                    )
-                                  ]))
-                            ]),
+                        CourseListItem(course: widget.passedGame.course, onDelete: () {}, onModify: () {}),
                         Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: SingleChildScrollView(
@@ -156,7 +105,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                                     ])))),
                       ],
                     ),
-                  ),
+                  ]),
                 ],
               );
             } else if (snapshot.hasError) {
@@ -168,56 +117,22 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
         ));
   }
 
-  Widget getPlayersList(BuildContext context, List<PlayerGameInfo> players) {
-    return ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: players.length,
-        itemBuilder: (BuildContext context, int index) {
-          return ListView.builder(
-              itemCount: players[index].scores.length,
-              itemBuilder: (context, int sindex) {
-                return ListTile(title: Text("Hole #$sindex, score: ${players[index].scores[sindex]}"));
-              });
-        });
-  }
-
-  Future<String> formatStartTime(DateTime startTime) async {
-    final now = DateTime.now();
-    final daysDifference = now.difference(startTime).inDays;
-    final timeFormatter = DateFormat.jm();
-    const String apiKey = '';
-    final CalendarificApi api = CalendarificApi(apiKey);
-    const String countryCode = "US";
-    String formattedResponse = "";
-
-    if (daysDifference <= 30) {
-      formattedResponse = '$daysDifference day(s) ago @ ${timeFormatter.format(startTime)}';
-    } else {
-      final formatter = DateFormat.yMMMMd('en_US');
-      formattedResponse = '${formatter.format(startTime)} @ ${timeFormatter.format(startTime)}';
-    }
-
-    // final holidays = await api.getHolidays(countryCode: countryCode, year: startTime.year.toString());
-
-    // if (holidays != null && holidays.isNotEmpty) {
-    //   final Holiday? holiday = holidays.firstWhere(
-    //     (h) => h.date.day == startTime.day && h.date.month == startTime.month,
-    //     orElse: () => null as Holiday,
-    //   );
-
-    //   if (holiday != null) {
-    //     return '$formattedResponse - ${holiday.name}';
-    //   } else {
-    //     return formattedResponse;
-    //   }
-    // } else {
-    return formattedResponse;
-    // }
-  }
+  // Widget getPlayersList(BuildContext context, List<PlayerGameInfo> players) {
+  //   return ListView.builder(
+  //       padding: const EdgeInsets.all(8),
+  //       itemCount: players.length,
+  //       itemBuilder: (BuildContext context, int index) {
+  //         return ListView.builder(
+  //             itemCount: players[index].scores.length,
+  //             itemBuilder: (context, int sindex) {
+  //               return ListTile(title: Text("Hole #$sindex, score: ${players[index].scores[sindex]}"));
+  //             });
+  //       });
+  // }
 
   PlayerGameInfo? _getPlayerGameInfo(int playerId) {
     return sortedPlayerScores.firstWhere((gameInfo) => gameInfo.playerId == playerId,
-        orElse: () => null as PlayerGameInfo);
+        orElse: () => throw Exception("No PlayerGameInfo found for playerId: $playerId"));
   }
 
   void handlePlayerClick(Player player) {

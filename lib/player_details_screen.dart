@@ -22,6 +22,8 @@ class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: const Text('Player Details'),
       ),

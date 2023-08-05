@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/dashboard_new_game_card_widget.dart';
 
-import 'create_game_screen.dart';
+import 'game_create_screen.dart';
 import 'home_screen.dart';
 import 'past_games_list_view.dart';
 import 'past_games_screen.dart';
 import 'players_card_widget.dart';
 import 'players_screen.dart';
+import 'utilities.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -15,7 +16,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashBoardScreenState extends State<DashboardScreen> {
-  Widget body = const DashBoardLayout();
+  late Widget body;
   int _selectedIndex = 0;
   final _pages = <Widget>[
     const HomeScreen(),
@@ -26,7 +27,11 @@ class _DashBoardScreenState extends State<DashboardScreen> {
     setState(() {
       _selectedIndex = index;
       if (index == 0) {
-        body = const DashBoardLayout();
+        body = DashBoardLayout(
+          updateBottomNavChangeNotifier: (bool value) {
+            _onBottomNavigationButtonTapped(1);
+          },
+        );
       } else {
         body = _pages.elementAt(_selectedIndex);
       }
@@ -34,9 +39,20 @@ class _DashBoardScreenState extends State<DashboardScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    body = DashBoardLayout(
+      updateBottomNavChangeNotifier: (bool value) {
+        _onBottomNavigationButtonTapped(1);
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      extendBodyBehindAppBar: false,
       body: body,
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -60,34 +76,44 @@ class _DashBoardScreenState extends State<DashboardScreen> {
   }
 }
 
-class DashBoardLayout extends StatelessWidget {
-  const DashBoardLayout({Key? key}) : super(key: key);
+class DashBoardLayout extends StatefulWidget {
+  final ValueChanged<bool> updateBottomNavChangeNotifier;
+
+  const DashBoardLayout({Key? key, required this.updateBottomNavChangeNotifier}) : super(key: key);
+
+  @override
+  State<DashBoardLayout> createState() => _DashBoardLayoutState();
+}
+
+class _DashBoardLayoutState extends State<DashBoardLayout> {
+  bool isShowFriendsScreen = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            alignment: Alignment(1, 1),
-            image: AssetImage("assets/images/loggedin_background_2.png"),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const DashboardNewGameCard(),
-                const PlayersCard(),
-                PastGamesListView(),
-              ],
+    return isShowFriendsScreen
+        ? const PlayersScreen()
+        : Stack(children: [
+            Utilities.backdropImageContinerWidget(),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const DashboardNewGameCard(),
+                    PlayersCard(onPlayerCardTap: (bool arg) {
+                      setState(() {
+                        isShowFriendsScreen = !isShowFriendsScreen;
+                        widget.updateBottomNavChangeNotifier(isShowFriendsScreen);
+                      });
+                    }),
+                    PastGamesListView(),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ));
+          ]);
   }
 }
 
@@ -113,7 +139,7 @@ class NewGameCard extends StatelessWidget {
                         // onPressed: () {/* ... */},
                         onPressed: () {
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                            return const CreateGameScreen();
+                            return const GameCreateScreen();
                           }));
                         },
                         child: const Row(

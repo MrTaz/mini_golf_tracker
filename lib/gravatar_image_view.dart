@@ -12,7 +12,7 @@ class GravatarImageView extends StatelessWidget {
 
   Future<String> getFriendAvatarImage() async {
     return Future.microtask(() async {
-      debugPrint('Getting gravatar data for $email');
+      // debugPrint('Getting gravatar data for $email');
       if (email.isNotEmpty) {
         if (_GravatarImgUrlCache.containsKey(email)) {
           return _GravatarImgUrlCache[email] as String;

@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'course.dart';
-import 'course_list_item_widget.dart';
+import 'utilities.dart';
+// import 'course_list_item_widget.dart';
 
 class CoursesScreen extends StatefulWidget {
+  final Course? selectedCourse;
+  const CoursesScreen({super.key, this.selectedCourse});
   @override
   _CoursesScreenState createState() => _CoursesScreenState();
 }
@@ -14,11 +17,15 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   late List<Course> courses = [];
   Course? selectedCourse; // Allow null value for selectedCourse
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadCourses();
+    setState(() {
+      selectedCourse = widget.selectedCourse;
+    });
   }
 
   Future<void> _saveCourse(Course course) async {
@@ -77,45 +84,64 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: const Text('Select Course'),
       ),
-      body: ListView.builder(
-        itemCount: courses.length + 1,
-        itemBuilder: (context, index) {
-          if (index == courses.length) {
-            return ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Create New Course'),
-              onTap: () {
-                _createNewCourse(context);
-              },
-            );
-          }
-          final Course course = courses[index];
-          return ListTile(
-            title: Text(course.name),
-            onTap: () {
-              _showCourseDetails(course);
-            },
-            trailing: _buildCourseSelectionSwitch(course),
-          );
-        },
+      body: Stack(children: [
+        Utilities.backdropImageContinerWidget(),
+        ListView(controller: _scrollController, children: [
+          Card(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(0.8),
+                  itemCount: courses.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Course course = courses[index];
+                    bool isSelected = false;
+                    if (selectedCourse != null && courses[index].id == selectedCourse!.id) {
+                      isSelected = true;
+                    }
+                    return ListTile(
+                      title: Text(course.name),
+                      subtitle: Text("${course.numberOfHoles} holes"),
+                      leading: const Icon(Icons.golf_course),
+                      selected: isSelected,
+                      iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
+                        if (states.contains(MaterialState.selected)) {
+                          return Colors.green;
+                        }
+                        return Colors.teal;
+                      }),
+                      onTap: () {
+                        _showCourseDetails(course);
+                      },
+                      trailing: _buildCourseSelectionSwitch(course),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ]),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _createNewCourse(context),
+        child: const Icon(Icons.add),
       ),
     );
   }
 
   Widget _buildCourseSelectionSwitch(Course course) {
-    return Switch(
-      value: selectedCourse == course,
-      onChanged: (value) {
+    return IconButton(
+      icon: const Icon(Icons.check),
+      onPressed: () {
         setState(() {
-          if (value) {
-            selectedCourse = course;
-            _handleCourseSelection(course); // Call the method to handle course selection
-          } else {
-            selectedCourse = null;
-          }
+          selectedCourse = course;
+          _handleCourseSelection(course); // Call the method to handle course selection
         });
       },
     );
@@ -128,7 +154,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   void _createNewCourse(BuildContext context) async {
     String courseName = '';
-    int? numberOfHoles = null;
+    int? numberOfHoles;
     List<int> parStrokes = List.filled(18, 3); // Default par stroke is 3 for each hole
 
     await showDialog<Course>(
@@ -155,18 +181,18 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
                       value: numberOfHoles,
-                      items: [
+                      items: const [
                         DropdownMenuItem<int>(
                           value: null,
-                          child: const Text('Select Number of Holes'),
+                          child: Text('Select Number of Holes'),
                         ),
                         DropdownMenuItem<int>(
                           value: 9,
-                          child: const Text('9 Holes'),
+                          child: Text('9 Holes'),
                         ),
                         DropdownMenuItem<int>(
                           value: 18,
-                          child: const Text('18 Holes'),
+                          child: Text('18 Holes'),
                         ),
                       ],
                       onChanged: (value) {
@@ -330,18 +356,18 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
                       value: numberOfHoles,
-                      items: [
+                      items: const [
                         DropdownMenuItem<int>(
                           value: null,
-                          child: const Text('Select Number of Holes'),
+                          child: Text('Select Number of Holes'),
                         ),
                         DropdownMenuItem<int>(
                           value: 9,
-                          child: const Text('9 Holes'),
+                          child: Text('9 Holes'),
                         ),
                         DropdownMenuItem<int>(
                           value: 18,
-                          child: const Text('18 Holes'),
+                          child: Text('18 Holes'),
                         ),
                       ],
                       onChanged: (value) {
