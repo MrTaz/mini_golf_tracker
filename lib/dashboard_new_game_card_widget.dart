@@ -1,28 +1,30 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'game.dart'; // Replace with the actual import path for the Game class
 
-import 'game_create_screen.dart';
 import 'utilities.dart';
 
 class DashboardNewGameCard extends StatefulWidget {
   const DashboardNewGameCard({Key? key}) : super(key: key);
 
   @override
-  _DashboardNewGameCardState createState() => _DashboardNewGameCardState();
+  DashboardNewGameCardState createState() => DashboardNewGameCardState();
 }
 
-class _DashboardNewGameCardState extends State<DashboardNewGameCard> {
+class DashboardNewGameCardState extends State<DashboardNewGameCard> {
   Future<void> _navigateToGameCreateScreen() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
-        return const GameCreateScreen();
+        return GameStartScreen(callback: () {
+          updateGameCard();
+        });
       }),
     );
+    await getSavedGame();
     setState(() {}); // Refresh the widget after creating a new game
   }
 
@@ -44,6 +46,11 @@ class _DashboardNewGameCardState extends State<DashboardNewGameCard> {
         ),
       ),
     );
+  }
+
+  updateGameCard() async {
+    await getSavedGame();
+    setState(() {});
   }
 
   Future<List<Game?>> getSavedGame() async {
@@ -85,11 +92,12 @@ class _DashboardNewGameCardState extends State<DashboardNewGameCard> {
       final Set<String> keys = prefs.getKeys().cast<String>();
       for (String key in keys) {
         dynamic value = prefs.get(key);
-        debugPrint("Found shared preference: $key $value");
+        // debugPrint("Found shared preference: $key $value");
         if (value is String) {
           try {
-            var _json = jsonDecode(value);
-            debugPrint("Deleting shared preference: $_json");
+            // var json = jsonDecode(value);
+            // debugPrint("Deleting shared preference: $_json");
+            jsonDecode(value);
             prefs.remove(key);
           } catch (e) {
             // debugPrint("Not a JSON-formatted string. Plain value: $value");
@@ -102,6 +110,12 @@ class _DashboardNewGameCardState extends State<DashboardNewGameCard> {
       }
     }
     setState(() {}); // Refresh the widget after deletion
+  }
+
+  @override
+  void initState() {
+    setState(() {}); // Refresh the widget after creating a new game
+    super.initState();
   }
 
   @override

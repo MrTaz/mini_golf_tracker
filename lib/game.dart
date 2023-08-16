@@ -10,7 +10,7 @@ import 'course.dart';
 import 'player_game_info.dart';
 
 class Game {
-  final String name;
+  late final String name;
   final String id;
   Course course;
   final List<PlayerGameInfo> players;
@@ -238,7 +238,7 @@ class Game {
         RndX.generateRandomDates(count: numberOfGames!, start: startDate, end: endDate, uniqueList: true);
     randomGameDateList.sort((a, b) => b.compareTo(a));
 
-    for (var i = 0; i < numberOfGames!; i++) {
+    for (var i = 0; i < numberOfGames; i++) {
       String name = generateRandomGameName("Club");
       Map<int, int> parStrokes = {};
       int courseNumberOfHoles = totalNumberOfHoles[rnd.nextInt(totalNumberOfHoles.length)];

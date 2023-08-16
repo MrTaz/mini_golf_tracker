@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class Utilities {
+  static bool isMobile =
+      !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
+
   static String formatStartTime(DateTime startTime) {
     final DateTime localDate = startTime.toLocal();
     final now = DateTime.now();

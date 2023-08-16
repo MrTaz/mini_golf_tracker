@@ -172,11 +172,12 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
                 );
               }
             },
-            child: Flexible(
+            child: FittedBox(
+                fit: BoxFit.fitWidth,
                 child: Text(
-              (currentHole != widget.currentGame.course.numberOfHoles) ? 'Next Hole' : 'Complete Game',
-              overflow: TextOverflow.clip,
-            )),
+                  (currentHole != widget.currentGame.course.numberOfHoles) ? 'Next Hole' : 'Complete Game',
+                  overflow: TextOverflow.clip,
+                )),
           ),
         ],
       ),
@@ -184,6 +185,19 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
   }
 
   Widget _buildPlayerCard(PlayerGameInfo pgi, int playerScore, int playerScoreDropDownIndex) {
+    final textScale = MediaQuery.of(context).size.height * 0.01;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    double getHeight(double sysVar, double size) {
+      double calc = size / 1000;
+      return sysVar * calc;
+    }
+
+    double getTextSize(double sysVar, double size) {
+      double calc = size / 10;
+      return sysVar * calc;
+    }
+
     return Card(
       child: Row(
         children: [
@@ -195,7 +209,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
               rank: int.tryParse((pgi.place) ?? '99'),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 2),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -208,37 +222,40 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
                         Expanded(
                           flex: 1,
                           child: Container(
-                              width: 200,
-                              child: Center(
-                                  child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text('Current score: ${pgi.totalScore}'),
-                                  if (currentHole != 1) ...[
-                                    Flex(
-                                      direction: Axis.horizontal,
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                              // width: 200,
+                              child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: Text('Current score: ${pgi.totalScore}',
+                                      style: TextStyle(fontSize: getTextSize(textScale, 20)))),
+                              if (currentHole != 1) ...[
+                                FittedBox(
+                                    fit: BoxFit.fill,
+                                    child: Row(
                                       children: [
-                                        Flexible(child: Text('Last hole (${currentHole - 1}): ')),
+                                        Text('Last hole (${currentHole - 1}): ',
+                                            style: TextStyle(fontSize: getTextSize(textScale, 18))),
                                         Text(
                                           '${pgi.scores[currentHole - 2]}',
                                           style: TextStyle(
-                                            color: (pgi.scores[currentHole - 2] < currentHolePar)
-                                                ? Colors.green
-                                                : (pgi.scores[currentHole - 2] > currentHolePar)
-                                                    ? Colors.red
-                                                    : Colors.black,
-                                          ),
+                                              color: (pgi.scores[currentHole - 2] < currentHolePar)
+                                                  ? Colors.green
+                                                  : (pgi.scores[currentHole - 2] > currentHolePar)
+                                                      ? Colors.red
+                                                      : Colors.black,
+                                              fontSize: getTextSize(textScale, 18)),
                                         )
                                       ],
-                                    )
-                                  ]
-                                ],
-                              ))),
+                                    ))
+                              ]
+                            ],
+                          )),
                         ),
                         Expanded(
-                          flex: 3,
+                          flex: 2,
                           child: Container(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
