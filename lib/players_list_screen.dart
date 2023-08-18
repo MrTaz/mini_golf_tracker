@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'gravatar_image_view.dart';
@@ -34,6 +35,7 @@ class _PlayerListItemState extends State<PlayerListItem> {
   final bool _enabled = true;
   bool _allowEditing = false;
   bool isDropdownOpen = false;
+  final Player? loggedInUser = UserProvider().loggedInUser;
 
   @override
   void initState() {
@@ -45,7 +47,7 @@ class _PlayerListItemState extends State<PlayerListItem> {
   Future<void> loadCurrentUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _allowEditing = widget.player.ownerId == Player.getPlayerByEmail(prefs.getString("email") ?? "")?.id;
+      _allowEditing = widget.player.ownerId == loggedInUser!.getPlayerFriendByEmail(prefs.getString("email") ?? "")?.id;
     });
   }
 

@@ -24,7 +24,7 @@ class _PlayerCreateScreenState extends State<PlayerCreateScreen> {
 
   void savePlayer() {
     widget.onSavePlayer(); // Notify the parent widget that a player has been saved
-    Player.addPlayer(newPlayer);
+    Player.empty().addPlayerFriend(newPlayer);
   }
 
   @override

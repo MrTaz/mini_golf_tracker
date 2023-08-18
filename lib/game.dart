@@ -1,5 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'package:mini_golf_tracker/utilities.dart';
+import 'package:supabase/supabase.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:random_x/random_x.dart';
@@ -7,6 +11,7 @@ import 'package:recase/recase.dart';
 import 'package:word_generator/word_generator.dart';
 
 import 'course.dart';
+import 'databaseconnectionerror.dart';
 import 'player_game_info.dart';
 
 class Game {
@@ -92,7 +97,7 @@ class Game {
     if (!scores.containsKey(player)) {
       throw Exception('Player scores not initialized');
     }
-    // debugPrint("CourseID: ${player.courseId}, Hole Number: $holeNumber, strokes: $strokes");
+    Utilities.debugPrintWithCallerInfo("CourseID: ${player.courseId}, Hole Number: $holeNumber, strokes: $strokes");
     scores[player]![holeNumber] = strokes;
     player.scores = scores[player]!.values.toList();
     calculateTotalScore(player);
@@ -275,5 +280,62 @@ class Game {
     }
 
     return games;
+  }
+
+  static Future<List<Game>> fetchGamesForCurrentUser(int currentUserId) async {
+    try {
+      // Fetch the games from the database where the current user is a player
+      final response = await supabase
+          .from('games')
+          .select('*, player_game_info!inner(*)')
+          .eq('player_game_info.player_id', '$currentUserId')
+          .order('scheduled_time', ascending: false);
+
+      Utilities.debugPrintWithCallerInfo("Fetching games: $response");
+
+      // Convert the response data into a list of Game objects
+      final List<Game> games = [];
+      if (response is List<dynamic> && response.isNotEmpty) {
+        for (final gameData in response) {
+          final game = Game.fromJson(jsonEncode(gameData));
+          games.add(game);
+        }
+      }
+
+      return games;
+    } on PostgrestException catch (e) {
+      // Handle error if any
+      if (kDebugMode) {
+        print('Error fetching games: ${e.message}');
+      }
+      throw DatabaseConnectionError('Failed to fetch games: ${e.message}');
+    }
+  }
+
+  Future<void> saveGameToDatabase(Game game) async {
+    try {
+      // 1. Prepare the game data to be saved
+      Map<String, dynamic> gameData = {
+        'courseId': game.course.id,
+        'players': game.players
+            .map((player) => {
+                  'playerId': player.playerId,
+                  'courseId': player.courseId,
+                  'scores': player.scores,
+                })
+            .toList(),
+        'scheduledTime': game.scheduledTime.toIso8601String(),
+        // Include any other relevant game data
+      };
+
+      // 2. Save the game data to the database
+      final response = await supabase.from('games').insert([gameData]); //.execute();
+    } on PostgrestException catch (e) {
+      // Handle error if any
+      if (kDebugMode) {
+        print('Failed to save game: ${e.message}');
+      }
+      throw DatabaseConnectionError('Failed to save game: ${e.message}');
+    }
   }
 }

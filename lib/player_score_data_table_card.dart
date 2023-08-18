@@ -29,9 +29,9 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       );
     }
     // widget.clickedPlayers
-    //     .forEach((element) => debugPrint('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
+    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
     // widget.clickedPlayerScores
-    //     .forEach((element) => debugPrint('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
+    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
 
     return Container(
         height: 48.0 * (widget.game.course.numberOfHoles + 2),

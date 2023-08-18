@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 import 'player.dart';
 
@@ -22,7 +23,8 @@ class _PlayerFormState extends State<PlayerForm> {
   late TextEditingController _emailController;
   late TextEditingController _phoneNumberController;
   late TextEditingController _statusController;
-  late Player currentUser;
+  // late Player currentUser;
+  Player? currentUser = UserProvider().loggedInUser;
   bool isDuplicate = false;
 
   @override
@@ -49,10 +51,10 @@ class _PlayerFormState extends State<PlayerForm> {
   bool get isEditing => widget.player != null;
 
   Future<void> loadCurrentUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currentUser = Player.getPlayerByEmail(prefs.getString("email") ?? "")!;
-    });
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // setState(() {
+    //   currentUser = Player.getPlayerByEmail(prefs.getString("email") ?? "")!;
+    // });
   }
 
   bool validateRequiredFields() {
@@ -83,7 +85,7 @@ class _PlayerFormState extends State<PlayerForm> {
 
   void checkDuplicate() {
     // Check for duplicates before saving
-    List<Player> allPlayers = Player.getAllPlayers();
+    List<Player> allPlayers = currentUser!.getAllPlayerFriends();
     isDuplicate = allPlayers.any((player) =>
         player != widget.player &&
         (player.playerName == _playerNameController.text && player.nickname == _nicknameController.text));
@@ -121,7 +123,8 @@ class _PlayerFormState extends State<PlayerForm> {
         widget.player!.email = _emailController.text;
         widget.player!.phoneNumber = _phoneNumberController.text;
         widget.player!.status = _statusController.text;
-        widget.player!.ownerId = currentUser.id;
+        widget.player!.ownerId = currentUser!.id;
+        currentUser!.addPlayerFriend(widget.player!);
       }
       widget.onSaveChanges();
     }

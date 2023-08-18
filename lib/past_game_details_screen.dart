@@ -29,7 +29,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   void initState() {
     super.initState();
     sortedPlayerScores = widget.passedGame.getSortedPlayerScores();
-    debugPrint("Passed in game: ${widget.passedGame.toJson()}");
+    Utilities.debugPrintWithCallerInfo("Passed in game: ${widget.passedGame.toJson()}");
     confettiController.addListener(() {
       setState(() {});
     });

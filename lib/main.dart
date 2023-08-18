@@ -1,27 +1,42 @@
 // import 'dart:js_interop';
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'home_screen.dart';
 import 'dashboard_screen.dart';
-import 'past_games_screen.dart';
+// import 'past_games_screen.dart';
 import 'player.dart';
 import 'players_screen.dart';
-import 'course.dart';
+// import 'course.dart';
 import 'databaseconnectionerror.dart';
 import 'game.dart';
 
 // import 'gamestarted.dart';
 // import 'playerListItem.dart';
 // import 'playergameinfo.dart';
+final _formKey = GlobalKey<FormState>();
+final SUPABASE_URL = 'https://hiuiqbsaqexyyyasabqo.supabase.co';
+final SUPABASE_ANON_KEY =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpdWlxYnNhcWV4eXl5YXNhYnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1MDAyNzEsImV4cCI6MjAwMDA3NjI3MX0.CgGzYPYvrU0EtnZPl83mBR8zL57mIBdXMCFxAfIBI2Y';
+final supabase = Supabase.instance.client;
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY,
+  );
   runApp(const MyApp());
 }
 
@@ -42,7 +57,7 @@ class MyApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           '/players': (context) {
-            return PlayersScreen();
+            return const PlayersScreen();
           }
         });
   }
@@ -72,6 +87,32 @@ class MainScaffold extends State<HomePage> {
     setState(() => _userLoggedIn = loggedIn);
   }
 
+  Future<void> _initializeLoggedInPlayer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString("email");
+
+    if (email == null) {
+      logout();
+    } else {
+      try {
+        String? loggedInUserJson = prefs.getString("loggedInUser");
+        if (loggedInUserJson != null) {
+          loggedInPlayer = Player.fromJson(jsonDecode(loggedInUserJson));
+          if (loggedInPlayer != null) {
+            UserProvider().loggedInUser = loggedInPlayer;
+            final loadingUsers = await loggedInPlayer?.loadUserPlayers();
+            isLoggedIn(true);
+            changeProfileImage();
+            body = const DashboardScreen();
+          }
+        }
+      } catch (error) {
+        Utilities.debugPrintWithCallerInfo("Error fetching logged-in player: $error");
+        logout();
+      }
+    }
+  }
+
   void logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("email");
@@ -93,7 +134,7 @@ class MainScaffold extends State<HomePage> {
   void changeProfileImage() async {
     setState(() {
       Future.microtask(() async {
-        debugPrint('Getting email');
+        Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
         SharedPreferences pref = await SharedPreferences.getInstance();
         String loggedInEmail = pref.getString("email") as String;
         if (loggedInEmail != "") {
@@ -108,22 +149,23 @@ class MainScaffold extends State<HomePage> {
   void initState() {
     super.initState();
     backgroundImage = const AssetImage("assets/images/background.jpeg");
-    Future.microtask(() async {
-      WidgetsFlutterBinding.ensureInitialized();
-      final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString("email");
-      setState(() {
-        debugPrint('Setting init state, $email');
-        if (email == null) {
-          logout();
-        } else {
-          loggedInPlayer = Player.getPlayerByEmail(email);
-          isLoggedIn(true);
-          changeProfileImage();
-          body = const DashboardScreen();
-        }
-      });
-    });
+    _initializeLoggedInPlayer();
+    // Future.microtask(() async {
+    //   WidgetsFlutterBinding.ensureInitialized();
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final email = prefs.getString("email");
+    //   setState(() async {
+    //     Utilities.debugPrintWithCallerInfo('Setting init state, $email');
+    //     if (email == null) {
+    //       logout();
+    //     } else {
+    //       loggedInPlayer = await Player.empty().getPlayerByEmail(email);
+    //       isLoggedIn(true);
+    //       changeProfileImage();
+    //       body = const DashboardScreen();
+    //     }
+    //   });
+    // });
   }
 
   @override
@@ -281,10 +323,6 @@ class MainScaffold extends State<HomePage> {
 //         );
 //   }
 // }
-
-final _formKey = GlobalKey<FormState>();
-final supabase = SupabaseClient('https://hiuiqbsaqexyyyasabqo.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpdWlxYnNhcWV4eXl5YXNhYnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1MDAyNzEsImV4cCI6MjAwMDA3NjI3MX0.CgGzYPYvrU0EtnZPl83mBR8zL57mIBdXMCFxAfIBI2Y');
 
 // class HomePage extends StatefulWidget {
 //   @override
@@ -715,67 +753,3 @@ final supabase = SupabaseClient('https://hiuiqbsaqexyyyasabqo.supabase.co',
 //     }
 //   }
 // }
-
-Future<List<String>> fetchCourses() async {
-  try {
-    // Fetch the courses from the database
-    final response = await supabase.from('courses').select('name').execute();
-    // Extract the course names from the response
-    final courses = response.data.map((row) => row['name'] as String).toList();
-
-    return courses;
-  } on PostgrestException catch (e) {
-    // Handle error if any
-    if (kDebugMode) {
-      print('Error fetching courses: ${e.message}');
-    }
-    throw DatabaseConnectionError('Failed to fetch courses: ${e.message}');
-    // return [];
-  }
-}
-
-Future<Course> fetchCourseDetails(String selectedCourseName) async {
-  try {
-    final response = await supabase.from('courses').select().eq('name', selectedCourseName).single().execute();
-    final courseData = response.data;
-    if (courseData == null) {
-      throw DatabaseConnectionError('Course not found: $selectedCourseName');
-    }
-
-    final course = Course.fromMap(courseData);
-    return course;
-  } on PostgrestException catch (e) {
-    // Handle error if any
-    if (kDebugMode) {
-      print('Error fetching courses: ${e.message}');
-    }
-    throw DatabaseConnectionError('Failed to fetch courses: ${e.message}');
-  }
-}
-
-Future<void> saveGameToDatabase(Game game) async {
-  try {
-    // 1. Prepare the game data to be saved
-    Map<String, dynamic> gameData = {
-      'courseId': game.course.id,
-      'players': game.players
-          .map((player) => {
-                'playerId': player.playerId,
-                'courseId': player.courseId,
-                'scores': player.scores,
-              })
-          .toList(),
-      'scheduledTime': game.scheduledTime.toIso8601String(),
-      // Include any other relevant game data
-    };
-
-    // 2. Save the game data to the database
-    final response = await supabase.from('games').insert([gameData]).execute();
-  } on PostgrestException catch (e) {
-    // Handle error if any
-    if (kDebugMode) {
-      print('Failed to save game: ${e.message}');
-    }
-    throw DatabaseConnectionError('Failed to save game: ${e.message}');
-  }
-}

@@ -58,7 +58,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
       // Navigate to the PastGameDetailsScreen if the game is completed
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) {
-          debugPrint("PASSING Current game: ${widget.currentGame.toJson()}");
+          Utilities.debugPrintWithCallerInfo("PASSING Current game: ${widget.currentGame.toJson()}");
           return PastGameDetailsScreen(passedGame: widget.currentGame);
         }),
       );
@@ -186,7 +186,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
 
   Widget _buildPlayerCard(PlayerGameInfo pgi, int playerScore, int playerScoreDropDownIndex) {
     final textScale = MediaQuery.of(context).size.height * 0.01;
-    final screenHeight = MediaQuery.of(context).size.height;
+    // final screenHeight = MediaQuery.of(context).size.height;
 
     double getHeight(double sysVar, double size) {
       double calc = size / 1000;
@@ -204,7 +204,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
           Container(
             width: 100,
             child: PlayerProfileWidget(
-              player: Player.getPlayerById(pgi.playerId)!,
+              player: Player.empty().getPlayerFriendById(pgi.playerId)!,
               isSelected: false,
               rank: int.tryParse((pgi.place) ?? '99'),
             ),

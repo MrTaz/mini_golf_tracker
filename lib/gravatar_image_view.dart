@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 
 class GravatarImageView extends StatelessWidget {
   final String email;
@@ -12,14 +13,14 @@ class GravatarImageView extends StatelessWidget {
 
   Future<String> getFriendAvatarImage() async {
     return Future.microtask(() async {
-      // debugPrint('Getting gravatar data for $email');
+      Utilities.debugPrintWithCallerInfo('Getting gravatar data for $email');
       if (email.isNotEmpty) {
         if (_GravatarImgUrlCache.containsKey(email)) {
           return _GravatarImgUrlCache[email] as String;
         }
         String gravatarImgUrl =
             Gravatar(email).imageUrl(size: width?.toInt() ?? 120, defaultImage: defaultFriendAvatarImageStr);
-        debugPrint('found gravatar image url for $email, $gravatarImgUrl');
+        Utilities.debugPrintWithCallerInfo('found gravatar image url for $email, $gravatarImgUrl');
         _GravatarImgUrlCache[email] = gravatarImgUrl;
         return gravatarImgUrl;
       }

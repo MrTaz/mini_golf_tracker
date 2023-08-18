@@ -1,5 +1,6 @@
 // import 'package:calendarific_dart/calendarific_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 
 import 'game.dart';
 import 'past_game_details_screen.dart';
@@ -7,11 +8,23 @@ import 'player.dart';
 import 'utilities.dart';
 
 class PastGamesListView extends StatelessWidget {
-  final List<Game> previousGames = [...Game.generateRandomGames(15)];
+  final List<Game> previousGames = [];
   PastGamesListView({Key? key}) : super(key: key);
+  Player? loggedInUser = UserProvider().loggedInUser;
 
   @override
   Widget build(BuildContext context) {
+    if (loggedInUser != null) {
+      Future.microtask(() async {
+        Utilities.debugPrintWithCallerInfo('Loading games for user ${loggedInUser!.playerName}');
+        List<Game> retrievedGames = await Game.fetchGamesForCurrentUser(loggedInUser!.id);
+        Utilities.debugPrintWithCallerInfo('Retrieved Games loaded ${retrievedGames.length}');
+        previousGames.addAll(retrievedGames);
+        Utilities.debugPrintWithCallerInfo('Games loaded ${previousGames.length}');
+      });
+    } else {
+      throw "Loading Past Games: User is not logged in";
+    }
     return Center(
         child: Card(
             elevation: 0,
@@ -41,14 +54,14 @@ class PastGamesListView extends StatelessWidget {
         itemCount: previousGames.length,
         padding: const EdgeInsets.all(8),
         itemBuilder: (context, index) {
-          // debugPrint("Current Game: ${previousGames[index].toJson()}");
+          // Utilities.debugPrintWithCallerInfo("Current Game: ${previousGames[index].toJson()}");
           return FutureBuilder<String>(
             future: Future.value(Utilities.formatStartTime(previousGames[index].startTime!)),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return InkWell(
                     onTap: () => {
-                          // debugPrint("game tapped: $index"),
+                          // Utilities.debugPrintWithCallerInfo("game tapped: $index"),
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                             return PastGameDetailsScreen(passedGame: previousGames[index]);
                           }))
@@ -67,7 +80,7 @@ class PastGamesListView extends StatelessWidget {
                                   Text("Number of Players: ${previousGames[index].players.length.toString()}",
                                       style: const TextStyle(fontSize: 8.0)), //Winners
                                   Text(
-                                      "Winner ${Player.getPlayerById(previousGames[index].getWinner().playerId)!.nickname}")
+                                      "Winner ${loggedInUser?.getPlayerFriendById(previousGames[index].getWinner().playerId)!.nickname}")
                                 ]),
                             Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               Text(

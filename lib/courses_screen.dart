@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'course.dart';
 import 'utilities.dart';
-// import 'course_list_item_widget.dart';
 
 class CoursesScreen extends StatefulWidget {
   final Course? selectedCourse;
@@ -28,44 +27,6 @@ class _CoursesScreenState extends State<CoursesScreen> {
     });
   }
 
-  Future<void> _saveCourse(Course course) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final List<Course> loadedCourses = await _loadCourses();
-
-    if (!_isCourseDuplicate(course, loadedCourses)) {
-      loadedCourses.add(course);
-      final List<String> coursesJson = loadedCourses.map((course) => jsonEncode(course.toJson())).toList();
-      await prefs.setStringList('courses', coursesJson);
-      setState(() {
-        courses = loadedCourses;
-      });
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Duplicate Course'),
-            content: const Text('A course with the same name and number of holes already exists.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
-  bool _isCourseDuplicate(Course course, List<Course> courses) {
-    return courses.any(
-      (c) => c.name == course.name && c.numberOfHoles == course.numberOfHoles,
-    );
-  }
-
   Future<List<Course>> _loadCourses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final List<String>? coursesJson = prefs.getStringList('courses');
@@ -79,6 +40,81 @@ class _CoursesScreenState extends State<CoursesScreen> {
     }
 
     return []; // Return an empty list if no courses are found
+  }
+
+  // Future<void> _saveCourse(Course course) async {
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final List<Course> loadedCourses = await _loadCourses();
+
+  //   if (!_isCourseDuplicate(course, loadedCourses)) {
+  //     loadedCourses.add(course);
+  //     final List<String> coursesJson = loadedCourses.map((course) => jsonEncode(course.toJson())).toList();
+  //     await prefs.setStringList('courses', coursesJson);
+  //     setState(() {
+  //       courses = loadedCourses;
+  //     });
+  //   } else {
+  //     showDialog(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return AlertDialog(
+  //           title: const Text('Duplicate Course'),
+  //           content: const Text('A course with the same name and number of holes already exists.'),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //               },
+  //               child: const Text('OK'),
+  //             ),
+  //           ],
+  //         );
+  //       },
+  //     );
+  //   }
+  // }
+
+  Future<void> _saveCourse(Course course) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final List<Course> loadedCourses = await _loadCourses();
+    await course.saveCourseToDatabase();
+
+    if (!_isCourseDuplicate(course, loadedCourses)) {
+      loadedCourses.add(course);
+      final List<String> coursesJson = loadedCourses.map((course) => jsonEncode(course.toJson())).toList();
+      await prefs.setStringList('courses', coursesJson);
+      setState(() {
+        courses = loadedCourses;
+      });
+    } else {
+      _showDuplicateCourseDialog(context);
+    }
+  }
+
+  bool _isCourseDuplicate(Course course, List<Course> courses) {
+    return courses.any(
+      (c) => c.name == course.name && c.numberOfHoles == course.numberOfHoles,
+    );
+  }
+
+  void _showDuplicateCourseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Duplicate Course'),
+          content: const Text('A course with the same name and number of holes already exists.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -100,27 +136,28 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   padding: const EdgeInsets.all(0.8),
                   itemCount: courses.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final Course course = courses[index];
-                    bool isSelected = false;
-                    if (selectedCourse != null && courses[index].id == selectedCourse!.id) {
-                      isSelected = true;
-                    }
-                    return ListTile(
-                      title: Text(course.name),
-                      subtitle: Text("${course.numberOfHoles} holes"),
-                      leading: const Icon(Icons.golf_course),
-                      selected: isSelected,
-                      iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-                        if (states.contains(MaterialState.selected)) {
-                          return Colors.green;
-                        }
-                        return Colors.teal;
-                      }),
-                      onTap: () {
-                        _showCourseDetails(course);
-                      },
-                      trailing: _buildCourseSelectionSwitch(course),
-                    );
+                    return _buildCourseListItem(index);
+                    // final Course course = courses[index];
+                    // bool isSelected = false;
+                    // if (selectedCourse != null && courses[index].id == selectedCourse!.id) {
+                    //   isSelected = true;
+                    // }
+                    // return ListTile(
+                    //   title: Text(course.name),
+                    //   subtitle: Text("${course.numberOfHoles} holes"),
+                    //   leading: const Icon(Icons.golf_course),
+                    //   selected: isSelected,
+                    //   iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
+                    //     if (states.contains(MaterialState.selected)) {
+                    //       return Colors.green;
+                    //     }
+                    //     return Colors.teal;
+                    //   }),
+                    //   onTap: () {
+                    //     _showCourseDetails(course);
+                    //   },
+                    //   trailing: _buildCourseSelectionSwitch(course),
+                    // );
                   },
                 ),
               ],
@@ -132,6 +169,23 @@ class _CoursesScreenState extends State<CoursesScreen> {
         onPressed: () => _createNewCourse(context),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildCourseListItem(int index) {
+    final Course course = courses[index];
+    final bool isSelected = selectedCourse != null && course.id == selectedCourse!.id;
+
+    return ListTile(
+      title: Text(course.name),
+      subtitle: Text("${course.numberOfHoles} holes"),
+      leading: const Icon(Icons.golf_course),
+      selected: isSelected,
+      iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+      }),
+      onTap: () => _showCourseDetails(course),
+      trailing: _buildCourseSelectionSwitch(course),
     );
   }
 
@@ -286,15 +340,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
               Text('Number of Holes: ${course.numberOfHoles}'),
               const SizedBox(height: 16.0),
               ...List.generate(course.numberOfHoles, (index) {
-                final holeNumber = index + 1;
-                final parStroke = course.parStrokes[holeNumber] ?? 3;
-                return Row(
-                  children: [
-                    Text('Hole $holeNumber:'),
-                    const SizedBox(width: 8.0),
-                    Text('Par: $parStroke'),
-                  ],
-                );
+                return _buildHoleDetailsRow(course, index);
+                // final holeNumber = index + 1;
+                // final parStroke = course.parStrokes[holeNumber] ?? 3;
+                // return Row(
+                //   children: [
+                //     Text('Hole $holeNumber:'),
+                //     const SizedBox(width: 8.0),
+                //     Text('Par: $parStroke'),
+                //   ],
+                // );
               }),
             ],
           ),
@@ -320,6 +375,19 @@ class _CoursesScreenState extends State<CoursesScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildHoleDetailsRow(Course course, int index) {
+    final holeNumber = index + 1;
+    final parStroke = course.parStrokes[holeNumber] ?? 3;
+
+    return Row(
+      children: [
+        Text('Hole $holeNumber:'),
+        const SizedBox(width: 8.0),
+        Text('Par: $parStroke'),
+      ],
     );
   }
 

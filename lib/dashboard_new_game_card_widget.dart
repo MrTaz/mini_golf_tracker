@@ -54,31 +54,31 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
   }
 
   Future<List<Game?>> getSavedGame() async {
-    List<Game> games = [];
+    List<Game?> games = [];
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // Get all the keys
     final Set<String> keys = prefs.getKeys().cast<String>();
     // Iterate over the keys and check if the value is a JSON
     for (String key in keys) {
-      dynamic value = prefs.get(key);
-      // debugPrint("Found shared preference: $key $value");
-      if (value is String) {
-        try {
-          // ignore: unused_local_variable
-          // var json = jsonDecode(value);
-          // debugPrint("It's a JSON-formatted string: $json");
-          Game savedGame = Game.fromJson(value);
-          // debugPrint("It's a Game-formatted string: ${savedGame.toJson()}");
-          if (savedGame.status == "unstarted_game" || savedGame.status == "started") {
-            games.add(savedGame);
+      if (key != "email" && key != "loggedInUser") {
+        dynamic value = prefs.get(key);
+        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
+        if (value is String) {
+          try {
+            Utilities.debugPrintWithCallerInfo("It's a JSON-formatted string: $json");
+            Game savedGame = Game.fromJson(value);
+            Utilities.debugPrintWithCallerInfo("It's a Game-formatted string: ${savedGame.toJson()}");
+            if (savedGame.status == "unstarted_game" || savedGame.status == "started") {
+              games.add(savedGame);
+            }
+          } catch (e) {
+            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
           }
-        } catch (e) {
-          // debugPrint("Not a JSON-formatted string. Plain value: $value");
+        } else if (value is List<String>) {
+          Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
+        } else {
+          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
         }
-      } else if (value is List<String>) {
-        // debugPrint("It's a List of strings: $value");
-      } else {
-        // debugPrint("Value cannot be parsed. Type: ${value.runtimeType}");
       }
     }
     return games;
@@ -92,20 +92,18 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
       final Set<String> keys = prefs.getKeys().cast<String>();
       for (String key in keys) {
         dynamic value = prefs.get(key);
-        // debugPrint("Found shared preference: $key $value");
+        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
         if (value is String) {
           try {
-            // var json = jsonDecode(value);
-            // debugPrint("Deleting shared preference: $_json");
             jsonDecode(value);
             prefs.remove(key);
           } catch (e) {
-            // debugPrint("Not a JSON-formatted string. Plain value: $value");
+            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
           }
         } else if (value is List<String>) {
-          // debugPrint("It's a List of strings: $value");
+          Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
         } else {
-          // debugPrint("Value cannot be parsed. Type: ${value.runtimeType}");
+          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
         }
       }
     }
@@ -133,7 +131,7 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
                   child: CircularProgressIndicator(),
                 );
               } else if (gameSnapshot.hasError) {
-                debugPrint(gameSnapshot.error.toString());
+                Utilities.debugPrintWithCallerInfo(gameSnapshot.error.toString());
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[

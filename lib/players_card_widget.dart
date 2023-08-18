@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:transparent_image/transparent_image.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
+// import 'package:transparent_image/transparent_image.dart';
 
-import 'gravatar_image_view.dart';
+// import 'gravatar_image_view.dart';
 import 'player.dart';
 import 'player_game_info.dart';
 import 'player_profile_widget.dart';
@@ -23,14 +24,15 @@ class PlayersCard extends StatefulWidget {
 
 class PlayersCardState extends State<PlayersCard> {
   List<int> selectedPlayerIds = [];
+  Player? loggedInUser = UserProvider().loggedInUser;
   List<int> scoresToShow = [];
   List<Player> sortedPlayers = [];
-  List<Player> playerFriends = Player.getAllPlayers();
+  List<Player> playerFriends = [];
 
   @override
   void initState() {
     super.initState();
-    playerFriends = Player.getAllPlayers();
+    playerFriends = loggedInUser!.getAllPlayerFriends();
     sortedPlayers = widget.sortedPlayerIds != null && widget.sortedPlayerIds!.isNotEmpty
         ? (widget.sortedPlayerIds!.map((id) => playerFriends.firstWhere((player) => player.id == id)).toList()
           ..sort((a, b) => widget.sortedPlayerIds!.indexOf(a.id).compareTo(widget.sortedPlayerIds!.indexOf(b.id))))

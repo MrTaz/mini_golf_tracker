@@ -71,6 +71,7 @@ class Utilities {
           ),
         ));
   }
+
   //   Positioned(
   //   bottom: 0,
   //   right: 0,
@@ -84,4 +85,37 @@ class Utilities {
   //         ),
   //       )),
   // ),
+  static void debugPrintWithCallerInfo(String message) {
+    if (!Utilities.isMobile) {
+      final stackTrace = StackTrace.current;
+      final stackFrames = stackTrace.toString().split('\n');
+      final callerInfo = stackFrames[2].trim(); // Get the caller info from the third line of the stack trace
+      final callerInfoParts = callerInfo.split(' ');
+
+      final filePath =
+          callerInfoParts[0].replaceFirst('packages/mini_golf_tracker/', ''); // Strip off the package prefix
+      final lineColumn = callerInfoParts[1].split(':');
+      final lineNumber = lineColumn[0];
+      final columnNumber = lineColumn[1];
+
+      final fileName = filePath.split('/').last;
+      final fileNameToShow = fileName.length > 35 ? fileName.substring(0, 32) + '...' : fileName;
+
+      final maxFileNameLength = 35;
+      final lineColumnPadding = maxFileNameLength - fileNameToShow.length;
+
+      final lineColumnSeparator = ':';
+      final formattedLineColumn = '$lineNumber$lineColumnSeparator$columnNumber';
+
+      final tabsAfterFileName = '\t' * (lineColumnPadding ~/ 8 + 1); // Calculate tabs based on 8-character tab width
+
+      final timestamp = DateTime.now().toString();
+
+      final modifiedCallerInfo = '[$timestamp] $fileNameToShow$tabsAfterFileName$formattedLineColumn\t $message';
+
+      (kDebugMode) ? debugPrint(modifiedCallerInfo) : null;
+    } else {
+      (kDebugMode) ? debugPrint(message) : null;
+    }
+  }
 }

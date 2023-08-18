@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 
 import 'player.dart';
 import 'player_create_screen.dart';
@@ -17,7 +18,8 @@ class PlayersScreen extends StatefulWidget {
 }
 
 class _PlayersScreenState extends State<PlayersScreen> {
-  final List<Player> players = Player.getAllPlayers();
+  final Player? loggedInUser = UserProvider().loggedInUser;
+  final List<Player> players = [];
   final List<Player> selectedPlayers = [];
   bool showNewPlayerForm = false;
   bool showCloseButton = false;
@@ -64,7 +66,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
           widget.currentlySelectedPlayers!.where((player) => player != null).cast<PlayerGameInfo>();
 
       for (PlayerGameInfo passedInSelectedPlayer in passedInSelectedPlayers) {
-        Player? lookedUpPlayer = Player.getPlayerById(passedInSelectedPlayer.playerId);
+        players.addAll(loggedInUser!.getAllPlayerFriends());
+        Player? lookedUpPlayer = loggedInUser!.getPlayerFriendById(passedInSelectedPlayer.playerId);
         if (lookedUpPlayer != null) {
           selectedPlayers.add(lookedUpPlayer);
         }

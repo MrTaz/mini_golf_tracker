@@ -31,7 +31,7 @@ class GameStartScreenState extends State<GameStartScreen> {
   @override
   void initState() {
     super.initState();
-    // debugPrint("unstartedGame: ${widget.unstartedGame?.toJson()}");
+    Utilities.debugPrintWithCallerInfo("unstartedGame: ${widget.unstartedGame?.toJson()}");
     _initializePlayersInfo();
 
     if (widget.unstartedGame == null) {
@@ -118,7 +118,7 @@ class GameStartScreenState extends State<GameStartScreen> {
 
     if (selectedCourse != null) {
       setState(() {
-        // debugPrint("Setting course to ${selectedCourse.toJson()}");
+        Utilities.debugPrintWithCallerInfo("Setting course to ${selectedCourse.toJson()}");
         if (_isCreatingGame) {
           _newGameCourse = selectedCourse;
         } else {
@@ -309,7 +309,7 @@ class GameStartScreenState extends State<GameStartScreen> {
   // UI for the course card
   Widget _buildSelectCourseCard() {
     Course? course = (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course;
-    // debugPrint("setting course: ${course?.toJson()}");
+    Utilities.debugPrintWithCallerInfo("setting course: ${course?.toJson()}");
 
     return Center(
       child: Card(
@@ -371,7 +371,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                       children: _playersInfo.asMap().entries.map((entry) {
                         final playerInfo = entry.value;
                         final playerIndex = entry.key;
-                        final player = Player.getPlayerById(playerInfo.playerId);
+                        final player = Player.empty().getPlayerFriendById(playerInfo.playerId);
                         return _buildPlayerListItem(player!, playerIndex);
                       }).toList(),
                       onReorder: (int oldIndex, int newIndex) {

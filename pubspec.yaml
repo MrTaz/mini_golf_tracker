@@ -31,7 +31,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase: ^1.8.1
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -52,6 +51,7 @@ dependencies:
   holiday_event_api: ^1.0.1
   calendarific_dart: ^1.0.2
   cached_network_image: ^3.2.3
+  supabase_flutter: ^1.10.13
 
 dev_dependencies:
   flutter_test:
