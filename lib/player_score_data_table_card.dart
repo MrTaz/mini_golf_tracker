@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mini_golf_tracker/utilities.dart';
-
-import 'player.dart';
-import 'player_game_info.dart';
-import 'game.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
 
 class PlayerScoreDataTable extends StatefulWidget {
   final List<Player> clickedPlayers;

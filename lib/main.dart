@@ -174,7 +174,6 @@ class MainScaffold extends State<HomePage> {
               ),
               body: body,
             );
-            ;
           } else {
             return Container(
               color: Colors.green[600],

@@ -7,9 +7,9 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGamesListView extends StatelessWidget {
+  final Player? loggedInUser = UserProvider().loggedInUser;
   final List<Game> previousGames = [];
   PastGamesListView({Key? key}) : super(key: key);
-  Player? loggedInUser = UserProvider().loggedInUser;
 
   @override
   Widget build(BuildContext context) {

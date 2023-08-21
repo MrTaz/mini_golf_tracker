@@ -1,6 +1,5 @@
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
-import 'package:mini_golf_tracker/main.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -89,18 +88,20 @@ class Player {
     Future.microtask(() async {
       Utilities.debugPrintWithCallerInfo('Checking if user is already in database');
       final isExistingUser = await _isDuplicatePlayer(player.email, player.phoneNumber);
-      if(isExistingUser){
+      if (isExistingUser) {
         Utilities.debugPrintWithCallerInfo('Getting player details');
         final updatedPlayer = await Player.getPlayerByEmailFromDB(player.email!);
-        if(updatedPlayer != null){
+        if (updatedPlayer != null) {
           Utilities.debugPrintWithCallerInfo('Adding ${updatedPlayer.playerName} as friend for $playerName');
           final response = await _addFriend(id, updatedPlayer.id);
           players.add(updatedPlayer);
-        }else{
+        } else {
           throw "Existing user, but unable to retrieve from database";
         }
-      }else{
-        final newPlayer = await _createPlayerInDB(player.playerName, player.email!, player.phoneNumber!, player.nickname, ownerId: ownerId);
+      } else {
+        final newPlayer = await _createPlayerInDB(
+            player.playerName, player.email!, player.phoneNumber!, player.nickname,
+            ownerId: ownerId);
         Utilities.debugPrintWithCallerInfo('New player friend created: ${newPlayer.toJson()}');
         Utilities.debugPrintWithCallerInfo('Adding ${newPlayer.playerName} as friend for $playerName');
         final response = await _addFriend(id, newPlayer.id);
@@ -158,10 +159,7 @@ class Player {
       };
 
       // Update the player's score in the players table
-      await db
-          .from('players')
-          .update(playerScoreData)
-          .eq('id', playerToUpdate.id);
+      await db.from('players').update(playerScoreData).eq('id', playerToUpdate.id);
     } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
       throw DatabaseConnectionError('Failed to update player score: ${e.message}');
@@ -174,12 +172,12 @@ class Player {
         throw DatabaseConnectionError(
             'Player with the same email or phone number already exists'); //TODO: fix error handling
       }
-      
+
       final createdPlayer = await _createPlayerInDB(playerName, email, phoneNumber, nickname);
       Utilities.debugPrintWithCallerInfo("Player saved to db, returning: ${createdPlayer.toJson()}");
-      
+
       return createdPlayer;
-    }  on PostgrestException catch (e) {
+    } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
       throw DatabaseConnectionError('Failed to update player score: ${e.message}');
     }
@@ -206,7 +204,7 @@ class Player {
         "owner_id": ownerId ?? 0,
         "total_score": 0
       };
-      
+
       final response = await db.from('players').upsert(userToCreate).select().single();
       Utilities.debugPrintWithCallerInfo("Create Player in Supabase response: ${response}");
       final playerWithoutOwnerId = Player.fromJson(response);
