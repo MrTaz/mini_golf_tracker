@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mini_golf_tracker/assets.dart';
 
 class Utilities {
   static bool isMobile =
@@ -60,6 +61,10 @@ class Utilities {
     }
   }
 
+  static String getPositionString(int number) {
+    return '$number${getPositionSuffix(number)}';
+  }
+
   static Widget backdropImageContinerWidget() {
     return Container(
         width: double.infinity,
@@ -67,7 +72,7 @@ class Utilities {
         decoration: const BoxDecoration(
           image: DecorationImage(
             alignment: Alignment(1, 1),
-            image: AssetImage("assets/images/loggedin_background_2.png"),
+            image: AppImages.backgroundLoggedIn,
           ),
         ));
   }
@@ -81,7 +86,7 @@ class Utilities {
   //       decoration: const BoxDecoration(
   //         image: DecorationImage(
   //           alignment: Alignment(1, 1),
-  //           image: AssetImage("assets/images/loggedin_background_2.png"),
+  //           image: AppImage.backgroundLoggedIn,
   //         ),
   //       )),
   // ),

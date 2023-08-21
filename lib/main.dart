@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
+import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
+import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
@@ -18,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 final _formKey = GlobalKey<FormState>();
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseConnection.initialize();
   runApp(const MyApp());
@@ -59,7 +62,7 @@ class MainScaffold extends State<HomePage> {
   Widget body = const HomeScreen();
   Player? loggedInPlayer;
   bool _userLoggedIn = false;
-  static late AssetImage backgroundImage;
+  // static late AssetImage backgroundImage;
 
   MainScaffold();
 
@@ -104,8 +107,9 @@ class MainScaffold extends State<HomePage> {
       loggedInPlayer = null;
       isLoggedIn(false);
       body = const HomeScreen();
-      if (_scaffoldKey.currentState!.isDrawerOpen) {
-        _scaffoldKey.currentState?.openEndDrawer();
+      final currentState = _scaffoldKey.currentState;
+      if (currentState != null && currentState.isDrawerOpen) {
+        _scaffoldKey.currentState!.openEndDrawer();
       }
     });
   }
@@ -132,7 +136,7 @@ class MainScaffold extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    backgroundImage = const AssetImage("assets/images/background.jpeg");
+    // backgroundImage = const AppImage.backgroundMainScreens;
     _initializeLoggedInPlayer();
     // Future.microtask(() async {
     //   WidgetsFlutterBinding.ensureInitialized();
@@ -154,16 +158,37 @@ class MainScaffold extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Mini Golf Tracker'),
-      ),
-      drawer: Drawer(
-        child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
-      ),
-      body: body,
-    );
+    return FutureBuilder(
+        future: Future.wait([
+          precacheImage(AppImages.backgroundMainScreens, context),
+        ]),
+        builder: (BuildContext context, AsyncSnapshot snap) {
+          if (snap.connectionState != ConnectionState.waiting) {
+            return Scaffold(
+              key: _scaffoldKey,
+              appBar: AppBar(
+                title: const Text('Mini Golf Tracker'),
+              ),
+              drawer: Drawer(
+                child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
+              ),
+              body: body,
+            );
+            ;
+          } else {
+            return Container(
+              color: Colors.green[600],
+              child: Center(
+                child: BouncyAnimation(
+                    duration: const Duration(seconds: 1),
+                    lift: 80,
+                    ratio: 0.25,
+                    pause: 0.01,
+                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
+              ),
+            );
+          }
+        });
   }
 
   @override
@@ -173,7 +198,7 @@ class MainScaffold extends State<HomePage> {
 
   @override
   void didChangeDependencies() {
-    precacheImage(backgroundImage, context);
+    precacheImage(AppImages.backgroundMainScreens, context);
     super.didChangeDependencies();
   }
 

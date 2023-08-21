@@ -58,7 +58,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
 
     if (gameCompleted) {
       // Update each players total score when the game is complete.
-      for(PlayerGameInfo player in widget.currentGame.players){
+      for (PlayerGameInfo player in widget.currentGame.players) {
         Player currentPlayer = loggedInUser!.getPlayerFriendById(player.playerId)!;
         currentPlayer.totalScore = currentPlayer.totalScore + player.totalScore;
         Player.updatePlayerScoreInDatabase(currentPlayer);
@@ -116,7 +116,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
 
     // Update the place based on sorted order
     for (int i = 0; i < sortedPlayers.length; i++) {
-      sortedPlayers[i].place = '$i';
+      sortedPlayers[i].place = Utilities.getPositionString(i);
     }
     for (int i = 0; i < sortedPlayers.length; i++) {
       if (_playersInfo[i].playerId == sortedPlayers[i].playerId) {
@@ -214,7 +214,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
             child: PlayerProfileWidget(
               player: Player.empty().getPlayerFriendById(pgi.playerId)!,
               isSelected: false,
-              rank: int.tryParse((pgi.place) ?? '99'),
+              rank: int.parse(((pgi.place) ?? '99th').replaceAll(RegExp(r'[^\d]'), '')) - 1,
             ),
           ),
           const SizedBox(width: 2),

@@ -109,16 +109,15 @@ class Game {
   }
 
   int calculateTotalScore(PlayerGameInfo player) {
-    if (!scores.containsKey(player)) {
-      addPlayer(player);
-    }
+    // if (!scores.containsKey(player)) {
+    //   addPlayer(player);
+    // }
 
-    final playerScores = scores[player];
-    if (playerScores == null) {
+    final List<int> playerScores = player.scores;
+    if (playerScores.isEmpty) {
       throw Exception('Player scores not initialized');
     }
-
-    player.totalScore = playerScores.values.reduce((sum, strokes) => sum + strokes);
+    player.totalScore = playerScores.fold<int>(0, (sum, strokes) => sum + strokes);
     return player.totalScore;
   }
 
@@ -145,7 +144,7 @@ class Game {
       playerScores.add(PlayerGameInfo(
         playerId: player.playerId,
         gameId: player.gameId,
-        scores: scores[player]!.values.toList(), // Convert map values to a list
+        scores: player.scores,
         place: player.place,
         totalScore: totalScore,
       ));
@@ -200,31 +199,15 @@ class Game {
         tiedPlayers.sort((a, b) => a.playerId.compareTo(b.playerId));
         int tiedPosition = currentPosition - tiedPlayers.length + 1;
         for (var tiedPlayer in tiedPlayers) {
-          tiedPlayer.place = '$tiedPosition${getOrdinalSuffix(tiedPosition)} (tied)';
+          tiedPlayer.place = '${Utilities.getPositionString(tiedPosition)} (tied)';
         }
       } else {
-        currentPlayer.place = getOrdinalString(currentPosition);
+        currentPlayer.place = Utilities.getPositionString(currentPosition);
       }
       tiedPlayers.clear(); // Clear tied players list for the next iteration
     }
 
     return sortedPlayers.indexWhere((p) => p.playerId == player.playerId) + 1;
-  }
-
-  String getOrdinalSuffix(int number) {
-    if (number % 10 == 1 && number % 100 != 11) {
-      return 'st';
-    } else if (number % 10 == 2 && number % 100 != 12) {
-      return 'nd';
-    } else if (number % 10 == 3 && number % 100 != 13) {
-      return 'rd';
-    } else {
-      return 'th';
-    }
-  }
-
-  String getOrdinalString(int number) {
-    return '$number${getOrdinalSuffix(number)}';
   }
 
   static String generateRandomGameName([String? suffix = "Game"]) {
@@ -294,17 +277,17 @@ class Game {
   }
 
   static Future<void> initializeLocalGames(Player loggedInUser) async {
-    try{
+    try {
       Utilities.debugPrintWithCallerInfo("Loading games from database");
       final List<Game?> dbGames = await Game.fetchGamesForCurrentUser(loggedInUser.id);
       if (dbGames.isNotEmpty) {
         List<Game> loadedGames = dbGames.whereType<Game>().toList();
-        for(Game loadedGame in loadedGames){
+        for (Game loadedGame in loadedGames) {
           await Game.saveLocalGame(loadedGame); //save games locally if we loaded them from db
         }
         Utilities.debugPrintWithCallerInfo("Loaded games: ${dbGames.map((game) => game?.toJson())}");
       }
-    }catch (exception){
+    } catch (exception) {
       Utilities.debugPrintWithCallerInfo("Exception when initializing games: ${exception.toString()}");
     }
   }
@@ -324,15 +307,15 @@ class Game {
             Utilities.debugPrintWithCallerInfo("It's a JSON-formatted string: $json");
             Game savedGame = Game.fromJson(value);
             Utilities.debugPrintWithCallerInfo("It's a Game-formatted string: ${savedGame.toJson()}");
-            if(gameStatusTypes != null && gameStatusTypes.isNotEmpty ){
+            if (gameStatusTypes != null && gameStatusTypes.isNotEmpty) {
               Utilities.debugPrintWithCallerInfo("Loading games of type $gameStatusTypes");
-              for(String statusType in gameStatusTypes){
-                if(savedGame.status == statusType){
+              for (String statusType in gameStatusTypes) {
+                if (savedGame.status == statusType) {
                   Utilities.debugPrintWithCallerInfo("*** found ${savedGame.name}");
                   games.add(savedGame);
                 }
               }
-            }else{
+            } else {
               games.add(savedGame);
             }
           } catch (e) {
@@ -352,11 +335,11 @@ class Game {
     try {
       // Fetch the games from the database where the current user is a player
       final response = await db
-        .from('games')
-        .select('*, players:player_game_info(*), course:courses(*)')
-        .eq('creator_id', currentUserId)
-      // .or('players_game_info.player_id.eq.$currentUserId')
-        .order('scheduled_time', ascending: true);
+          .from('games')
+          .select('*, players:player_game_info(*), course:courses(*)')
+          .eq('creator_id', currentUserId)
+          // .or('players_game_info.player_id.eq.$currentUserId')
+          .order('scheduled_time', ascending: true);
 
       Utilities.debugPrintWithCallerInfo("Fetching games: $response");
 
@@ -377,52 +360,55 @@ class Game {
   }
 
   static Future<void> saveGameToDatabase(Game game, Player creator) async {
-  try {
-    // 1. Prepare the game data to be saved
-    Map<String, dynamic> gameData = {
-      'id': game.id,
-      'name': game.name,
-      'course_id': game.course.id,
-      'scheduled_time': game.scheduledTime.toIso8601String(),
-      'start_time': (game.startTime != null) ? game.startTime!.toIso8601String() : null,
-      'completed_time': (game.completedTime != null) ? game.completedTime!.toIso8601String() : null,
-      'status': game.status,
-      'creator_id': creator.id
-    };
-
-    // 2. Save the game data to the games table and get the saved game ID
-    final gameResponse = await db.from('games').upsert([gameData]);
-    Utilities.debugPrintWithCallerInfo("Saved game to database, returned ${gameResponse.toString()}");
-
-    // 3. Save player game info to the player_game_info table
-    bool playerUpdated = false;
-    for (final player in game.players) {
-      final playerGameInfoData = {
-        'game_id': game.id,
-        'player_id': player.playerId,
-        'place': player.place,
-        'scores': player.scores,
-        'total_score': player.totalScore,
+    try {
+      // 1. Prepare the game data to be saved
+      Map<String, dynamic> gameData = {
+        'id': game.id,
+        'name': game.name,
+        'course_id': game.course.id,
+        'scheduled_time': game.scheduledTime.toIso8601String(),
+        'start_time': (game.startTime != null) ? game.startTime!.toIso8601String() : null,
+        'completed_time': (game.completedTime != null) ? game.completedTime!.toIso8601String() : null,
+        'status': game.status,
+        'creator_id': creator.id
       };
-      final pgiResponse = await db.from('player_game_info').upsert([playerGameInfoData], onConflict: 'game_id, player_id' );
-      Utilities.debugPrintWithCallerInfo("Saved player game info to database, $playerGameInfoData, returned ${pgiResponse.toString()}");
-      if(pgiResponse != null){ //if response was not null
-        if(!playerUpdated){ //only change the flag to true if it is still false.
-          playerUpdated = true;
+
+      // 2. Save the game data to the games table and get the saved game ID
+      final gameResponse = await db.from('games').upsert([gameData]);
+      Utilities.debugPrintWithCallerInfo("Saved game to database, returned ${gameResponse.toString()}");
+
+      // 3. Save player game info to the player_game_info table
+      bool playerUpdated = false;
+      for (final player in game.players) {
+        final playerGameInfoData = {
+          'game_id': game.id,
+          'player_id': player.playerId,
+          'place': player.place,
+          'scores': player.scores,
+          'total_score': player.totalScore,
+        };
+        final pgiResponse =
+            await db.from('player_game_info').upsert([playerGameInfoData], onConflict: 'game_id, player_id');
+        Utilities.debugPrintWithCallerInfo(
+            "Saved player game info to database, $playerGameInfoData, returned ${pgiResponse.toString()}");
+        if (pgiResponse != null) {
+          //if response was not null
+          if (!playerUpdated) {
+            //only change the flag to true if it is still false.
+            playerUpdated = true;
+          }
         }
       }
+      if (gameResponse != null && playerUpdated) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString(game.id, game.toJson() as String);
+      }
+    } on PostgrestException catch (e) {
+      Utilities.debugPrintWithCallerInfo('DB Failed to update player score: ${e.message}');
+      throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+    } catch (exception) {
+      Utilities.debugPrintWithCallerInfo('General failure to update player score: $exception');
+      throw Exception('Failed to update player score: $exception');
     }
-    if(gameResponse != null && playerUpdated){
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(game.id, game.toJson() as String);
-    }      
-  } on PostgrestException catch (e) {
-    Utilities.debugPrintWithCallerInfo('DB Failed to update player score: ${e.message}');
-    throw DatabaseConnectionError('Failed to update player score: ${e.message}');
-  } catch (exception) {
-    Utilities.debugPrintWithCallerInfo('General failure to update player score: $exception');
-    throw Exception('Failed to update player score: $exception');
   }
-}
-
 }

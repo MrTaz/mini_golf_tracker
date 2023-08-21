@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
+import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_card_widget.dart';
@@ -19,16 +21,10 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class DashBoardScreenState extends State<DashboardScreen> {
-  final Player? loggedInUser = UserProvider().loggedInUser;
   late Widget body;
   int _selectedIndex = 0;
 
-  final _pages = <Widget>[
-    const HomeScreen(),
-    const PlayersScreen(),
-    const PastGamesScreen(),
-    const CoursesScreen()
-  ];
+  final _pages = <Widget>[const HomeScreen(), const PlayersScreen(), const PastGamesScreen(), const CoursesScreen()];
   void _onBottomNavigationButtonTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -47,7 +43,6 @@ class DashBoardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    Game.initializeLocalGames(loggedInUser!);
     body = DashBoardLayout(
       updateBottomNavChangeNotifier: (bool value) {
         _onBottomNavigationButtonTapped(1);
@@ -99,80 +94,54 @@ class DashBoardLayout extends StatefulWidget {
 }
 
 class _DashBoardLayoutState extends State<DashBoardLayout> {
+  final Player? loggedInUser = UserProvider().loggedInUser;
   bool isShowFriendsScreen = false;
 
   @override
   Widget build(BuildContext context) {
-    return isShowFriendsScreen
-        ? const PlayersScreen()
-        : Stack(children: [
-            Utilities.backdropImageContinerWidget(),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const GameCardWidget(),
-                    PlayersCard(onPlayerCardTap: (bool arg) {
-                      setState(() {
-                        isShowFriendsScreen = !isShowFriendsScreen;
-                        widget.updateBottomNavChangeNotifier(isShowFriendsScreen);
-                      });
-                    }),
-                    const PastGameCardWidget()
-                  ],
-                ),
+    return FutureBuilder(
+        future: Future.wait([
+          Game.initializeLocalGames(loggedInUser!),
+        ]),
+        builder: (BuildContext context, AsyncSnapshot snap) {
+          if (snap.connectionState != ConnectionState.waiting) {
+            return isShowFriendsScreen
+                ? const PlayersScreen()
+                : Stack(children: [
+                    Utilities.backdropImageContinerWidget(),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const GameCardWidget(),
+                            PlayersCard(onPlayerCardTap: (bool arg) {
+                              setState(() {
+                                isShowFriendsScreen = !isShowFriendsScreen;
+                                widget.updateBottomNavChangeNotifier(isShowFriendsScreen);
+                              });
+                            }),
+                            const PastGameCardWidget()
+                          ],
+                        ),
+                      ),
+                    ),
+                  ]);
+          } else {
+            return Container(
+              color: Colors.green[600],
+              child: Center(
+                child: BouncyAnimation(
+                    duration: const Duration(seconds: 1),
+                    lift: 80,
+                    ratio: 0.25,
+                    pause: 0.01,
+                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
               ),
-            ),
-          ]);
+            );
+          }
+        });
   }
 }
-
-// class NewGameCard extends StatelessWidget {
-//   const NewGameCard({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//         child: Card(
-//             elevation: 6,
-//             child: Padding(
-//               padding: const EdgeInsets.all(8.0),
-//               child: Column(
-//                 children: <Widget>[
-//                   const ListTile(
-//                     title: Text('Create a new game'),
-//                   ),
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.end,
-//                     children: <Widget>[
-//                       FilledButton(
-//                         // onPressed: () {/* ... */},
-//                         onPressed: () {
-//                           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-//                             return const GameCreateScreen();
-//                           }));
-//                         },
-//                         child: const Row(
-//                           children: [
-//                             Icon(
-//                               Icons.add,
-//                               size: 24.0,
-//                             ),
-//                             SizedBox(
-//                               width: 5,
-//                             ),
-//                             Text('New Game'),
-//                           ],
-//                         ),
-//                       ),
-//                       const SizedBox(width: 8),
-//                     ],
-//                   )
-//                 ],
-//               ),
-//             )));
-//   }
-// }

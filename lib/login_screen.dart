@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_login/flutter_login.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
@@ -111,15 +112,13 @@ class LoginScreen extends StatelessWidget {
           body: Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/background.jpeg"),
+                image: AppImages.backgroundMainScreens,
                 fit: BoxFit.cover,
               ),
             ),
             child: Container(
               transform: Matrix4.translationValues(0, -100, 0.0),
               child: FlutterLogin(
-                // title: "Test",
-                // logo: const AssetImage('assets/images/1x1.png'),
                 onLogin: _authUser,
                 onSignup: _signupUser,
                 userType: LoginUserType.email,

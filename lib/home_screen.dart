@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
 
@@ -14,7 +15,7 @@ class HomeScreen extends StatelessWidget {
           decoration: const BoxDecoration(
             image: DecorationImage(
               alignment: Alignment(.5, 1),
-              image: AssetImage("assets/images/background.jpeg"),
+              image: AppImages.backgroundMainScreens,
               fit: BoxFit.cover,
             ),
           ),
