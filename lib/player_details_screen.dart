@@ -7,10 +7,10 @@ class PlayerDetailsScreen extends StatefulWidget {
   const PlayerDetailsScreen({super.key, required this.player});
 
   @override
-  _PlayerDetailsScreenState createState() => _PlayerDetailsScreenState();
+  PlayerDetailsScreenState createState() => PlayerDetailsScreenState();
 }
 
-class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
+class PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
   late Player _player;
 
   @override

@@ -8,7 +8,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 1
 
-    paint.color = Color(0xFFDDDBDB);
+    paint.color = const Color(0xFFDDDBDB);
     path = Path();
     path.lineTo(size.width * 1.41, size.height * 0.91);
     path.cubicTo(size.width * 1.41, size.height * 1.19, size.width * 1.19, size.height * 1.41, size.width * 0.91,
@@ -23,7 +23,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 2
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.09, size.height * 1.29);
     path.cubicTo(size.width * 1.09, size.height * 1.32, size.width * 1.07, size.height * 1.33, size.width * 1.05,
@@ -37,7 +37,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 3
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.22, size.height * 1.22);
     path.cubicTo(size.width * 1.22, size.height * 1.24, size.width * 1.2, size.height * 1.26, size.width * 1.18,
@@ -52,7 +52,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 4
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.31, size.height * 1.11);
     path.cubicTo(size.width * 1.31, size.height * 1.13, size.width * 1.3, size.height * 1.15, size.width * 1.27,
@@ -67,7 +67,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 5
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.36, size.height);
     path.cubicTo(
@@ -81,7 +81,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 6
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.11, size.height * 1.18);
     path.cubicTo(size.width * 1.11, size.height * 1.2, size.width * 1.09, size.height * 1.22, size.width * 1.07,
@@ -96,7 +96,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 7
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.19, size.height * 1.1);
     path.cubicTo(size.width * 1.19, size.height * 1.12, size.width * 1.17, size.height * 1.13, size.width * 1.15,
@@ -111,7 +111,7 @@ class GolfBallPainter extends CustomPainter {
 
     // Path number 8
 
-    paint.color = Color(0xFF000000).withOpacity(1);
+    paint.color = const Color(0xFF000000).withOpacity(1);
     path = Path();
     path.lineTo(size.width * 1.26, size.height);
     path.cubicTo(size.width * 1.26, size.height * 1.03, size.width * 1.24, size.height * 1.04, size.width * 1.22,

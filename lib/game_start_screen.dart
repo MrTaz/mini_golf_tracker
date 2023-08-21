@@ -73,11 +73,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                     final newGame = Game(
                         name: _nameController.text,
                         players: [],
-                        course: Course(
-                            id: 0,
-                            name: "Please select course",
-                            numberOfHoles: 0,
-                            parStrokes: {}),
+                        course: Course(id: 0, name: "Please select course", numberOfHoles: 0, parStrokes: {}),
                         scheduledTime: DateTime.now());
                     Navigator.pop(context, true);
                     Navigator.pushReplacement(
@@ -102,7 +98,8 @@ class GameStartScreenState extends State<GameStartScreen> {
   void _initializePlayersInfo() {
     if (widget.unstartedGame != null) {
       _playersInfo = (widget.unstartedGame?.players ?? [])
-          .map((player) => PlayerGameInfo(playerId: player.playerId, gameId: widget.unstartedGame!.id, scores: player.scores))
+          .map((player) =>
+              PlayerGameInfo(playerId: player.playerId, gameId: widget.unstartedGame!.id, scores: player.scores))
           .toList();
     } else {
       _playersInfo = [];
@@ -110,12 +107,15 @@ class GameStartScreenState extends State<GameStartScreen> {
   }
 
   void _selectCourse() async {
-    Utilities.debugPrintWithCallerInfo("Opening select course screen, $_isCreatingGame, $_newGameCourse, ${widget.unstartedGame?.course.toJson()}");
+    Utilities.debugPrintWithCallerInfo(
+        "Opening select course screen, $_isCreatingGame, $_newGameCourse, ${widget.unstartedGame?.course.toJson()}");
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
       MaterialPageRoute(
-          builder: (context) =>
-              CoursesScreen(selectedCourse: (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course, creatingGame: true,)),
+          builder: (context) => CoursesScreen(
+                selectedCourse: (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course,
+                creatingGame: true,
+              )),
     );
 
     if (selectedCourse != null) {
@@ -172,9 +172,8 @@ class GameStartScreenState extends State<GameStartScreen> {
     if (selectedPlayers != null && selectedPlayers.isNotEmpty) {
       setState(() {
         _playersInfo.clear();
-        for (Player _selectedPlayer in selectedPlayers) {
-          _playersInfo
-              .add(PlayerGameInfo(playerId: _selectedPlayer.id, gameId: widget.unstartedGame!.id, scores: []));
+        for (Player selectedPlayer in selectedPlayers) {
+          _playersInfo.add(PlayerGameInfo(playerId: selectedPlayer.id, gameId: widget.unstartedGame!.id, scores: []));
         }
         widget.unstartedGame!.players.replaceRange(0, widget.unstartedGame!.players.length, _playersInfo);
       });
@@ -336,7 +335,7 @@ class GameStartScreenState extends State<GameStartScreen> {
               ),
               ListTile(
                 title: Text(course?.name ?? 'Select Course'),
-                subtitle: Text("${course?.numberOfHoles.toString() ?? 'No course selected'}"),
+                subtitle: Text(course?.numberOfHoles.toString() ?? 'No course selected'),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: _selectCourse,

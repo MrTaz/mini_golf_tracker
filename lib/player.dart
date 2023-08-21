@@ -129,19 +129,19 @@ class Player {
     return Player.fromJson(response as Map<String, dynamic>);
   }
 
-  static Future<Player?> _getPlayerByIdFromDB(int playerId) async {
-    final response = await db.from('players').select().eq('id', playerId).single();
+  // static Future<Player?> _getPlayerByIdFromDB(int playerId) async {
+  //   final response = await db.from('players').select().eq('id', playerId).single();
 
-    // if (response.status == 400 || response.status == 401) {
-    //   throw DatabaseConnectionError('Error retrieving player from Supabase');
-    // }
+  //   // if (response.status == 400 || response.status == 401) {
+  //   //   throw DatabaseConnectionError('Error retrieving player from Supabase');
+  //   // }
 
-    if (response == null) {
-      return null;
-    }
+  //   if (response == null) {
+  //     return null;
+  //   }
 
-    return Player.fromJson(response as Map<String, dynamic>);
-  }
+  //   return Player.fromJson(response as Map<String, dynamic>);
+  // }
 
   static Future<List<Player>> _getAllPlayersFromDBByOwnerId(int ownerId) async {
     final response = await db.from('players').select().eq('owner_id', ownerId);
@@ -188,7 +188,7 @@ class Player {
     // if (response.status == 400 || response.status == 401) {
     //   throw DatabaseConnectionError('Error checking duplicate players from Supabase');
     // }
-    Utilities.debugPrintWithCallerInfo("Is duplicate response: ${response}");
+    Utilities.debugPrintWithCallerInfo("Is duplicate response: $response");
     return (response as List<dynamic>).isNotEmpty;
   }
 
@@ -206,7 +206,7 @@ class Player {
       };
 
       final response = await db.from('players').upsert(userToCreate).select().single();
-      Utilities.debugPrintWithCallerInfo("Create Player in Supabase response: ${response}");
+      Utilities.debugPrintWithCallerInfo("Create Player in Supabase response: $response");
       final playerWithoutOwnerId = Player.fromJson(response);
       Utilities.debugPrintWithCallerInfo("Created Player: ${playerWithoutOwnerId.toJson()}");
       Map<String, dynamic> responseWithOwnerId = {};

@@ -2,7 +2,6 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -18,7 +17,7 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final _formKey = GlobalKey<FormState>();
+// final _formKey = GlobalKey<FormState>();
 
 void main() async {
   // WidgetsFlutterBinding.ensureInitialized();

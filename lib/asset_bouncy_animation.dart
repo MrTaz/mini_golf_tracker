@@ -83,7 +83,7 @@ class _BouncyAnimation extends StatelessWidget {
     if (controller.value >= (ratio * (1 - pause)) && (controller.value < (1 - pause))) {
       phase = downPhase;
     }
-    return Transform(transform: Matrix4.translationValues(0, -1 * phase.value, 0), child: child ?? SizedBox());
+    return Transform(transform: Matrix4.translationValues(0, -1 * phase.value, 0), child: child ?? const SizedBox());
   }
 
   @override

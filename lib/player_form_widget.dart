@@ -11,13 +11,13 @@ class PlayerForm extends StatefulWidget {
   final String editingOrAdding;
 
   const PlayerForm(
-      {this.player, required this.allowEditing, required this.onSaveChanges, required this.editingOrAdding});
+      {super.key, this.player, required this.allowEditing, required this.onSaveChanges, required this.editingOrAdding});
 
   @override
-  _PlayerFormState createState() => _PlayerFormState();
+  PlayerFormState createState() => PlayerFormState();
 }
 
-class _PlayerFormState extends State<PlayerForm> {
+class PlayerFormState extends State<PlayerForm> {
   late TextEditingController _playerNameController;
   late TextEditingController _nicknameController;
   late TextEditingController _emailController;
@@ -135,7 +135,9 @@ class _PlayerFormState extends State<PlayerForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        (widget.editingOrAdding == 'Edit') ? Text("Edit Player Attributes (${widget.player!.id})") : const Text("Add A New Player"),
+        (widget.editingOrAdding == 'Edit')
+            ? Text("Edit Player Attributes (${widget.player!.id})")
+            : const Text("Add A New Player"),
         const SizedBox(height: 10),
         TextFormField(
           controller: _playerNameController,

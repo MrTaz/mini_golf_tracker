@@ -66,7 +66,7 @@ class LoginScreen extends StatelessWidget {
       //   });
       // }
     } on PlatformException catch (exception) {
-      print(exception);
+      Utilities.debugPrintWithCallerInfo(exception.toString());
     }
   }
 

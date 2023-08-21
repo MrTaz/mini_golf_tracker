@@ -15,10 +15,10 @@ class GameCreateScreen extends StatefulWidget {
   const GameCreateScreen({Key? key}) : super(key: key);
 
   @override
-  _GameCreateScreenState createState() => _GameCreateScreenState();
+  GameCreateScreenState createState() => GameCreateScreenState();
 }
 
-class _GameCreateScreenState extends State<GameCreateScreen> {
+class GameCreateScreenState extends State<GameCreateScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   Course? _selectedCourse;
@@ -35,7 +35,10 @@ class _GameCreateScreenState extends State<GameCreateScreen> {
   Future<void> _selectCourse() async {
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
-      MaterialPageRoute(builder: (context) => const CoursesScreen(creatingGame: true,)),
+      MaterialPageRoute(
+          builder: (context) => const CoursesScreen(
+                creatingGame: true,
+              )),
     );
     if (selectedCourse != null) {
       setState(() {

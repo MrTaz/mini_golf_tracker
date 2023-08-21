@@ -7,13 +7,13 @@ class PlayerCreateScreen extends StatefulWidget {
   final List<Player> players;
   final VoidCallback onSavePlayer;
 
-  const PlayerCreateScreen({required this.players, required this.onSavePlayer});
+  const PlayerCreateScreen({super.key, required this.players, required this.onSavePlayer});
 
   @override
-  _PlayerCreateScreenState createState() => _PlayerCreateScreenState();
+  PlayerCreateScreenState createState() => PlayerCreateScreenState();
 }
 
-class _PlayerCreateScreenState extends State<PlayerCreateScreen> {
+class PlayerCreateScreenState extends State<PlayerCreateScreen> {
   late Player newPlayer;
 
   @override

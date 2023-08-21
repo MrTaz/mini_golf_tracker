@@ -8,6 +8,8 @@ class OverscrollList extends StatelessWidget {
   final double _topOverscroll = 200;
   final double _bottomOverscroll = 200;
 
+  OverscrollList({super.key});
+
   void _scrollList(Offset offset) {
     _scrollCtrl.jumpTo(
       _scrollCtrl.offset + offset.dy,

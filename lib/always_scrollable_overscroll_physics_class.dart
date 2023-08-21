@@ -16,7 +16,7 @@ class AlwaysScrollableOverscrollPhysics extends AlwaysScrollableScrollPhysics {
   final double overscrollStart;
   final double overscrollEnd;
 
-  AlwaysScrollableOverscrollPhysics({
+  const AlwaysScrollableOverscrollPhysics({
     this.overscrollStart = 0,
     this.overscrollEnd = 0,
     ScrollPhysics? parent,
@@ -85,7 +85,7 @@ class NeverScrollableOverscrollPhysics extends NeverScrollableScrollPhysics {
   final double overscrollStart;
   final double overscrollEnd;
 
-  NeverScrollableOverscrollPhysics({
+  const NeverScrollableOverscrollPhysics({
     this.overscrollStart = 0,
     this.overscrollEnd = 0,
     ScrollPhysics? parent,

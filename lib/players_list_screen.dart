@@ -80,22 +80,21 @@ class PlayerListItemState extends State<PlayerListItem> {
         children: [
           // orderNumberText,
           ListTile(
-            title: Text(widget.player.nickname),
-            subtitle: Text(widget.player.playerName),
-            leading: _buildLeadingWidget(),
-            enabled: _enabled,
-            selected: widget.isSelected,
-            iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-              return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
-            }),
-            onTap: () {
-              setState(() {
-                // This is called when the user toggles the switch.
-                isSelected = !isSelected;
-              });
-            },
-            trailing: _buildTrailingIcons()
-          ),
+              title: Text(widget.player.nickname),
+              subtitle: Text(widget.player.playerName),
+              leading: _buildLeadingWidget(),
+              enabled: _enabled,
+              selected: widget.isSelected,
+              iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
+                return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+              }),
+              onTap: () {
+                setState(() {
+                  // This is called when the user toggles the switch.
+                  isSelected = !isSelected;
+                });
+              },
+              trailing: _buildTrailingIcons()),
           _buildListItemDropDownEdit()
         ],
       ),
@@ -109,7 +108,7 @@ class PlayerListItemState extends State<PlayerListItem> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(widget.listOrderNumber.toString() + getPlayerPositionSuffix(widget.listOrderNumber!)),
-          SizedBox(width: 8.0),
+          const SizedBox(width: 8.0),
           _buildPlayerProfileCircleIcon(),
         ],
       );
@@ -121,21 +120,11 @@ class PlayerListItemState extends State<PlayerListItem> {
 
   Widget _buildPlayerProfileCircleIcon() {
     return FittedBox(
-      child: 
-        CircleAvatar(
-          backgroundColor: Colors.teal, 
-          child: 
-            ClipOval(
-              child: 
-                GravatarImageView(
-                  email: widget.player.email!
-                )
-            )
-        )
-    );
+        child: CircleAvatar(
+            backgroundColor: Colors.teal, child: ClipOval(child: GravatarImageView(email: widget.player.email!))));
   }
 
-  Widget _buildTrailingIcons(){
+  Widget _buildTrailingIcons() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -173,10 +162,9 @@ class PlayerListItemState extends State<PlayerListItem> {
     );
   }
 
-  Widget _buildListItemDropDownEdit(){
-    if (isDropdownOpen){
-      return Column(
-        children: <Widget> [
+  Widget _buildListItemDropDownEdit() {
+    if (isDropdownOpen) {
+      return Column(children: <Widget>[
         const Divider(),
         Padding(
           padding: const EdgeInsets.all(16.0),
@@ -192,9 +180,8 @@ class PlayerListItemState extends State<PlayerListItem> {
             },
           ),
         ),
-      ]
-      );
-    }else{
+      ]);
+    } else {
       return const SizedBox(width: 0);
     }
   }

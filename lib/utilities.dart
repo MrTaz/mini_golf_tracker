@@ -104,12 +104,12 @@ class Utilities {
       final columnNumber = lineColumn[1];
 
       final fileName = filePath.split('/').last;
-      final fileNameToShow = fileName.length > 35 ? fileName.substring(0, 32) + '...' : fileName;
+      final fileNameToShow = fileName.length > 35 ? '${fileName.substring(0, 32)}...' : fileName;
 
-      final maxFileNameLength = 35;
+      const maxFileNameLength = 35;
       final lineColumnPadding = maxFileNameLength - fileNameToShow.length;
 
-      final lineColumnSeparator = ':';
+      const lineColumnSeparator = ':';
       final formattedLineColumn = '$lineNumber$lineColumnSeparator$columnNumber';
 
       final tabsAfterFileName = '\t' * (lineColumnPadding ~/ 8 + 1); // Calculate tabs based on 8-character tab width

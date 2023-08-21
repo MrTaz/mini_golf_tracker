@@ -16,10 +16,10 @@ class GameInprogressScreen extends StatefulWidget {
   const GameInprogressScreen({super.key, required this.currentGame});
 
   @override
-  _GameInprogressScreenState createState() => _GameInprogressScreenState();
+  GameInprogressScreenState createState() => GameInprogressScreenState();
 }
 
-class _GameInprogressScreenState extends State<GameInprogressScreen> {
+class GameInprogressScreenState extends State<GameInprogressScreen> {
   final Player? loggedInUser = UserProvider().loggedInUser;
   late List<PlayerGameInfo> _playersInfo;
   int currentHole = 1;
@@ -196,10 +196,10 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
     final textScale = MediaQuery.of(context).size.height * 0.01;
     // final screenHeight = MediaQuery.of(context).size.height;
 
-    double getHeight(double sysVar, double size) {
-      double calc = size / 1000;
-      return sysVar * calc;
-    }
+    // double getHeight(double sysVar, double size) {
+    //   double calc = size / 1000;
+    //   return sysVar * calc;
+    // }
 
     double getTextSize(double sysVar, double size) {
       double calc = size / 10;
@@ -223,139 +223,133 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  Container(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                              // width: 200,
-                              child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            FittedBox(
+                                fit: BoxFit.fill,
+                                child: Text('Current score: ${pgi.totalScore}',
+                                    style: TextStyle(fontSize: getTextSize(textScale, 20)))),
+                            if (currentHole != 1) ...[
                               FittedBox(
                                   fit: BoxFit.fill,
-                                  child: Text('Current score: ${pgi.totalScore}',
-                                      style: TextStyle(fontSize: getTextSize(textScale, 20)))),
-                              if (currentHole != 1) ...[
-                                FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: Row(
-                                      children: [
-                                        Text('Last hole (${currentHole - 1}): ',
-                                            style: TextStyle(fontSize: getTextSize(textScale, 18))),
-                                        Text(
-                                          '${pgi.scores[currentHole - 2]}',
-                                          style: TextStyle(
-                                              color: (pgi.scores[currentHole - 2] < currentHolePar)
-                                                  ? Colors.green
-                                                  : (pgi.scores[currentHole - 2] > currentHolePar)
-                                                      ? Colors.red
-                                                      : Colors.black,
-                                              fontSize: getTextSize(textScale, 18)),
-                                        )
-                                      ],
-                                    ))
-                              ]
-                            ],
-                          )),
+                                  child: Row(
+                                    children: [
+                                      Text('Last hole (${currentHole - 1}): ',
+                                          style: TextStyle(fontSize: getTextSize(textScale, 18))),
+                                      Text(
+                                        '${pgi.scores[currentHole - 2]}',
+                                        style: TextStyle(
+                                            color: (pgi.scores[currentHole - 2] < currentHolePar)
+                                                ? Colors.green
+                                                : (pgi.scores[currentHole - 2] > currentHolePar)
+                                                    ? Colors.red
+                                                    : Colors.black,
+                                            fontSize: getTextSize(textScale, 18)),
+                                      )
+                                    ],
+                                  ))
+                            ]
+                          ],
                         ),
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            child: Column(
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('Score'),
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                const Text('Score'),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                        shadowColor: Colors.greenAccent,
-                                        elevation: 3,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
-                                        minimumSize: Size(40, 40),
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          if (playerScore > 1) {
-                                            playerScoreDropDownIndex = (playerScoreDropDownIndex == 0)
-                                                ? playerScoreDropDownIndex
-                                                : playerScoreDropDownIndex - 1;
-                                            playerScore--;
-                                            if (pgi.scores.isEmpty) {
-                                              pgi.scores.add(playerScore);
-                                            } else {
-                                              pgi.scores[currentHole - 1] = playerScore;
-                                            }
-                                          }
-                                        });
-                                      },
-                                      child: const Icon(Icons.remove),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    DropdownButton<int>(
-                                      value: playerScoreDropDownIndex,
-                                      items: List.generate(6, (index) {
-                                        return DropdownMenuItem<int>(
-                                          value: index,
-                                          child: Text('${index + 1}'),
-                                        );
-                                      }),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          if (playerScore < 7 && playerScore > 0) {
-                                            playerScoreDropDownIndex = value!;
-                                            playerScore = value + 1;
-                                            if (pgi.scores.isEmpty) {
-                                              pgi.scores.add(playerScore);
-                                            } else {
-                                              pgi.scores[currentHole - 1] = playerScore;
-                                            }
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                        shadowColor: Colors.greenAccent,
-                                        elevation: 3,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
-                                        minimumSize: Size(40, 40),
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          if (playerScore < 6) {
-                                            playerScoreDropDownIndex++;
-                                            playerScore++;
-                                            if (pgi.scores.isEmpty) {
-                                              pgi.scores.add(playerScore);
-                                            } else {
-                                              pgi.scores[currentHole - 1] = playerScore;
-                                            }
-                                          }
-                                        });
-                                      },
-                                      child: const Icon(Icons.add),
-                                    ),
-                                  ],
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.greenAccent,
+                                    elevation: 3,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
+                                    minimumSize: const Size(40, 40),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      if (playerScore > 1) {
+                                        playerScoreDropDownIndex = (playerScoreDropDownIndex == 0)
+                                            ? playerScoreDropDownIndex
+                                            : playerScoreDropDownIndex - 1;
+                                        playerScore--;
+                                        if (pgi.scores.isEmpty) {
+                                          pgi.scores.add(playerScore);
+                                        } else {
+                                          pgi.scores[currentHole - 1] = playerScore;
+                                        }
+                                      }
+                                    });
+                                  },
+                                  child: const Icon(Icons.remove),
+                                ),
+                                const SizedBox(width: 8),
+                                DropdownButton<int>(
+                                  value: playerScoreDropDownIndex,
+                                  items: List.generate(6, (index) {
+                                    return DropdownMenuItem<int>(
+                                      value: index,
+                                      child: Text('${index + 1}'),
+                                    );
+                                  }),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (playerScore < 7 && playerScore > 0) {
+                                        playerScoreDropDownIndex = value!;
+                                        playerScore = value + 1;
+                                        if (pgi.scores.isEmpty) {
+                                          pgi.scores.add(playerScore);
+                                        } else {
+                                          pgi.scores[currentHole - 1] = playerScore;
+                                        }
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.greenAccent,
+                                    elevation: 3,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
+                                    minimumSize: const Size(40, 40),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      if (playerScore < 6) {
+                                        playerScoreDropDownIndex++;
+                                        playerScore++;
+                                        if (pgi.scores.isEmpty) {
+                                          pgi.scores.add(playerScore);
+                                        } else {
+                                          pgi.scores[currentHole - 1] = playerScore;
+                                        }
+                                      }
+                                    });
+                                  },
+                                  child: const Icon(Icons.add),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
