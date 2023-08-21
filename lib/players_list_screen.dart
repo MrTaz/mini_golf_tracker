@@ -27,10 +27,10 @@ class PlayerListItem extends StatefulWidget {
       : super(key: key);
 
   @override
-  _PlayerListItemState createState() => _PlayerListItemState();
+  PlayerListItemState createState() => PlayerListItemState();
 }
 
-class _PlayerListItemState extends State<PlayerListItem> {
+class PlayerListItemState extends State<PlayerListItem> {
   bool isSelected = false;
   final bool _enabled = true;
   bool _allowEditing = false;
@@ -71,15 +71,38 @@ class _PlayerListItemState extends State<PlayerListItem> {
 
   @override
   Widget build(BuildContext context) {
-    // final orderNumberText = widget.listOrderNumber != null
-    //     ? Text(
-    //         "Plays: ${widget.listOrderNumber}${getPlayerPositionSuffix(widget.listOrderNumber!)}",
-    //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    //       )
-    //     : SizedBox.shrink();
-    Widget playerProfileCircleIcon = FittedBox(
-        child: CircleAvatar(
-            backgroundColor: Colors.teal, child: ClipOval(child: GravatarImageView(email: widget.player.email!))));
+    return _buildPlayerListItem();
+  }
+
+  Widget _buildPlayerListItem() {
+    return Card(
+      child: Column(
+        children: [
+          // orderNumberText,
+          ListTile(
+            title: Text(widget.player.nickname),
+            subtitle: Text(widget.player.playerName),
+            leading: _buildLeadingWidget(),
+            enabled: _enabled,
+            selected: widget.isSelected,
+            iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
+              return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+            }),
+            onTap: () {
+              setState(() {
+                // This is called when the user toggles the switch.
+                isSelected = !isSelected;
+              });
+            },
+            trailing: _buildTrailingIcons()
+          ),
+          _buildListItemDropDownEdit()
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeadingWidget() {
     Widget leadingWidget;
     if (widget.listOrderNumber != null) {
       leadingWidget = Row(
@@ -87,90 +110,92 @@ class _PlayerListItemState extends State<PlayerListItem> {
         children: [
           Text(widget.listOrderNumber.toString() + getPlayerPositionSuffix(widget.listOrderNumber!)),
           SizedBox(width: 8.0),
-          playerProfileCircleIcon,
+          _buildPlayerProfileCircleIcon(),
         ],
       );
     } else {
-      leadingWidget = playerProfileCircleIcon;
+      leadingWidget = _buildPlayerProfileCircleIcon();
     }
+    return leadingWidget;
+  }
 
-    return Card(
-      child: Column(
-        children: [
-          // orderNumberText,
-          ListTile(
-            enabled: _enabled,
-            selected: widget.isSelected,
-            onTap: () {
+  Widget _buildPlayerProfileCircleIcon() {
+    return FittedBox(
+      child: 
+        CircleAvatar(
+          backgroundColor: Colors.teal, 
+          child: 
+            ClipOval(
+              child: 
+                GravatarImageView(
+                  email: widget.player.email!
+                )
+            )
+        )
+    );
+  }
+
+  Widget _buildTrailingIcons(){
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_allowEditing)
+          GestureDetector(
+            onTap: toggleDropdown,
+            child: const Icon(Icons.edit),
+          ),
+        const SizedBox(width: 8),
+        if (widget.onRemove != null) ...[
+          IconButton(
+            icon: const Icon(Icons.remove_circle),
+            onPressed: widget.onRemove,
+          ),
+          const SizedBox(width: 8),
+        ],
+        if (widget.creatingGame == true)
+          Switch(
+            value: isSelected,
+            onChanged: (bool? value) {
               setState(() {
-                // This is called when the user toggles the switch.
-                isSelected = !isSelected;
+                isSelected = value!;
+              });
+              if (widget.onPlayerSelected != null) {
+                widget.onPlayerSelected!(widget.player);
+              }
+              // if (isSelected) {
+              //   // removePlayerFromGame(player);
+              // } else {
+              //   // addPlayerToGame(player);
+              // }
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildListItemDropDownEdit(){
+    if (isDropdownOpen){
+      return Column(
+        children: <Widget> [
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: PlayerForm(
+            player: widget.player,
+            allowEditing: _allowEditing,
+            editingOrAdding: "Edit",
+            onSaveChanges: () {
+              // Save changes
+              setState(() {
+                isDropdownOpen = false;
               });
             },
-            iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-              if (states.contains(MaterialState.selected)) {
-                return Colors.green;
-              }
-              return Colors.teal;
-            }),
-            leading: leadingWidget,
-            title: Text(widget.player.nickname),
-            subtitle: Text(widget.player.playerName),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_allowEditing)
-                  GestureDetector(
-                    onTap: toggleDropdown,
-                    child: const Icon(Icons.edit),
-                  ),
-                const SizedBox(width: 8),
-                if (widget.onRemove != null) ...[
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle),
-                    onPressed: widget.onRemove,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                if (widget.creatingGame == true)
-                  Switch(
-                    onChanged: (bool? value) {
-                      setState(() {
-                        isSelected = value!;
-                      });
-                      if (widget.onPlayerSelected != null) {
-                        widget.onPlayerSelected!(widget.player);
-                      }
-                      // if (isSelected) {
-                      //   // removePlayerFromGame(player);
-                      // } else {
-                      //   // addPlayerToGame(player);
-                      // }
-                    },
-                    value: isSelected,
-                  ),
-              ],
-            ),
           ),
-          if (isDropdownOpen) ...[
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: PlayerForm(
-                player: widget.player,
-                allowEditing: _allowEditing,
-                editingOrAdding: "Edit",
-                onSaveChanges: () {
-                  // Save changes
-                  setState(() {
-                    isDropdownOpen = false;
-                  });
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+        ),
+      ]
+      );
+    }else{
+      return const SizedBox(width: 0);
+    }
   }
 }

@@ -4,18 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'utilities.dart';
-
-class DashboardNewGameCard extends StatefulWidget {
-  const DashboardNewGameCard({Key? key}) : super(key: key);
+class GameCardWidget extends StatefulWidget {
+  const GameCardWidget({Key? key}) : super(key: key);
 
   @override
-  DashboardNewGameCardState createState() => DashboardNewGameCardState();
+  GameCardWidgetState createState() => GameCardWidgetState();
 }
 
-class DashboardNewGameCardState extends State<DashboardNewGameCard> {
+class GameCardWidgetState extends State<GameCardWidget> {
   Future<void> _navigateToGameCreateScreen() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
@@ -24,7 +23,7 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
         });
       }),
     );
-    await getSavedGame();
+    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {}); // Refresh the widget after creating a new game
   }
 
@@ -49,39 +48,8 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
   }
 
   updateGameCard() async {
-    await getSavedGame();
+    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {});
-  }
-
-  Future<List<Game?>> getSavedGame() async {
-    List<Game?> games = [];
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    // Get all the keys
-    final Set<String> keys = prefs.getKeys().cast<String>();
-    // Iterate over the keys and check if the value is a JSON
-    for (String key in keys) {
-      if (key != "email" && key != "loggedInUser") {
-        dynamic value = prefs.get(key);
-        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
-        if (value is String) {
-          try {
-            Utilities.debugPrintWithCallerInfo("It's a JSON-formatted string: $json");
-            Game savedGame = Game.fromJson(value);
-            Utilities.debugPrintWithCallerInfo("It's a Game-formatted string: ${savedGame.toJson()}");
-            if (savedGame.status == "unstarted_game" || savedGame.status == "started") {
-              games.add(savedGame);
-            }
-          } catch (e) {
-            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
-          }
-        } else if (value is List<String>) {
-          Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
-        } else {
-          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
-        }
-      }
-    }
-    return games;
   }
 
   Future<void> deleteSavedGame({Game? gameToDelete}) async {
@@ -124,7 +92,7 @@ class DashboardNewGameCardState extends State<DashboardNewGameCard> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: FutureBuilder<List<Game?>>(
-            future: getSavedGame(),
+            future: Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]),
             builder: (BuildContext context, AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(

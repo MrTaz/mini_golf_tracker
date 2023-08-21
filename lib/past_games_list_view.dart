@@ -1,11 +1,10 @@
 // import 'package:calendarific_dart/calendarific_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/past_game_details_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
-
-import 'game.dart';
-import 'past_game_details_screen.dart';
-import 'player.dart';
-import 'utilities.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGamesListView extends StatelessWidget {
   final List<Game> previousGames = [];
@@ -50,10 +49,10 @@ class PastGamesListView extends StatelessWidget {
       return Expanded(
           child: ListView.separated(
         shrinkWrap: true,
+        padding: const EdgeInsets.all(8),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: previousGames.length,
-        padding: const EdgeInsets.all(8),
-        itemBuilder: (context, index) {
+        itemBuilder: (BuildContext context, int index) {
           // Utilities.debugPrintWithCallerInfo("Current Game: ${previousGames[index].toJson()}");
           return FutureBuilder<String>(
             future: Future.value(Utilities.formatStartTime(previousGames[index].startTime!)),

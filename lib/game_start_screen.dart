@@ -1,17 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
+import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/players_list_screen.dart';
+import 'package:mini_golf_tracker/players_screen.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'course.dart';
-import 'game.dart';
-import 'players_list_screen.dart';
-import 'players_screen.dart';
 
 class GameStartScreen extends StatefulWidget {
   final Game? unstartedGame;
@@ -23,6 +23,7 @@ class GameStartScreen extends StatefulWidget {
 }
 
 class GameStartScreenState extends State<GameStartScreen> {
+  final Player? loggedInUser = UserProvider().loggedInUser;
   late List<PlayerGameInfo> _playersInfo;
   late Course? _newGameCourse = null;
   late TextEditingController _nameController;
@@ -73,7 +74,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                         name: _nameController.text,
                         players: [],
                         course: Course(
-                            id: DateTime.now().millisecondsSinceEpoch,
+                            id: 0,
                             name: "Please select course",
                             numberOfHoles: 0,
                             parStrokes: {}),
@@ -101,7 +102,7 @@ class GameStartScreenState extends State<GameStartScreen> {
   void _initializePlayersInfo() {
     if (widget.unstartedGame != null) {
       _playersInfo = (widget.unstartedGame?.players ?? [])
-          .map((player) => PlayerGameInfo(playerId: player.playerId, courseId: player.courseId, scores: player.scores))
+          .map((player) => PlayerGameInfo(playerId: player.playerId, gameId: widget.unstartedGame!.id, scores: player.scores))
           .toList();
     } else {
       _playersInfo = [];
@@ -109,11 +110,12 @@ class GameStartScreenState extends State<GameStartScreen> {
   }
 
   void _selectCourse() async {
+    Utilities.debugPrintWithCallerInfo("Opening select course screen, $_isCreatingGame, $_newGameCourse, ${widget.unstartedGame?.course.toJson()}");
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
       MaterialPageRoute(
           builder: (context) =>
-              CoursesScreen(selectedCourse: (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course)),
+              CoursesScreen(selectedCourse: (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course, creatingGame: true,)),
     );
 
     if (selectedCourse != null) {
@@ -172,7 +174,7 @@ class GameStartScreenState extends State<GameStartScreen> {
         _playersInfo.clear();
         for (Player _selectedPlayer in selectedPlayers) {
           _playersInfo
-              .add(PlayerGameInfo(playerId: _selectedPlayer.id, courseId: widget.unstartedGame!.course.id, scores: []));
+              .add(PlayerGameInfo(playerId: _selectedPlayer.id, gameId: widget.unstartedGame!.id, scores: []));
         }
         widget.unstartedGame!.players.replaceRange(0, widget.unstartedGame!.players.length, _playersInfo);
       });
@@ -203,6 +205,7 @@ class GameStartScreenState extends State<GameStartScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String unstartedGameJson = jsonEncode(widget.unstartedGame!);
     await prefs.setString(widget.unstartedGame!.id, unstartedGameJson);
+    await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
     if (widget.callback != null) {
       widget.callback!();
     }
@@ -275,6 +278,7 @@ class GameStartScreenState extends State<GameStartScreen> {
     widget.unstartedGame!.startTime = DateTime.now();
 
     await _updateUnstartedGame();
+    await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
 
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) {
@@ -308,6 +312,7 @@ class GameStartScreenState extends State<GameStartScreen> {
 
   // UI for the course card
   Widget _buildSelectCourseCard() {
+    Utilities.debugPrintWithCallerInfo("Creating new game? $_isCreatingGame");
     Course? course = (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course;
     Utilities.debugPrintWithCallerInfo("setting course: ${course?.toJson()}");
 

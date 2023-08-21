@@ -1,12 +1,12 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/player_score_data_table_card.dart';
+import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/utilities.dart';
-import 'course_list_item_widget.dart';
-import 'game.dart';
-import 'player.dart';
-import 'player_score_data_table_card.dart';
-import 'player_game_info.dart';
-import 'players_card_widget.dart';
 
 class PastGameDetailsScreen extends StatefulWidget {
   final Game passedGame;

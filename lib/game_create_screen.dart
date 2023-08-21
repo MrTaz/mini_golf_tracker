@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/course.dart';
+import 'package:mini_golf_tracker/courses_screen.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-
-import 'courses_screen.dart';
-import 'game.dart';
-import 'course.dart';
-import 'player.dart';
-import 'player_game_info.dart';
-import 'utilities.dart';
 
 class GameCreateScreen extends StatefulWidget {
   const GameCreateScreen({Key? key}) : super(key: key);
@@ -36,7 +35,7 @@ class _GameCreateScreenState extends State<GameCreateScreen> {
   Future<void> _selectCourse() async {
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
-      MaterialPageRoute(builder: (context) => CoursesScreen()),
+      MaterialPageRoute(builder: (context) => const CoursesScreen(creatingGame: true,)),
     );
     if (selectedCourse != null) {
       setState(() {
@@ -78,7 +77,7 @@ class _GameCreateScreenState extends State<GameCreateScreen> {
 
       final Game newGame = Game(name: name, course: _selectedCourse!, players: [], scheduledTime: _scheduledTime);
       for (var player in _selectedPlayers) {
-        PlayerGameInfo pgi = PlayerGameInfo(playerId: player.id, courseId: newGame.course.id, scores: []);
+        PlayerGameInfo pgi = PlayerGameInfo(playerId: player.id, gameId: newGame.id, scores: []);
         newGame.addPlayer(pgi);
       }
 

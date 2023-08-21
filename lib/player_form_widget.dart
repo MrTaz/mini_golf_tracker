@@ -135,7 +135,7 @@ class _PlayerFormState extends State<PlayerForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        (widget.editingOrAdding == 'Edit') ? const Text("Edit Player Attributes") : const Text("Add A New Player"),
+        (widget.editingOrAdding == 'Edit') ? Text("Edit Player Attributes (${widget.player!.id})") : const Text("Add A New Player"),
         const SizedBox(height: 10),
         TextFormField(
           controller: _playerNameController,

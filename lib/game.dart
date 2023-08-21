@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
-import 'package:mini_golf_tracker/main.dart';
+import 'package:mini_golf_tracker/course.dart';
+import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/database_connection_error.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/utilities.dart';
-import 'package:supabase/supabase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-
 import 'package:random_x/random_x.dart';
 import 'package:recase/recase.dart';
 import 'package:word_generator/word_generator.dart';
-
-import 'course.dart';
-import 'databaseconnectionerror.dart';
-import 'player_game_info.dart';
 
 class Game {
   late final String name;
@@ -21,6 +20,7 @@ class Game {
   final List<PlayerGameInfo> players;
   DateTime? startTime;
   DateTime scheduledTime;
+  DateTime? completedTime;
   String status = "unstarted_game";
   late Map<PlayerGameInfo, Map<int, int>> scores;
 
@@ -30,6 +30,7 @@ class Game {
       required this.players,
       this.startTime,
       required this.scheduledTime,
+      this.completedTime,
       String? id,
       String? status})
       : id = id ?? const Uuid().v4(),
@@ -43,8 +44,9 @@ class Game {
       'name': name,
       'course': course.toJson(),
       'players': players.map((player) => player.toJson()).toList(),
-      'startTime': startTime?.toIso8601String(),
-      'scheduledTime': scheduledTime.toIso8601String(),
+      'start_time': startTime?.toIso8601String(),
+      'scheduled_time': scheduledTime.toIso8601String(),
+      'completed_time': completedTime?.toIso8601String(),
       'status': status
     };
   }
@@ -56,9 +58,10 @@ class Game {
     final Course course = Course.fromJson(data['course']);
     final List<PlayerGameInfo> players =
         List<PlayerGameInfo>.from(data['players'].map((playerData) => PlayerGameInfo.fromJson(playerData)));
-    final DateTime? startTime = (data['startTime'] != null) ? DateTime.parse(data['startTime']) : null;
+    final DateTime? startTime = (data['start_time'] != null) ? DateTime.parse(data['start_time']) : null;
     final DateTime scheduledTime =
-        (data['scheduledTime'] != null) ? DateTime.parse(data['scheduledTime']) : DateTime.now();
+        (data['scheduled_time'] != null) ? DateTime.parse(data['scheduled_time']) : DateTime.now();
+    final DateTime? completedTime = (data['completed_time'] != null) ? DateTime.parse(data['completed_time']) : null;
     String? status = data['status'];
 
     return Game(
@@ -68,6 +71,7 @@ class Game {
         players: players,
         startTime: startTime,
         scheduledTime: scheduledTime,
+        completedTime: completedTime,
         status: status);
   }
 
@@ -97,7 +101,7 @@ class Game {
     if (!scores.containsKey(player)) {
       throw Exception('Player scores not initialized');
     }
-    Utilities.debugPrintWithCallerInfo("CourseID: ${player.courseId}, Hole Number: $holeNumber, strokes: $strokes");
+    Utilities.debugPrintWithCallerInfo("GameId: ${player.gameId}, Hole Number: $holeNumber, strokes: $strokes");
     scores[player]![holeNumber] = strokes;
     player.scores = scores[player]!.values.toList();
     calculateTotalScore(player);
@@ -140,7 +144,7 @@ class Game {
       int totalScore = calculateTotalScore(player);
       playerScores.add(PlayerGameInfo(
         playerId: player.playerId,
-        courseId: player.courseId,
+        gameId: player.gameId,
         scores: scores[player]!.values.toList(), // Convert map values to a list
         place: player.place,
         totalScore: totalScore,
@@ -262,11 +266,12 @@ class Game {
           players: [],
           startTime: randomGameDateList[i],
           scheduledTime: randomGameDateList[i],
+          completedTime: randomGameDateList[i],
           status: "completed");
 
       int numOfPlayers = 2 + rnd.nextInt((5 + 1 - 2));
       for (int l = 0; l < numOfPlayers; l++) {
-        PlayerGameInfo player = PlayerGameInfo(playerId: l + 1, courseId: i, scores: []);
+        PlayerGameInfo player = PlayerGameInfo(playerId: l + 1, gameId: game.id, scores: []);
         game.addPlayer(player);
       }
 
@@ -282,14 +287,76 @@ class Game {
     return games;
   }
 
+  static Future<void> saveLocalGame(Game gameToSaveLocally) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String gameString = jsonEncode(gameToSaveLocally.toJson());
+    await prefs.setString(gameToSaveLocally.id, gameString);
+  }
+
+  static Future<void> initializeLocalGames(Player loggedInUser) async {
+    try{
+      Utilities.debugPrintWithCallerInfo("Loading games from database");
+      final List<Game?> dbGames = await Game.fetchGamesForCurrentUser(loggedInUser.id);
+      if (dbGames.isNotEmpty) {
+        List<Game> loadedGames = dbGames.whereType<Game>().toList();
+        for(Game loadedGame in loadedGames){
+          await Game.saveLocalGame(loadedGame); //save games locally if we loaded them from db
+        }
+        Utilities.debugPrintWithCallerInfo("Loaded games: ${dbGames.map((game) => game?.toJson())}");
+      }
+    }catch (exception){
+      Utilities.debugPrintWithCallerInfo("Exception when initializing games: ${exception.toString()}");
+    }
+  }
+
+  static Future<List<Game?>> getLocallySavedGames({List<String>? gameStatusTypes}) async {
+    List<Game?> games = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Get all the keys
+    final Set<String> keys = prefs.getKeys().cast<String>();
+    // Iterate over the keys and check if the value is a JSON
+    for (String key in keys) {
+      if (key != "email" && key != "loggedInUser" && key != "courses") {
+        dynamic value = prefs.get(key);
+        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
+        if (value is String) {
+          try {
+            Utilities.debugPrintWithCallerInfo("It's a JSON-formatted string: $json");
+            Game savedGame = Game.fromJson(value);
+            Utilities.debugPrintWithCallerInfo("It's a Game-formatted string: ${savedGame.toJson()}");
+            if(gameStatusTypes != null && gameStatusTypes.isNotEmpty ){
+              Utilities.debugPrintWithCallerInfo("Loading games of type $gameStatusTypes");
+              for(String statusType in gameStatusTypes){
+                if(savedGame.status == statusType){
+                  Utilities.debugPrintWithCallerInfo("*** found ${savedGame.name}");
+                  games.add(savedGame);
+                }
+              }
+            }else{
+              games.add(savedGame);
+            }
+          } catch (e) {
+            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
+          }
+        } else if (value is List<String>) {
+          Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
+        } else {
+          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
+        }
+      }
+    }
+    return games;
+  }
+
   static Future<List<Game>> fetchGamesForCurrentUser(int currentUserId) async {
     try {
       // Fetch the games from the database where the current user is a player
-      final response = await supabase
-          .from('games')
-          .select('*, player_game_info!inner(*)')
-          .eq('player_game_info.player_id', '$currentUserId')
-          .order('scheduled_time', ascending: false);
+      final response = await db
+        .from('games')
+        .select('*, players:player_game_info(*), course:courses(*)')
+        .eq('creator_id', currentUserId)
+      // .or('players_game_info.player_id.eq.$currentUserId')
+        .order('scheduled_time', ascending: true);
 
       Utilities.debugPrintWithCallerInfo("Fetching games: $response");
 
@@ -304,38 +371,58 @@ class Game {
 
       return games;
     } on PostgrestException catch (e) {
-      // Handle error if any
-      if (kDebugMode) {
-        print('Error fetching games: ${e.message}');
-      }
-      throw DatabaseConnectionError('Failed to fetch games: ${e.message}');
+      Utilities.debugPrintWithCallerInfo('Failed to get games for current user: ${e.message}');
+      throw DatabaseConnectionError('Failed to get games for current user: ${e.message}');
     }
   }
 
-  Future<void> saveGameToDatabase(Game game) async {
-    try {
-      // 1. Prepare the game data to be saved
-      Map<String, dynamic> gameData = {
-        'courseId': game.course.id,
-        'players': game.players
-            .map((player) => {
-                  'playerId': player.playerId,
-                  'courseId': player.courseId,
-                  'scores': player.scores,
-                })
-            .toList(),
-        'scheduledTime': game.scheduledTime.toIso8601String(),
-        // Include any other relevant game data
+  static Future<void> saveGameToDatabase(Game game, Player creator) async {
+  try {
+    // 1. Prepare the game data to be saved
+    Map<String, dynamic> gameData = {
+      'id': game.id,
+      'name': game.name,
+      'course_id': game.course.id,
+      'scheduled_time': game.scheduledTime.toIso8601String(),
+      'start_time': (game.startTime != null) ? game.startTime!.toIso8601String() : null,
+      'completed_time': (game.completedTime != null) ? game.completedTime!.toIso8601String() : null,
+      'status': game.status,
+      'creator_id': creator.id
+    };
+
+    // 2. Save the game data to the games table and get the saved game ID
+    final gameResponse = await db.from('games').upsert([gameData]);
+    Utilities.debugPrintWithCallerInfo("Saved game to database, returned ${gameResponse.toString()}");
+
+    // 3. Save player game info to the player_game_info table
+    bool playerUpdated = false;
+    for (final player in game.players) {
+      final playerGameInfoData = {
+        'game_id': game.id,
+        'player_id': player.playerId,
+        'place': player.place,
+        'scores': player.scores,
+        'total_score': player.totalScore,
       };
-
-      // 2. Save the game data to the database
-      final response = await supabase.from('games').insert([gameData]); //.execute();
-    } on PostgrestException catch (e) {
-      // Handle error if any
-      if (kDebugMode) {
-        print('Failed to save game: ${e.message}');
+      final pgiResponse = await db.from('player_game_info').upsert([playerGameInfoData], onConflict: 'game_id, player_id' );
+      Utilities.debugPrintWithCallerInfo("Saved player game info to database, $playerGameInfoData, returned ${pgiResponse.toString()}");
+      if(pgiResponse != null){ //if response was not null
+        if(!playerUpdated){ //only change the flag to true if it is still false.
+          playerUpdated = true;
+        }
       }
-      throw DatabaseConnectionError('Failed to save game: ${e.message}');
     }
+    if(gameResponse != null && playerUpdated){
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(game.id, game.toJson() as String);
+    }      
+  } on PostgrestException catch (e) {
+    Utilities.debugPrintWithCallerInfo('DB Failed to update player score: ${e.message}');
+    throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+  } catch (exception) {
+    Utilities.debugPrintWithCallerInfo('General failure to update player score: $exception');
+    throw Exception('Failed to update player score: $exception');
   }
+}
+
 }

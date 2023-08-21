@@ -1,33 +1,37 @@
 class PlayerGameInfo {
   final int playerId;
-  final int courseId;
+  final String gameId;
   String? place;
   List<int> scores;
   int totalScore;
 
   PlayerGameInfo(
-      {required this.playerId, required this.courseId, required this.scores, this.place = "", this.totalScore = 0});
+      {required this.playerId,
+      required this.gameId,
+      required this.scores,
+      this.place = "", 
+      this.totalScore = 0});
 
   Map<String, dynamic> toJson() {
     return {
-      'playerId': playerId,
-      'courseId': courseId,
+      'player_id': playerId,
+      'game_id': gameId, 
       'scores': [...scores],
-      'place': place == null ? "" : place,
-      'totalScore': totalScore,
+      'place': place ?? "",
+      'total_score': totalScore,
     };
   }
 
   factory PlayerGameInfo.fromJson(Map<String, dynamic> json) {
-    final int playerId = json['playerId'];
-    final int courseId = json['courseId'];
+    final int playerId = json['player_id'];
+    final String gameId = json['game_id'];
     final List<int> scores = List<int>.from(json['scores']);
     final String? place = json['place'];
-    final int totalScore = json['totalScore'];
+    final int totalScore = json['total_score'];
 
     return PlayerGameInfo(
       playerId: playerId,
-      courseId: courseId,
+      gameId: gameId,
       scores: scores,
       place: place,
       totalScore: totalScore,

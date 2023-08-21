@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:mini_golf_tracker/dashboard_new_game_card_widget.dart';
-
-import 'game_create_screen.dart';
-import 'home_screen.dart';
-import 'past_games_list_view.dart';
-import 'past_games_screen.dart';
-import 'players_card_widget.dart';
-import 'players_screen.dart';
-import 'utilities.dart';
+import 'package:mini_golf_tracker/courses_screen.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/game_card_widget.dart';
+import 'package:mini_golf_tracker/home_screen.dart';
+import 'package:mini_golf_tracker/past_game_card_widget.dart';
+import 'package:mini_golf_tracker/past_games_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/players_card_widget.dart';
+import 'package:mini_golf_tracker/players_screen.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
+
   @override
-  _DashBoardScreenState createState() => _DashBoardScreenState();
+  DashBoardScreenState createState() => DashBoardScreenState();
 }
 
-class _DashBoardScreenState extends State<DashboardScreen> {
+class DashBoardScreenState extends State<DashboardScreen> {
+  final Player? loggedInUser = UserProvider().loggedInUser;
   late Widget body;
   int _selectedIndex = 0;
+
   final _pages = <Widget>[
     const HomeScreen(),
-    PlayersScreen(),
+    const PlayersScreen(),
     const PastGamesScreen(),
+    const CoursesScreen()
   ];
   void _onBottomNavigationButtonTapped(int index) {
     setState(() {
@@ -41,6 +47,7 @@ class _DashBoardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    Game.initializeLocalGames(loggedInUser!);
     body = DashBoardLayout(
       updateBottomNavChangeNotifier: (bool value) {
         _onBottomNavigationButtonTapped(1);
@@ -55,6 +62,8 @@ class _DashBoardScreenState extends State<DashboardScreen> {
       extendBodyBehindAppBar: false,
       body: body,
       bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: const Color(0xFF009688),
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -67,6 +76,10 @@ class _DashBoardScreenState extends State<DashboardScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.folder),
             label: 'Past Games',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.golf_course),
+            label: 'Courses',
           )
         ],
         currentIndex: _selectedIndex,
@@ -101,14 +114,14 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const DashboardNewGameCard(),
+                    const GameCardWidget(),
                     PlayersCard(onPlayerCardTap: (bool arg) {
                       setState(() {
                         isShowFriendsScreen = !isShowFriendsScreen;
                         widget.updateBottomNavChangeNotifier(isShowFriendsScreen);
                       });
                     }),
-                    PastGamesListView(),
+                    const PastGameCardWidget()
                   ],
                 ),
               ),
@@ -117,49 +130,49 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
   }
 }
 
-class NewGameCard extends StatelessWidget {
-  const NewGameCard({super.key});
+// class NewGameCard extends StatelessWidget {
+//   const NewGameCard({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-        child: Card(
-            elevation: 6,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: <Widget>[
-                  const ListTile(
-                    title: Text('Create a new game'),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      FilledButton(
-                        // onPressed: () {/* ... */},
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                            return const GameCreateScreen();
-                          }));
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.add,
-                              size: 24.0,
-                            ),
-                            SizedBox(
-                              width: 5,
-                            ),
-                            Text('New Game'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  )
-                ],
-              ),
-            )));
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//         child: Card(
+//             elevation: 6,
+//             child: Padding(
+//               padding: const EdgeInsets.all(8.0),
+//               child: Column(
+//                 children: <Widget>[
+//                   const ListTile(
+//                     title: Text('Create a new game'),
+//                   ),
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.end,
+//                     children: <Widget>[
+//                       FilledButton(
+//                         // onPressed: () {/* ... */},
+//                         onPressed: () {
+//                           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+//                             return const GameCreateScreen();
+//                           }));
+//                         },
+//                         child: const Row(
+//                           children: [
+//                             Icon(
+//                               Icons.add,
+//                               size: 24.0,
+//                             ),
+//                             SizedBox(
+//                               width: 5,
+//                             ),
+//                             Text('New Game'),
+//                           ],
+//                         ),
+//                       ),
+//                       const SizedBox(width: 8),
+//                     ],
+//                   )
+//                 ],
+//               ),
+//             )));
+//   }
+// }

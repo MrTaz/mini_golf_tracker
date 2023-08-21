@@ -6,16 +6,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_login/flutter_login.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:mini_golf_tracker/databaseconnectionerror.dart';
+import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-const users = {
-  'mrtaz28@gmail.com': '12345',
-  'hunter@gmail.com': 'hunter',
-};
 
 class LoginScreen extends StatelessWidget {
   // bool _isSnackOpen = false;
@@ -100,9 +95,6 @@ class LoginScreen extends StatelessWidget {
   Future<String> _recoverPassword(String name) {
     Utilities.debugPrintWithCallerInfo('Name: $name');
     return Future.delayed(loginTime).then((_) {
-      if (!users.containsKey(name)) {
-        return 'User not exists';
-      }
       return "";
     });
   }

@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-
-import 'always_scrollable_overscroll_physics_class.dart';
+import 'package:mini_golf_tracker/always_scrollable_overscroll_physics_class.dart';
 
 class OverscrollList extends StatelessWidget {
   final ScrollController _scrollCtrl = ScrollController();

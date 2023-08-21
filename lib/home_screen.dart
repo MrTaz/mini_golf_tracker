@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'game_create_screen.dart';
-import 'login_screen.dart';
+import 'package:mini_golf_tracker/game_create_screen.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);

@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/past_game_details_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/player_profile_widget.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'course_list_item_widget.dart';
-import 'game.dart';
-import 'past_game_details_screen.dart';
-import 'player.dart';
-import 'player_game_info.dart';
-import 'player_profile_widget.dart';
 
 class GameInprogressScreen extends StatefulWidget {
   final Game currentGame;
@@ -20,6 +20,7 @@ class GameInprogressScreen extends StatefulWidget {
 }
 
 class _GameInprogressScreenState extends State<GameInprogressScreen> {
+  final Player? loggedInUser = UserProvider().loggedInUser;
   late List<PlayerGameInfo> _playersInfo;
   int currentHole = 1;
   int currentHolePar = 3;
@@ -38,7 +39,7 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
     _playersInfo = widget.currentGame.players
         .map((player) => PlayerGameInfo(
             playerId: player.playerId,
-            courseId: player.courseId,
+            gameId: widget.currentGame.id,
             scores: player.scores,
             totalScore: player.totalScore,
             place: player.place))
@@ -53,8 +54,15 @@ class _GameInprogressScreenState extends State<GameInprogressScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String currentGameJson = jsonEncode(widget.currentGame);
     await prefs.setString(widget.currentGame.id, currentGameJson);
+    await Game.saveGameToDatabase(widget.currentGame, loggedInUser!);
 
     if (gameCompleted) {
+      // Update each players total score when the game is complete.
+      for(PlayerGameInfo player in widget.currentGame.players){
+        Player currentPlayer = loggedInUser!.getPlayerFriendById(player.playerId)!;
+        currentPlayer.totalScore = currentPlayer.totalScore + player.totalScore;
+        Player.updatePlayerScoreInDatabase(currentPlayer);
+      }
       // Navigate to the PastGameDetailsScreen if the game is completed
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) {

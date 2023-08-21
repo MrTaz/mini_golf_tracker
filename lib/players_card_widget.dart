@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
-// import 'package:transparent_image/transparent_image.dart';
 
-// import 'gravatar_image_view.dart';
 import 'player.dart';
 import 'player_game_info.dart';
 import 'player_profile_widget.dart';

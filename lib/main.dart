@@ -6,37 +6,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:mini_golf_tracker/dashboard_screen.dart';
+import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/home_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'home_screen.dart';
-import 'dashboard_screen.dart';
-// import 'past_games_screen.dart';
-import 'player.dart';
-import 'players_screen.dart';
-// import 'course.dart';
-import 'databaseconnectionerror.dart';
-import 'game.dart';
-
-// import 'gamestarted.dart';
-// import 'playerListItem.dart';
-// import 'playergameinfo.dart';
 final _formKey = GlobalKey<FormState>();
-final SUPABASE_URL = 'https://hiuiqbsaqexyyyasabqo.supabase.co';
-final SUPABASE_ANON_KEY =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpdWlxYnNhcWV4eXl5YXNhYnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1MDAyNzEsImV4cCI6MjAwMDA3NjI3MX0.CgGzYPYvrU0EtnZPl83mBR8zL57mIBdXMCFxAfIBI2Y';
-final supabase = Supabase.instance.client;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: SUPABASE_URL,
-    anonKey: SUPABASE_ANON_KEY,
-  );
+  await DatabaseConnection.initialize();
   runApp(const MyApp());
 }
 
