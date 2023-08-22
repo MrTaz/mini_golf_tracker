@@ -98,9 +98,15 @@ class GameStartScreenState extends State<GameStartScreen> {
   void _initializePlayersInfo() {
     if (widget.unstartedGame != null) {
       _playersInfo = (widget.unstartedGame?.players ?? [])
-          .map((player) =>
-              PlayerGameInfo(playerId: player.playerId, gameId: widget.unstartedGame!.id, scores: player.scores))
+          .map((player) => PlayerGameInfo(
+              playerId: player.playerId,
+              gameId: widget.unstartedGame!.id,
+              playOrderPosition: player.playOrderPosition ?? 0, // Default value is 0 for null
+              scores: player.scores,
+              totalScore: player.totalScore,
+              place: player.place))
           .toList();
+      _playersInfo.sort((a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
     } else {
       _playersInfo = [];
     }
@@ -229,7 +235,9 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
-    if (widget.unstartedGame!.scheduledTime != DateTime(0)) {
+    if (widget.unstartedGame?.scheduledTime == null || widget.unstartedGame!.scheduledTime == DateTime(0)) {
+      Utilities.debugPrintWithCallerInfo(
+          "** Unstarted game did not have a scheduled Time: ${widget.unstartedGame!.scheduledTime}");
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }
 
@@ -384,6 +392,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                             newIndex -= 1;
                           }
                           final PlayerGameInfo player = _playersInfo.removeAt(oldIndex);
+                          player.playOrderPosition = newIndex;
                           _playersInfo.insert(newIndex, player);
                         });
                       },

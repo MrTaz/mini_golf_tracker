@@ -145,6 +145,7 @@ class Game {
         playerId: player.playerId,
         gameId: player.gameId,
         scores: player.scores,
+        playOrderPosition: player.playOrderPosition,
         place: player.place,
         totalScore: totalScore,
       ));
@@ -356,6 +357,9 @@ class Game {
     } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo('Failed to get games for current user: ${e.message}');
       throw DatabaseConnectionError('Failed to get games for current user: ${e.message}');
+    } catch (exception) {
+      Utilities.debugPrintWithCallerInfo("General failure loading games for current user: $exception");
+      throw Exception("General failure loading games for current user: $exception");
     }
   }
 
@@ -384,6 +388,7 @@ class Game {
           'game_id': game.id,
           'player_id': player.playerId,
           'place': player.place,
+          'play_order_position': player.playOrderPosition,
           'scores': player.scores,
           'total_score': player.totalScore,
         };

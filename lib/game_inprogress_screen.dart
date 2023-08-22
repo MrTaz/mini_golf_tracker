@@ -40,10 +40,12 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
         .map((player) => PlayerGameInfo(
             playerId: player.playerId,
             gameId: widget.currentGame.id,
+            playOrderPosition: player.playOrderPosition ?? 0,
             scores: player.scores,
             totalScore: player.totalScore,
             place: player.place))
         .toList();
+    _playersInfo.sort((a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
   }
 
   Future<void> _updateGame() async {
@@ -206,16 +208,19 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
       return sysVar * calc;
     }
 
+    String? rankString = pgi.place?.replaceAll(RegExp(r'[^\d]'), '');
+    int rank = 99;
+    if (rankString != '') {
+      rank = int.parse(rankString ?? '99');
+    }
+
     return Card(
       child: Row(
         children: [
-          Container(
+          SizedBox(
             width: 100,
             child: PlayerProfileWidget(
-              player: Player.empty().getPlayerFriendById(pgi.playerId)!,
-              isSelected: false,
-              rank: int.parse(((pgi.place) ?? '99th').replaceAll(RegExp(r'[^\d]'), '')) - 1,
-            ),
+                player: Player.empty().getPlayerFriendById(pgi.playerId)!, isSelected: false, rank: rank),
           ),
           const SizedBox(width: 2),
           Expanded(
@@ -361,20 +366,24 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   }
 
   Widget _buildPlayerCards() {
-    return ListView.builder(
-      shrinkWrap: true,
-      padding: const EdgeInsets.all(0.8),
-      itemCount: widget.currentGame.players.length,
-      itemBuilder: (BuildContext context, int index) {
-        PlayerGameInfo pgi = _playersInfo[index];
-        // Initialize scores up to the current hole if needed
-        while (pgi.scores.length < currentHole) {
-          pgi.scores.add(1);
-        }
-        int playerScore = pgi.scores.isNotEmpty ? pgi.scores[currentHole - 1] : 1;
-        int playerScoreDropDownIndex = (playerScore == 1) ? 0 : playerScore - 1;
-        return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
-      },
+    return Flexible(
+      fit: FlexFit.loose,
+      flex: 1,
+      child: ListView.builder(
+        shrinkWrap: true,
+        padding: const EdgeInsets.all(0.8),
+        itemCount: widget.currentGame.players.length,
+        itemBuilder: (BuildContext context, int index) {
+          PlayerGameInfo pgi = _playersInfo[index];
+          // Initialize scores up to the current hole if needed
+          while (pgi.scores.length < currentHole) {
+            pgi.scores.add(1);
+          }
+          int playerScore = pgi.scores.isNotEmpty ? pgi.scores[currentHole - 1] : 1;
+          int playerScoreDropDownIndex = (playerScore == 1) ? 0 : playerScore - 1;
+          return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
+        },
+      ),
     );
   }
 
