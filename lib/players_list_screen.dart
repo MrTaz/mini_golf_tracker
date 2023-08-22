@@ -7,14 +7,6 @@ import 'player.dart';
 import 'player_form_widget.dart';
 
 class PlayerListItem extends StatefulWidget {
-  final ValueChanged<String>? onChanged;
-  final Player player;
-  final bool? creatingGame;
-  final bool isSelected;
-  final ValueChanged<Player>? onPlayerSelected;
-  final int? listOrderNumber;
-  final VoidCallback? onRemove;
-
   const PlayerListItem(
       {Key? key,
       required this.player,
@@ -26,16 +18,25 @@ class PlayerListItem extends StatefulWidget {
       this.onRemove})
       : super(key: key);
 
+  final bool? creatingGame;
+  final bool isSelected;
+  final int? listOrderNumber;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<Player>? onPlayerSelected;
+  final VoidCallback? onRemove;
+  final Player player;
+
   @override
   PlayerListItemState createState() => PlayerListItemState();
 }
 
 class PlayerListItemState extends State<PlayerListItem> {
-  bool isSelected = false;
-  final bool _enabled = true;
-  bool _allowEditing = false;
   bool isDropdownOpen = false;
+  bool isSelected = false;
   final Player? loggedInUser = UserProvider().loggedInUser;
+
+  bool _allowEditing = false;
+  final bool _enabled = true;
 
   @override
   void initState() {
@@ -67,11 +68,6 @@ class PlayerListItemState extends State<PlayerListItem> {
     } else {
       return "th";
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildPlayerListItem();
   }
 
   Widget _buildPlayerListItem() {
@@ -184,5 +180,10 @@ class PlayerListItemState extends State<PlayerListItem> {
     } else {
       return const SizedBox(width: 0);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildPlayerListItem();
   }
 }

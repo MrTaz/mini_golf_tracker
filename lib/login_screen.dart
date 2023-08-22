@@ -17,6 +17,7 @@ class LoginScreen extends StatelessWidget {
   // bool _isSnackOpen = false;
   // final Snapkit _snapkit = Snapkit();
   LoginScreen({super.key});
+
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   Duration get loginTime => const Duration(milliseconds: 50);

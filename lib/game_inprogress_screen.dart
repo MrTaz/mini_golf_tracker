@@ -12,20 +12,22 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameInprogressScreen extends StatefulWidget {
-  final Game currentGame;
   const GameInprogressScreen({super.key, required this.currentGame});
+
+  final Game currentGame;
 
   @override
   GameInprogressScreenState createState() => GameInprogressScreenState();
 }
 
 class GameInprogressScreenState extends State<GameInprogressScreen> {
-  final Player? loggedInUser = UserProvider().loggedInUser;
-  late List<PlayerGameInfo> _playersInfo;
   int currentHole = 1;
   int currentHolePar = 3;
   bool gameCompleted = false;
   bool isUpdatingGame = false;
+  final Player? loggedInUser = UserProvider().loggedInUser;
+
+  late List<PlayerGameInfo> _playersInfo;
 
   @override
   void initState() {

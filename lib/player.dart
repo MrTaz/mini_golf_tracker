@@ -4,18 +4,6 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Player {
-  final int id;
-  String playerName;
-  String nickname;
-  String? email;
-  String? phoneNumber;
-  String? status;
-  num totalScore;
-  String? avatarImageLocation;
-  int ownerId;
-
-  static List<Player> players = [];
-
   Player(
       {required this.id,
       required this.playerName,
@@ -50,6 +38,18 @@ class Player {
         totalScore: json['total_score'],
         avatarImageLocation: json['avatar_image_location']);
   }
+
+  static List<Player> players = [];
+
+  String? avatarImageLocation;
+  String? email;
+  final int id;
+  String nickname;
+  int ownerId;
+  String? phoneNumber;
+  String playerName;
+  String? status;
+  num totalScore;
 
   Map<String, dynamic> toJson() {
     return {
@@ -111,14 +111,6 @@ class Player {
     //TODO: Notify player that they have been added to a game
   }
 
-  // Private method to add friend relationship
-  Future<void> _addFriend(int playerId, int friendId) async {
-    final response = await db.from('friends').upsert([
-      {'player_id': playerId, 'friend_id': friendId},
-      {'player_id': friendId, 'friend_id': playerId},
-    ]);
-  }
-
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
     final response = await db.from('players').select().eq('email', email).single();
 
@@ -127,28 +119,6 @@ class Player {
     }
 
     return Player.fromJson(response as Map<String, dynamic>);
-  }
-
-  // static Future<Player?> _getPlayerByIdFromDB(int playerId) async {
-  //   final response = await db.from('players').select().eq('id', playerId).single();
-
-  //   // if (response.status == 400 || response.status == 401) {
-  //   //   throw DatabaseConnectionError('Error retrieving player from Supabase');
-  //   // }
-
-  //   if (response == null) {
-  //     return null;
-  //   }
-
-  //   return Player.fromJson(response as Map<String, dynamic>);
-  // }
-
-  static Future<List<Player>> _getAllPlayersFromDBByOwnerId(int ownerId) async {
-    final response = await db.from('players').select().eq('owner_id', ownerId);
-    // if (response.status == 400 || response.status == 401) {
-    //   throw DatabaseConnectionError('Error loading players from Supabase');
-    // }
-    return (response as List<dynamic>).map((data) => Player.fromJson(data)).toList();
   }
 
   static Future<void> updatePlayerScoreInDatabase(Player playerToUpdate) async {
@@ -181,6 +151,36 @@ class Player {
       Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
       throw DatabaseConnectionError('Failed to update player score: ${e.message}');
     }
+  }
+
+  // Private method to add friend relationship
+  Future<void> _addFriend(int playerId, int friendId) async {
+    final response = await db.from('friends').upsert([
+      {'player_id': playerId, 'friend_id': friendId},
+      {'player_id': friendId, 'friend_id': playerId},
+    ]);
+  }
+
+  // static Future<Player?> _getPlayerByIdFromDB(int playerId) async {
+  //   final response = await db.from('players').select().eq('id', playerId).single();
+
+  //   // if (response.status == 400 || response.status == 401) {
+  //   //   throw DatabaseConnectionError('Error retrieving player from Supabase');
+  //   // }
+
+  //   if (response == null) {
+  //     return null;
+  //   }
+
+  //   return Player.fromJson(response as Map<String, dynamic>);
+  // }
+
+  static Future<List<Player>> _getAllPlayersFromDBByOwnerId(int ownerId) async {
+    final response = await db.from('players').select().eq('owner_id', ownerId);
+    // if (response.status == 400 || response.status == 401) {
+    //   throw DatabaseConnectionError('Error loading players from Supabase');
+    // }
+    return (response as List<dynamic>).map((data) => Player.fromJson(data)).toList();
   }
 
   Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {

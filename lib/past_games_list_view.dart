@@ -7,42 +7,10 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGamesListView extends StatelessWidget {
-  final Player? loggedInUser = UserProvider().loggedInUser;
-  final List<Game> previousGames = [];
   PastGamesListView({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    if (loggedInUser != null) {
-      Future.microtask(() async {
-        Utilities.debugPrintWithCallerInfo('Loading games for user ${loggedInUser!.playerName}');
-        List<Game> retrievedGames = await Game.fetchGamesForCurrentUser(loggedInUser!.id);
-        Utilities.debugPrintWithCallerInfo('Retrieved Games loaded ${retrievedGames.length}');
-        previousGames.addAll(retrievedGames);
-        Utilities.debugPrintWithCallerInfo('Games loaded ${previousGames.length}');
-      });
-    } else {
-      throw "Loading Past Games: User is not logged in";
-    }
-    return Center(
-        child: Card(
-            elevation: 0,
-            color: const Color.fromARGB(161, 255, 255, 255),
-            surfaceTintColor: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: <Widget>[
-                  const ListTile(title: Text('Past games')),
-                  Row(
-                    children: <Widget>[
-                      getGames(context),
-                    ],
-                  )
-                ],
-              ),
-            )));
-  }
+  final Player? loggedInUser = UserProvider().loggedInUser;
+  final List<Game> previousGames = [];
 
   getGames(BuildContext context) {
     if (previousGames.isNotEmpty) {
@@ -106,5 +74,38 @@ class PastGamesListView extends StatelessWidget {
           width: MediaQuery.of(context).size.width * 0.9,
           child: const Align(alignment: Alignment.center, child: Text("Let's play!")));
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loggedInUser != null) {
+      Future.microtask(() async {
+        Utilities.debugPrintWithCallerInfo('Loading games for user ${loggedInUser!.playerName}');
+        List<Game> retrievedGames = await Game.fetchGamesForCurrentUser(loggedInUser!.id);
+        Utilities.debugPrintWithCallerInfo('Retrieved Games loaded ${retrievedGames.length}');
+        previousGames.addAll(retrievedGames);
+        Utilities.debugPrintWithCallerInfo('Games loaded ${previousGames.length}');
+      });
+    } else {
+      throw "Loading Past Games: User is not logged in";
+    }
+    return Center(
+        child: Card(
+            elevation: 0,
+            color: const Color.fromARGB(161, 255, 255, 255),
+            surfaceTintColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: <Widget>[
+                  const ListTile(title: Text('Past games')),
+                  Row(
+                    children: <Widget>[
+                      getGames(context),
+                    ],
+                  )
+                ],
+              ),
+            )));
   }
 }

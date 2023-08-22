@@ -1,11 +1,4 @@
 class PlayerGameInfo {
-  final int playerId;
-  final String gameId;
-  int? playOrderPosition;
-  String? place;
-  List<int> scores;
-  int totalScore;
-
   PlayerGameInfo(
       {required this.playerId,
       required this.gameId,
@@ -13,17 +6,6 @@ class PlayerGameInfo {
       this.playOrderPosition = 0,
       this.place = "",
       this.totalScore = 0});
-
-  Map<String, dynamic> toJson() {
-    return {
-      'player_id': playerId,
-      'game_id': gameId,
-      'scores': [...scores],
-      'play_order_position': playOrderPosition,
-      'place': place ?? "",
-      'total_score': totalScore,
-    };
-  }
 
   factory PlayerGameInfo.fromJson(Map<String, dynamic> json) {
     final int playerId = json['player_id'];
@@ -41,5 +23,23 @@ class PlayerGameInfo {
       place: place,
       totalScore: totalScore,
     );
+  }
+
+  final String gameId;
+  String? place;
+  int? playOrderPosition;
+  final int playerId;
+  List<int> scores;
+  int totalScore;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'player_id': playerId,
+      'game_id': gameId,
+      'scores': [...scores],
+      'play_order_position': playOrderPosition,
+      'place': place ?? "",
+      'total_score': totalScore,
+    };
   }
 }

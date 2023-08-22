@@ -22,9 +22,20 @@ class DashboardScreen extends StatefulWidget {
 
 class DashBoardScreenState extends State<DashboardScreen> {
   late Widget body;
-  int _selectedIndex = 0;
 
   final _pages = <Widget>[const HomeScreen(), const PlayersScreen(), const PastGamesScreen(), const CoursesScreen()];
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    body = DashBoardLayout(
+      updateBottomNavChangeNotifier: (bool value) {
+        _onBottomNavigationButtonTapped(1);
+      },
+    );
+  }
+
   void _onBottomNavigationButtonTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -38,16 +49,6 @@ class DashBoardScreenState extends State<DashboardScreen> {
         body = _pages.elementAt(_selectedIndex);
       }
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    body = DashBoardLayout(
-      updateBottomNavChangeNotifier: (bool value) {
-        _onBottomNavigationButtonTapped(1);
-      },
-    );
   }
 
   @override
@@ -85,17 +86,17 @@ class DashBoardScreenState extends State<DashboardScreen> {
 }
 
 class DashBoardLayout extends StatefulWidget {
-  final ValueChanged<bool> updateBottomNavChangeNotifier;
-
   const DashBoardLayout({Key? key, required this.updateBottomNavChangeNotifier}) : super(key: key);
+
+  final ValueChanged<bool> updateBottomNavChangeNotifier;
 
   @override
   State<DashBoardLayout> createState() => _DashBoardLayoutState();
 }
 
 class _DashBoardLayoutState extends State<DashBoardLayout> {
-  final Player? loggedInUser = UserProvider().loggedInUser;
   bool isShowFriendsScreen = false;
+  final Player? loggedInUser = UserProvider().loggedInUser;
 
   @override
   Widget build(BuildContext context) {

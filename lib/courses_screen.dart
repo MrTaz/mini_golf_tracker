@@ -6,11 +6,11 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CoursesScreen extends StatefulWidget {
-  final Course? selectedCourse;
-  final bool? creatingGame;
-
   const CoursesScreen({super.key, this.creatingGame = false, this.selectedCourse});
-  
+
+  final bool? creatingGame;
+  final Course? selectedCourse;
+
   @override
   CoursesScreenState createState() => CoursesScreenState();
 }
@@ -18,9 +18,19 @@ class CoursesScreen extends StatefulWidget {
 class CoursesScreenState extends State<CoursesScreen> {
   late List<Course> courses = [];
   Course? selectedCourse; // Allow null value for selectedCourse
-  bool showCreateForm = false;
   bool showCloseButton = false;
+  bool showCreateForm = false;
+
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCourses();
+    setState(() {
+      selectedCourse = widget.selectedCourse;
+    });
+  }
 
   void fabPressed() {
     setState(() {
@@ -36,17 +46,17 @@ class CoursesScreenState extends State<CoursesScreen> {
     });
   }
 
-Future<List<Course?>> _initializeCourses() async {
-    try{
+  Future<List<Course?>> _initializeCourses() async {
+    try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final List<String>? coursesJson = prefs.getStringList('courses');
       Utilities.debugPrintWithCallerInfo("Courses saved locally: $coursesJson");
       List<Course> loadedCourses = [];
 
-      if(coursesJson != null){
+      if (coursesJson != null) {
         Utilities.debugPrintWithCallerInfo("Loading courses from sharedprefs");
         loadedCourses = coursesJson.map((String courseJson) => Course.fromJson(jsonDecode(courseJson))).toList();
-      }else{
+      } else {
         Utilities.debugPrintWithCallerInfo("Loading courses from database");
         final List<Course?> dbcourses = await Course.fetchCourses();
         if (dbcourses.isNotEmpty) {
@@ -59,20 +69,10 @@ Future<List<Course?>> _initializeCourses() async {
         courses = loadedCourses; // Update the courses list after loading
       });
       return loadedCourses; // Returns an empty list if no courses are found
-    }catch (exception){
+    } catch (exception) {
       Utilities.debugPrintWithCallerInfo("Exception when loading courses: ${exception.toString()}");
       return [];
     }
-  }
-
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCourses();
-    setState(() {
-      selectedCourse = widget.selectedCourse;
-    });
   }
 
   Future<void> _saveLocalCourses(List<Course> coursesToSaveLocally) async {
@@ -82,7 +82,7 @@ Future<List<Course?>> _initializeCourses() async {
   }
 
   Future<void> _saveCourse(Course course) async {
-    try{
+    try {
       final Course updatedCourse = await course.saveCourseToDatabase();
       final List<Course?> loadedCourses = await _initializeCourses();
       loadedCourses.add(updatedCourse);
@@ -91,7 +91,7 @@ Future<List<Course?>> _initializeCourses() async {
       setState(() {
         courses = loadedCourses.whereType<Course>().toList();
       });
-    } catch (exception){
+    } catch (exception) {
       _showDuplicateCourseDialog(context);
     }
   }
@@ -116,48 +116,6 @@ Future<List<Course?>> _initializeCourses() async {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      extendBodyBehindAppBar: false,
-      appBar: (widget.creatingGame!)
-          ? AppBar(
-              title: const Text('Select Course'),
-            )
-          : null,
-      body: Stack(
-        children: [
-          Utilities.backdropImageContinerWidget(),
-          SingleChildScrollView(
-            controller: _scrollController, 
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: showCreateForm
-                ? _createNewCourse(context)
-                : Column(
-                    children: <Widget> [
-                    ListView.builder(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.all(0.8),
-                        itemCount: courses.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return _buildCourseListItem(index);
-                        },
-                      ),
-                    ],
-                  ),
-              ),
-          ),
-        ]
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: showCloseButton ? closeCreateScreen : () => _createNewCourse(context),
-        child: showCloseButton ? const Icon(Icons.close) : const Icon(Icons.add),
-      ),
-    );
-  }
-
   Widget _buildCourseListItem(int index) {
     final Course course = courses[index];
     final bool isSelected = selectedCourse != null && course.id == selectedCourse!.id;
@@ -174,7 +132,7 @@ Future<List<Course?>> _initializeCourses() async {
               return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
             }),
             onTap: () => _showCourseDetails(course),
-            // trailing: _buildCourseSelectionSwitch(course) 
+            // trailing: _buildCourseSelectionSwitch(course)
             trailing: widget.creatingGame! ? _buildCourseSelectionSwitch(course) : null,
           ),
         ],
@@ -298,7 +256,7 @@ Future<List<Course?>> _initializeCourses() async {
                     onPressed: () async {
                       if (courseName.isNotEmpty && parStrokes.isNotEmpty) {
                         final Course newCourse = Course(
-                          id: 0,//DateTime.now().millisecondsSinceEpoch,
+                          id: 0, //DateTime.now().millisecondsSinceEpoch,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
                           parStrokes: Map<int, int>.fromIterable(
@@ -519,9 +477,50 @@ Future<List<Course?>> _initializeCourses() async {
     await prefs.setStringList('courses', coursesJson);
 
     setState(() {
-      courses = loadedCourses.whereType<Course>().toList();;
+      courses = loadedCourses.whereType<Course>().toList();
+      ;
     });
 
     Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: false,
+      appBar: (widget.creatingGame!)
+          ? AppBar(
+              title: const Text('Select Course'),
+            )
+          : null,
+      body: Stack(children: [
+        Utilities.backdropImageContinerWidget(),
+        SingleChildScrollView(
+          controller: _scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: showCreateForm
+                ? _createNewCourse(context)
+                : Column(
+                    children: <Widget>[
+                      ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(0.8),
+                        itemCount: courses.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return _buildCourseListItem(index);
+                        },
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ]),
+      floatingActionButton: FloatingActionButton(
+        onPressed: showCloseButton ? closeCreateScreen : () => _createNewCourse(context),
+        child: showCloseButton ? const Icon(Icons.close) : const Icon(Icons.add),
+      ),
+    );
   }
 }

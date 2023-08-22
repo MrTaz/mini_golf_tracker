@@ -5,11 +5,11 @@ import 'gravatar_image_view.dart';
 import 'player.dart';
 
 class PlayerProfileWidget extends StatefulWidget {
+  const PlayerProfileWidget({super.key, required this.player, this.rank, required this.isSelected});
+
+  final bool isSelected;
   final Player player;
   final int? rank;
-  final bool isSelected;
-
-  const PlayerProfileWidget({super.key, required this.player, this.rank, required this.isSelected});
 
   @override
   PlayerProfileWidgetState createState() => PlayerProfileWidgetState();

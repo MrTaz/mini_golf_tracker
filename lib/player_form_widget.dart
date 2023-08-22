@@ -5,27 +5,39 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'player.dart';
 
 class PlayerForm extends StatefulWidget {
-  final Player? player;
-  final bool allowEditing;
-  final VoidCallback onSaveChanges;
-  final String editingOrAdding;
-
   const PlayerForm(
       {super.key, this.player, required this.allowEditing, required this.onSaveChanges, required this.editingOrAdding});
+
+  final bool allowEditing;
+  final String editingOrAdding;
+  final VoidCallback onSaveChanges;
+  final Player? player;
 
   @override
   PlayerFormState createState() => PlayerFormState();
 }
 
 class PlayerFormState extends State<PlayerForm> {
-  late TextEditingController _playerNameController;
-  late TextEditingController _nicknameController;
-  late TextEditingController _emailController;
-  late TextEditingController _phoneNumberController;
-  late TextEditingController _statusController;
   // late Player currentUser;
   Player? currentUser = UserProvider().loggedInUser;
+
   bool isDuplicate = false;
+
+  late TextEditingController _emailController;
+  late TextEditingController _nicknameController;
+  late TextEditingController _phoneNumberController;
+  late TextEditingController _playerNameController;
+  late TextEditingController _statusController;
+
+  @override
+  void dispose() {
+    _playerNameController.dispose();
+    _nicknameController.dispose();
+    _emailController.dispose();
+    _phoneNumberController.dispose();
+    _statusController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -36,16 +48,6 @@ class PlayerFormState extends State<PlayerForm> {
     _emailController = TextEditingController(text: widget.player?.email ?? '');
     _phoneNumberController = TextEditingController(text: widget.player?.phoneNumber ?? '');
     _statusController = TextEditingController(text: widget.player?.status ?? '');
-  }
-
-  @override
-  void dispose() {
-    _playerNameController.dispose();
-    _nicknameController.dispose();
-    _emailController.dispose();
-    _phoneNumberController.dispose();
-    _statusController.dispose();
-    super.dispose();
   }
 
   bool get isEditing => widget.player != null;

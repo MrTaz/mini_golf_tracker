@@ -5,38 +5,12 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Course {
-  final int id;
-  String name;
-  final int numberOfHoles;
-  final Map<int, int> parStrokes; // Map to store par strokes for each hole
-
   Course({
     required this.id,
     required this.name,
     required this.numberOfHoles,
     required this.parStrokes,
   });
-
-  factory Course.fromMap(Map<String, dynamic> map) {
-    final parStrokes =
-        (map['parStrokes'] as Map<String, dynamic>).map((key, value) => MapEntry(int.parse(key), value as int));
-
-    return Course(
-      id: map['id'] as int,
-      name: map['name'] as String,
-      numberOfHoles: map['numberOfHoles'] as int,
-      parStrokes: parStrokes,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'number_of_holes': numberOfHoles,
-      'par_strokes': Map<String, int>.from(parStrokes.map((key, value) => MapEntry(key.toString(), value))),
-    };
-  }
 
   factory Course.fromJson(Map<String, dynamic> json) {
     final int id = json['id'];
@@ -51,6 +25,32 @@ class Course {
       numberOfHoles: numberOfHoles,
       parStrokes: parStrokes,
     );
+  }
+
+  factory Course.fromMap(Map<String, dynamic> map) {
+    final parStrokes =
+        (map['parStrokes'] as Map<String, dynamic>).map((key, value) => MapEntry(int.parse(key), value as int));
+
+    return Course(
+      id: map['id'] as int,
+      name: map['name'] as String,
+      numberOfHoles: map['numberOfHoles'] as int,
+      parStrokes: parStrokes,
+    );
+  }
+
+  final int id;
+  String name;
+  final int numberOfHoles;
+  final Map<int, int> parStrokes; // Map to store par strokes for each hole
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'number_of_holes': numberOfHoles,
+      'par_strokes': Map<String, int>.from(parStrokes.map((key, value) => MapEntry(key.toString(), value))),
+    };
   }
 
   int getParValue(int holeNumber) {
@@ -122,7 +122,7 @@ class Course {
       final updatedCourse = await db.from('courses').insert([courseData]).select().single();
       Utilities.debugPrintWithCallerInfo("Updated course returned: $updatedCourse");
 
-      return Course.fromJson(updatedCourse); 
+      return Course.fromJson(updatedCourse);
     } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo('Failed to save course: ${e.message}');
       throw DatabaseConnectionError('Failed to save course: ${e.message}');

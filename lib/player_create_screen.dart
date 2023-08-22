@@ -4,10 +4,10 @@ import 'player.dart';
 import 'player_form_widget.dart';
 
 class PlayerCreateScreen extends StatefulWidget {
-  final List<Player> players;
-  final VoidCallback onSavePlayer;
-
   const PlayerCreateScreen({super.key, required this.players, required this.onSavePlayer});
+
+  final VoidCallback onSavePlayer;
+  final List<Player> players;
 
   @override
   PlayerCreateScreenState createState() => PlayerCreateScreenState();

@@ -9,21 +9,29 @@ import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameDetailsScreen extends StatefulWidget {
-  final Game passedGame;
-
   const PastGameDetailsScreen({Key? key, required this.passedGame}) : super(key: key);
+
+  final Game passedGame;
 
   @override
   PastGameDetailsScreenState createState() => PastGameDetailsScreenState();
 }
 
 class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with SingleTickerProviderStateMixin {
-  ConfettiController confettiController = ConfettiController(duration: const Duration(seconds: 2));
   static const routeName = '/gameDetails';
+
   List<Player> clickedPlayer = [];
   List<PlayerGameInfo> clickedPlayerScores = [];
+  ConfettiController confettiController = ConfettiController(duration: const Duration(seconds: 2));
   List<PlayerGameInfo> sortedPlayerScores = [];
+
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    confettiController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -36,10 +44,42 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
     // _scrollController = ScrollController();
   }
 
-  @override
-  void dispose() {
-    confettiController.dispose();
-    super.dispose();
+  void handlePlayerClick(Player player) {
+    setState(() {
+      _scrollController.animateTo(
+        100,
+        curve: Curves.fastOutSlowIn,
+        duration: const Duration(milliseconds: 500),
+      );
+      if (clickedPlayer.contains(player)) {
+        clickedPlayer.remove(player);
+        clickedPlayerScores.remove(_getPlayerGameInfo(player.id));
+      } else {
+        clickedPlayer.add(player);
+        var currentClickPlayerGameInfo = _getPlayerGameInfo(player.id);
+        if (currentClickPlayerGameInfo != null) {
+          clickedPlayerScores.add(currentClickPlayerGameInfo);
+        }
+      }
+    });
+  }
+
+  // Widget getPlayersList(BuildContext context, List<PlayerGameInfo> players) {
+  //   return ListView.builder(
+  //       padding: const EdgeInsets.all(8),
+  //       itemCount: players.length,
+  //       itemBuilder: (BuildContext context, int index) {
+  //         return ListView.builder(
+  //             itemCount: players[index].scores.length,
+  //             itemBuilder: (context, int sindex) {
+  //               return ListTile(title: Text("Hole #$sindex, score: ${players[index].scores[sindex]}"));
+  //             });
+  //       });
+  // }
+
+  PlayerGameInfo? _getPlayerGameInfo(int playerId) {
+    return sortedPlayerScores.firstWhere((gameInfo) => gameInfo.playerId == playerId,
+        orElse: () => throw Exception("No PlayerGameInfo found for playerId: $playerId"));
   }
 
   @override
@@ -115,43 +155,5 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
             }
           },
         ));
-  }
-
-  // Widget getPlayersList(BuildContext context, List<PlayerGameInfo> players) {
-  //   return ListView.builder(
-  //       padding: const EdgeInsets.all(8),
-  //       itemCount: players.length,
-  //       itemBuilder: (BuildContext context, int index) {
-  //         return ListView.builder(
-  //             itemCount: players[index].scores.length,
-  //             itemBuilder: (context, int sindex) {
-  //               return ListTile(title: Text("Hole #$sindex, score: ${players[index].scores[sindex]}"));
-  //             });
-  //       });
-  // }
-
-  PlayerGameInfo? _getPlayerGameInfo(int playerId) {
-    return sortedPlayerScores.firstWhere((gameInfo) => gameInfo.playerId == playerId,
-        orElse: () => throw Exception("No PlayerGameInfo found for playerId: $playerId"));
-  }
-
-  void handlePlayerClick(Player player) {
-    setState(() {
-      _scrollController.animateTo(
-        100,
-        curve: Curves.fastOutSlowIn,
-        duration: const Duration(milliseconds: 500),
-      );
-      if (clickedPlayer.contains(player)) {
-        clickedPlayer.remove(player);
-        clickedPlayerScores.remove(_getPlayerGameInfo(player.id));
-      } else {
-        clickedPlayer.add(player);
-        var currentClickPlayerGameInfo = _getPlayerGameInfo(player.id);
-        if (currentClickPlayerGameInfo != null) {
-          clickedPlayerScores.add(currentClickPlayerGameInfo);
-        }
-      }
-    });
   }
 }

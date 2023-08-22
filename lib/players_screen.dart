@@ -8,10 +8,10 @@ import 'players_list_screen.dart';
 import 'utilities.dart';
 
 class PlayersScreen extends StatefulWidget {
+  const PlayersScreen({Key? key, this.creatingGame = false, this.currentlySelectedPlayers}) : super(key: key);
+
   final bool? creatingGame;
   final List<PlayerGameInfo?>? currentlySelectedPlayers;
-
-  const PlayersScreen({Key? key, this.creatingGame = false, this.currentlySelectedPlayers}) : super(key: key);
 
   @override
   PlayersScreenState createState() => PlayersScreenState();
@@ -21,8 +21,14 @@ class PlayersScreenState extends State<PlayersScreen> {
   final Player? loggedInUser = UserProvider().loggedInUser;
   final List<Player> players = [];
   final List<Player> selectedPlayers = [];
-  bool showNewPlayerForm = false;
   bool showCloseButton = false;
+  bool showNewPlayerForm = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayers();
+  }
 
   void fabPressed() {
     setState(() {
@@ -71,15 +77,19 @@ class PlayersScreenState extends State<PlayersScreen> {
           selectedPlayers.add(lookedUpPlayer);
         }
       }
-    }else{
+    } else {
       players.addAll(loggedInUser!.getAllPlayerFriends());
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _initializePlayers();
+  Widget _buildPlayerListItem(int index, bool isSelected) {
+    return PlayerListItem(
+      key: Key('counter-$index'),
+      player: players[index],
+      creatingGame: widget.creatingGame,
+      onPlayerSelected: _handlePlayerSelection,
+      isSelected: isSelected,
+    );
   }
 
   @override
@@ -97,29 +107,28 @@ class PlayersScreenState extends State<PlayersScreen> {
           Utilities.backdropImageContinerWidget(),
           SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: showNewPlayerForm
-                ? PlayerCreateScreen(players: players, onSavePlayer: savePlayer)
-                : Column(
-                  children: <Widget>[
-                    ListView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.all(0.8),
-                      itemCount: players.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        bool isSelected = selectedPlayers.contains(players[index]);
-                        return _buildPlayerListItem(index, isSelected);                              
-                      },
-                    ),
-                    (widget.creatingGame!)
-                      ? ElevatedButton(
-                          onPressed: _addPlayers,
-                          child: const Text('Add selected players to game.'),
-                        )
-                      : const SizedBox(height: 16.0),
-                  ],
-                )
-            ),
+                padding: const EdgeInsets.all(16.0),
+                child: showNewPlayerForm
+                    ? PlayerCreateScreen(players: players, onSavePlayer: savePlayer)
+                    : Column(
+                        children: <Widget>[
+                          ListView.builder(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.all(0.8),
+                            itemCount: players.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              bool isSelected = selectedPlayers.contains(players[index]);
+                              return _buildPlayerListItem(index, isSelected);
+                            },
+                          ),
+                          (widget.creatingGame!)
+                              ? ElevatedButton(
+                                  onPressed: _addPlayers,
+                                  child: const Text('Add selected players to game.'),
+                                )
+                              : const SizedBox(height: 16.0),
+                        ],
+                      )),
           )
         ],
       ),
@@ -129,16 +138,4 @@ class PlayersScreenState extends State<PlayersScreen> {
       ),
     );
   }
-
-  Widget _buildPlayerListItem(int index, bool isSelected){
-    return PlayerListItem(
-      key: Key('counter-$index'),
-      player: players[index],
-      creatingGame: widget.creatingGame,
-      onPlayerSelected: _handlePlayerSelection,
-      isSelected: isSelected,
-    );
-  }
-
 }
-

@@ -2,6 +2,17 @@ import 'package:flutter/widgets.dart';
 
 /// A Widget which makes its child bounce up and down.
 class BouncyAnimation extends StatefulWidget {
+  const BouncyAnimation(
+      {this.duration = const Duration(seconds: 1),
+      required this.lift,
+      this.pause = 0,
+      this.ratio = 0.25,
+      required this.child,
+      super.key});
+
+  /// the Widget which will bounce
+  final Widget child;
+
   /// total duration of the bounce cycle, including pause
   final Duration duration;
 
@@ -14,17 +25,6 @@ class BouncyAnimation extends StatefulWidget {
   /// ratio of lift to drop phases
   final double ratio;
 
-  /// the Widget which will bounce
-  final Widget child;
-
-  const BouncyAnimation(
-      {this.duration = const Duration(seconds: 1),
-      required this.lift,
-      this.pause = 0,
-      this.ratio = 0.25,
-      required this.child,
-      super.key});
-
   @override
   BouncyAnimationState createState() => BouncyAnimationState();
 }
@@ -33,16 +33,16 @@ class BouncyAnimationState extends State<BouncyAnimation> with TickerProviderSta
   late AnimationController _controller;
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this);
     _controller.repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -53,15 +53,6 @@ class BouncyAnimationState extends State<BouncyAnimation> with TickerProviderSta
 }
 
 class _BouncyAnimation extends StatelessWidget {
-  final AnimationController controller;
-  final Animation<double> upPhase;
-  final Animation<double> downPhase;
-  final Animation<double> pausePhase;
-  final double ratio;
-  final double lift;
-  final double pause;
-  final Widget child;
-
   _BouncyAnimation({
     required this.controller,
     required this.lift,
@@ -74,6 +65,15 @@ class _BouncyAnimation extends StatelessWidget {
             parent: controller, curve: Interval(ratio * (1 - pause), (1.0 - pause), curve: Curves.bounceOut))),
         pausePhase =
             Tween<double>(begin: 0, end: 0).animate(CurvedAnimation(parent: controller, curve: Interval(1 - pause, 1)));
+
+  final Widget child;
+  final AnimationController controller;
+  final Animation<double> downPhase;
+  final double lift;
+  final double pause;
+  final Animation<double> pausePhase;
+  final double ratio;
+  final Animation<double> upPhase;
 
   Widget _buildAnimation(BuildContext context, Widget? child) {
     Animation<double> phase = pausePhase;

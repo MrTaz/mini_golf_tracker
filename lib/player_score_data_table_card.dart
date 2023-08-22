@@ -4,10 +4,6 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 
 class PlayerScoreDataTable extends StatefulWidget {
-  final List<Player> clickedPlayers;
-  final List<PlayerGameInfo> clickedPlayerScores;
-  final Game game;
-
   const PlayerScoreDataTable({
     Key? key,
     required this.clickedPlayers,
@@ -15,40 +11,15 @@ class PlayerScoreDataTable extends StatefulWidget {
     required this.game,
   }) : super(key: key);
 
+  final List<PlayerGameInfo> clickedPlayerScores;
+  final List<Player> clickedPlayers;
+  final Game game;
+
   @override
   PlayerScoreDataTableState createState() => PlayerScoreDataTableState();
 }
 
 class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
-  @override
-  Widget build(BuildContext context) {
-    if (widget.clickedPlayers.isEmpty) {
-      return const Center(
-        child: Text('No players selected.'),
-      );
-    }
-    // widget.clickedPlayers
-    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
-    // widget.clickedPlayerScores
-    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
-
-    return Container(
-        height: 48.0 * (widget.game.course.numberOfHoles + 2),
-        color: Colors.white.withOpacity(0.8),
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              horizontalMargin: 0,
-              columnSpacing: 24.0,
-              columns: _buildColumns(),
-              rows: _buildRows(),
-            ),
-          ),
-        ));
-  }
-
   List<DataColumn> _buildColumns() {
     List<DataColumn> columns = [];
 
@@ -229,5 +200,34 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       totalScore += score;
     }
     return totalScore;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.clickedPlayers.isEmpty) {
+      return const Center(
+        child: Text('No players selected.'),
+      );
+    }
+    // widget.clickedPlayers
+    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player: ${widget.clickedPlayers} ${element.toJson()}'));
+    // widget.clickedPlayerScores
+    //     .forEach((element) => Utilities.debugPrintWithCallerInfo('Clicked Player Scores: ${widget.clickedPlayerScores} ${element.toJson()}'));
+
+    return Container(
+        height: 48.0 * (widget.game.course.numberOfHoles + 2),
+        color: Colors.white.withOpacity(0.8),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              horizontalMargin: 0,
+              columnSpacing: 24.0,
+              columns: _buildColumns(),
+              rows: _buildRows(),
+            ),
+          ),
+        ));
   }
 }

@@ -15,36 +15,10 @@ class GameCardWidget extends StatefulWidget {
 }
 
 class GameCardWidgetState extends State<GameCardWidget> {
-  Future<void> _navigateToGameCreateScreen() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) {
-        return GameStartScreen(callback: () {
-          updateGameCard();
-        });
-      }),
-    );
-    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
+  @override
+  void initState() {
     setState(() {}); // Refresh the widget after creating a new game
-  }
-
-  Widget _buildCreateNewGameCard() {
-    return Card(
-      elevation: 6,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: <Widget>[
-            ListTile(
-              title: const Text('Create a new game'),
-              trailing: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _navigateToGameCreateScreen,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    super.initState();
   }
 
   updateGameCard() async {
@@ -78,10 +52,36 @@ class GameCardWidgetState extends State<GameCardWidget> {
     setState(() {}); // Refresh the widget after deletion
   }
 
-  @override
-  void initState() {
+  Future<void> _navigateToGameCreateScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) {
+        return GameStartScreen(callback: () {
+          updateGameCard();
+        });
+      }),
+    );
+    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {}); // Refresh the widget after creating a new game
-    super.initState();
+  }
+
+  Widget _buildCreateNewGameCard() {
+    return Card(
+      elevation: 6,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            ListTile(
+              title: const Text('Create a new game'),
+              trailing: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _navigateToGameCreateScreen,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override

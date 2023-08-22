@@ -21,9 +21,9 @@ class GameCreateScreen extends StatefulWidget {
 class GameCreateScreenState extends State<GameCreateScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
+  late DateTime _scheduledTime;
   Course? _selectedCourse;
   late List<Player> _selectedPlayers;
-  late DateTime _scheduledTime;
 
   @override
   void initState() {

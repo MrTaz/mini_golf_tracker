@@ -4,12 +4,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class GravatarImageView extends StatelessWidget {
+  const GravatarImageView({Key? key, required this.email, this.width, this.height = 0.0}) : super(key: key);
+
+  final String defaultFriendAvatarImageStr = "assets/images/avatars_3d_avatar_28.png";
   final String email;
   final double? height;
   final double? width;
-  final String defaultFriendAvatarImageStr = "assets/images/avatars_3d_avatar_28.png";
+
   static final Map<String, String> _GravatarImgUrlCache = {};
-  const GravatarImageView({Key? key, required this.email, this.width, this.height = 0.0}) : super(key: key);
 
   Future<String> getFriendAvatarImage() async {
     return Future.microtask(() async {
@@ -28,19 +30,6 @@ class GravatarImageView extends StatelessWidget {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-        child: FutureBuilder<String>(
-            future: getFriendAvatarImage(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if (snapshot.hasData) {
-                return _fadeInWidget(snapshot.data.toString());
-              }
-              return Text(defaultFriendAvatarImageStr);
-            }));
-  }
-
   Widget _fadeInWidget(imgUrlStr) {
     return FadeInImage(
         placeholder: AssetImage(defaultFriendAvatarImageStr),
@@ -52,5 +41,18 @@ class GravatarImageView extends StatelessWidget {
         fit: BoxFit.cover,
         width: width != 0.0 ? width : null,
         height: height != 0.0 ? height : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: FutureBuilder<String>(
+            future: getFriendAvatarImage(),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if (snapshot.hasData) {
+                return _fadeInWidget(snapshot.data.toString());
+              }
+              return Text(defaultFriendAvatarImageStr);
+            }));
   }
 }

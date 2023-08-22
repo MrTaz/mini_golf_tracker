@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course.dart';
 
 class CourseListItem extends StatefulWidget {
-  final Course course;
-  final VoidCallback onDelete;
-  final VoidCallback onModify;
-
   const CourseListItem({
-    Key? key, 
+    Key? key,
     required this.course,
     required this.onDelete,
     required this.onModify,
-  }): super(key: key);
+  }) : super(key: key);
+
+  final Course course;
+  final VoidCallback onDelete;
+  final VoidCallback onModify;
 
   @override
   CourseListItemState createState() => CourseListItemState();

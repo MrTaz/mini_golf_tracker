@@ -1,5 +1,3 @@
-// import 'dart:js_interop';
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -57,13 +55,53 @@ class HomePage extends StatefulWidget {
 }
 
 class MainScaffold extends State<HomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  Widget body = const HomeScreen();
-  Player? loggedInPlayer;
-  bool _userLoggedIn = false;
   // static late AssetImage backgroundImage;
 
   MainScaffold();
+
+  Widget body = const HomeScreen();
+  Player? loggedInPlayer;
+  Image profileImage = Image.asset(
+    "assets/images/avatars_3d_avatar_28.png",
+    width: 120,
+  );
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _userLoggedIn = false;
+
+  @override
+  void didChangeDependencies() {
+    precacheImage(AppImages.backgroundMainScreens, context);
+    super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // backgroundImage = const AppImage.backgroundMainScreens;
+    _initializeLoggedInPlayer();
+    // Future.microtask(() async {
+    //   WidgetsFlutterBinding.ensureInitialized();
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final email = prefs.getString("email");
+    //   setState(() async {
+    //     Utilities.debugPrintWithCallerInfo('Setting init state, $email');
+    //     if (email == null) {
+    //       logout();
+    //     } else {
+    //       loggedInPlayer = await Player.empty().getPlayerByEmail(email);
+    //       isLoggedIn(true);
+    //       changeProfileImage();
+    //       body = const DashboardScreen();
+    //     }
+    //   });
+    // });
+  }
 
   void changeBodyCallback(Widget nextPage) {
     body = nextPage;
@@ -71,6 +109,34 @@ class MainScaffold extends State<HomePage> {
 
   void isLoggedIn(bool loggedIn) {
     setState(() => _userLoggedIn = loggedIn);
+  }
+
+  void logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove("email");
+    setState(() {
+      loggedInPlayer = null;
+      isLoggedIn(false);
+      body = const HomeScreen();
+      final currentState = _scaffoldKey.currentState;
+      if (currentState != null && currentState.isDrawerOpen) {
+        _scaffoldKey.currentState!.openEndDrawer();
+      }
+    });
+  }
+
+  void changeProfileImage() async {
+    setState(() {
+      Future.microtask(() async {
+        Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
+        SharedPreferences pref = await SharedPreferences.getInstance();
+        String loggedInEmail = pref.getString("email") as String;
+        if (loggedInEmail != "") {
+          String gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
+          profileImage = Image.network(gravatarImgUrl);
+        }
+      });
+    });
   }
 
   Future<void> _initializeLoggedInPlayer() async {
@@ -97,107 +163,6 @@ class MainScaffold extends State<HomePage> {
         logout();
       }
     }
-  }
-
-  void logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove("email");
-    setState(() {
-      loggedInPlayer = null;
-      isLoggedIn(false);
-      body = const HomeScreen();
-      final currentState = _scaffoldKey.currentState;
-      if (currentState != null && currentState.isDrawerOpen) {
-        _scaffoldKey.currentState!.openEndDrawer();
-      }
-    });
-  }
-
-  Image profileImage = Image.asset(
-    "assets/images/avatars_3d_avatar_28.png",
-    width: 120,
-  );
-
-  void changeProfileImage() async {
-    setState(() {
-      Future.microtask(() async {
-        Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
-        SharedPreferences pref = await SharedPreferences.getInstance();
-        String loggedInEmail = pref.getString("email") as String;
-        if (loggedInEmail != "") {
-          String gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
-          profileImage = Image.network(gravatarImgUrl);
-        }
-      });
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // backgroundImage = const AppImage.backgroundMainScreens;
-    _initializeLoggedInPlayer();
-    // Future.microtask(() async {
-    //   WidgetsFlutterBinding.ensureInitialized();
-    //   final prefs = await SharedPreferences.getInstance();
-    //   final email = prefs.getString("email");
-    //   setState(() async {
-    //     Utilities.debugPrintWithCallerInfo('Setting init state, $email');
-    //     if (email == null) {
-    //       logout();
-    //     } else {
-    //       loggedInPlayer = await Player.empty().getPlayerByEmail(email);
-    //       isLoggedIn(true);
-    //       changeProfileImage();
-    //       body = const DashboardScreen();
-    //     }
-    //   });
-    // });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: Future.wait([
-          precacheImage(AppImages.backgroundMainScreens, context),
-        ]),
-        builder: (BuildContext context, AsyncSnapshot snap) {
-          if (snap.connectionState != ConnectionState.waiting) {
-            return Scaffold(
-              key: _scaffoldKey,
-              appBar: AppBar(
-                title: const Text('Mini Golf Tracker'),
-              ),
-              drawer: Drawer(
-                child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
-              ),
-              body: body,
-            );
-          } else {
-            return Container(
-              color: Colors.green[600],
-              child: Center(
-                child: BouncyAnimation(
-                    duration: const Duration(seconds: 1),
-                    lift: 80,
-                    ratio: 0.25,
-                    pause: 0.01,
-                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
-              ),
-            );
-          }
-        });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    precacheImage(AppImages.backgroundMainScreens, context);
-    super.didChangeDependencies();
   }
 
   List<Widget> _buildDrawerList(BuildContext context) {
@@ -238,6 +203,40 @@ class MainScaffold extends State<HomePage> {
             )
           ])
     ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: Future.wait([
+          precacheImage(AppImages.backgroundMainScreens, context),
+        ]),
+        builder: (BuildContext context, AsyncSnapshot snap) {
+          if (snap.connectionState != ConnectionState.waiting) {
+            return Scaffold(
+              key: _scaffoldKey,
+              appBar: AppBar(
+                title: const Text('Mini Golf Tracker'),
+              ),
+              drawer: Drawer(
+                child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
+              ),
+              body: body,
+            );
+          } else {
+            return Container(
+              color: Colors.green[600],
+              child: Center(
+                child: BouncyAnimation(
+                    duration: const Duration(seconds: 1),
+                    lift: 80,
+                    ratio: 0.25,
+                    pause: 0.01,
+                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
+              ),
+            );
+          }
+        });
   }
 }
 

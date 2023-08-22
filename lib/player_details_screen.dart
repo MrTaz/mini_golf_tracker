@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'player.dart';
 
 class PlayerDetailsScreen extends StatefulWidget {
-  final Player player;
   const PlayerDetailsScreen({super.key, required this.player});
+
+  final Player player;
 
   @override
   PlayerDetailsScreenState createState() => PlayerDetailsScreenState();
@@ -17,6 +18,20 @@ class PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
   void initState() {
     super.initState();
     _player = widget.player;
+  }
+
+  Widget _buildFormField(
+    String label,
+    String? value,
+    ValueChanged<String?> onChanged,
+  ) {
+    return TextFormField(
+      initialValue: value ?? '',
+      decoration: InputDecoration(
+        labelText: label,
+      ),
+      onChanged: onChanged,
+    );
   }
 
   @override
@@ -64,20 +79,6 @@ class PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildFormField(
-    String label,
-    String? value,
-    ValueChanged<String?> onChanged,
-  ) {
-    return TextFormField(
-      initialValue: value ?? '',
-      decoration: InputDecoration(
-        labelText: label,
-      ),
-      onChanged: onChanged,
     );
   }
 }

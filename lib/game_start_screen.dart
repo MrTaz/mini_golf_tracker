@@ -14,9 +14,10 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameStartScreen extends StatefulWidget {
-  final Game? unstartedGame;
-  final Function()? callback;
   const GameStartScreen({super.key, this.unstartedGame, this.callback});
+
+  final Function()? callback;
+  final Game? unstartedGame;
 
   @override
   GameStartScreenState createState() => GameStartScreenState();
@@ -24,10 +25,19 @@ class GameStartScreen extends StatefulWidget {
 
 class GameStartScreenState extends State<GameStartScreen> {
   final Player? loggedInUser = UserProvider().loggedInUser;
-  late List<PlayerGameInfo> _playersInfo;
-  late Course? _newGameCourse = null;
-  late TextEditingController _nameController;
+
   bool _isCreatingGame = false;
+  late TextEditingController _nameController;
+  late Course? _newGameCourse = null;
+  late List<PlayerGameInfo> _playersInfo;
+
+  @override
+  void dispose() {
+    if (_isCreatingGame) {
+      _nameController.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -451,14 +461,6 @@ class GameStartScreenState extends State<GameStartScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    if (_isCreatingGame) {
-      _nameController.dispose();
-    }
-    super.dispose();
   }
 
   @override

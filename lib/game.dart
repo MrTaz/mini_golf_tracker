@@ -14,16 +14,6 @@ import 'package:recase/recase.dart';
 import 'package:word_generator/word_generator.dart';
 
 class Game {
-  late final String name;
-  final String id;
-  Course course;
-  final List<PlayerGameInfo> players;
-  DateTime? startTime;
-  DateTime scheduledTime;
-  DateTime? completedTime;
-  String status = "unstarted_game";
-  late Map<PlayerGameInfo, Map<int, int>> scores;
-
   Game(
       {required this.name,
       required this.course,
@@ -36,19 +26,6 @@ class Game {
       : id = id ?? const Uuid().v4(),
         status = status ?? "unstarted_game" {
     scores = _initializeScores(players, course.numberOfHoles);
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'course': course.toJson(),
-      'players': players.map((player) => player.toJson()).toList(),
-      'start_time': startTime?.toIso8601String(),
-      'scheduled_time': scheduledTime.toIso8601String(),
-      'completed_time': completedTime?.toIso8601String(),
-      'status': status
-    };
   }
 
   factory Game.fromJson(String json) {
@@ -75,12 +52,27 @@ class Game {
         status: status);
   }
 
-  static Map<PlayerGameInfo, Map<int, int>> _initializeScores(List<PlayerGameInfo> players, int numberOfHoles) {
-    final scores = <PlayerGameInfo, Map<int, int>>{};
-    for (final player in players) {
-      scores[player] = {for (var holeNumber in List.generate(numberOfHoles, (index) => index + 1)) holeNumber: 0};
-    }
-    return scores;
+  DateTime? completedTime;
+  Course course;
+  final String id;
+  late final String name;
+  final List<PlayerGameInfo> players;
+  DateTime scheduledTime;
+  late Map<PlayerGameInfo, Map<int, int>> scores;
+  DateTime? startTime;
+  String status = "unstarted_game";
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'course': course.toJson(),
+      'players': players.map((player) => player.toJson()).toList(),
+      'start_time': startTime?.toIso8601String(),
+      'scheduled_time': scheduledTime.toIso8601String(),
+      'completed_time': completedTime?.toIso8601String(),
+      'status': status
+    };
   }
 
   void addPlayer(PlayerGameInfo player) {
@@ -415,5 +407,13 @@ class Game {
       Utilities.debugPrintWithCallerInfo('General failure to update player score: $exception');
       throw Exception('Failed to update player score: $exception');
     }
+  }
+
+  static Map<PlayerGameInfo, Map<int, int>> _initializeScores(List<PlayerGameInfo> players, int numberOfHoles) {
+    final scores = <PlayerGameInfo, Map<int, int>>{};
+    for (final player in players) {
+      scores[player] = {for (var holeNumber in List.generate(numberOfHoles, (index) => index + 1)) holeNumber: 0};
+    }
+    return scores;
   }
 }

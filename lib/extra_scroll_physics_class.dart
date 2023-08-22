@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/always_scrollable_overscroll_physics_class.dart';
 
 class OverscrollList extends StatelessWidget {
+  OverscrollList({super.key});
+
+  final double _bottomOverscroll = 200;
   final ScrollController _scrollCtrl = ScrollController();
   final double _topOverscroll = 200;
-  final double _bottomOverscroll = 200;
-
-  OverscrollList({super.key});
 
   void _scrollList(Offset offset) {
     _scrollCtrl.jumpTo(

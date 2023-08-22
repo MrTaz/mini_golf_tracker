@@ -8,9 +8,9 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'utilities.dart';
 
 class PastGamesScreen extends StatefulWidget {
-  final Game? currentlySelectedGame;
-
   const PastGamesScreen({Key? key, this.currentlySelectedGame}) : super(key: key);
+
+  final Game? currentlySelectedGame;
 
   @override
   PastGameScreenState createState() => PastGameScreenState();
@@ -20,6 +20,12 @@ class PastGameScreenState extends State<PastGamesScreen> {
   final Player? loggedInUser = UserProvider().loggedInUser;
   List<Game> pastGames = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadPastGames();
+  }
+
   _loadPastGames() async {
     List<Game?> loadedPastGames = await Game.getLocallySavedGames(gameStatusTypes: ["completed"]);
     List<Game> filteredLoadedPastGames = loadedPastGames.whereType<Game>().toList();
@@ -28,10 +34,17 @@ class PastGameScreenState extends State<PastGamesScreen> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadPastGames();
+  Widget _buildPastGameListItem(int index, bool isSelected) {
+    return PastGameListItem(
+      key: Key('pastgame-$index'),
+      pastGame: pastGames[index],
+      isSelected: isSelected,
+      onPastGameCardTap: (value) => {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+          return PastGameDetailsScreen(passedGame: pastGames[index]);
+        }))
+      },
+    );
   }
 
   @override
@@ -63,19 +76,6 @@ class PastGameScreenState extends State<PastGamesScreen> {
           ),
         ),
       ]),
-    );
-  }
-
-  Widget _buildPastGameListItem(int index, bool isSelected) {
-    return PastGameListItem(
-      key: Key('pastgame-$index'),
-      pastGame: pastGames[index],
-      isSelected: isSelected,
-      onPastGameCardTap: (value) => {
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-          return PastGameDetailsScreen(passedGame: pastGames[index]);
-        }))
-      },
     );
   }
 }

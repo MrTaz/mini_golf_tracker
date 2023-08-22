@@ -6,26 +6,26 @@ import 'player_game_info.dart';
 import 'player_profile_widget.dart';
 
 class PlayersCard extends StatefulWidget {
-  final List<int>? sortedPlayerIds;
-  final String? cardTitle;
-  final List<PlayerGameInfo>? sortedPlayerScores;
-  final ValueChanged<Player>? onTap;
-  final ValueChanged<bool>? onPlayerCardTap;
-
   const PlayersCard(
       {Key? key, this.cardTitle, this.sortedPlayerIds, this.sortedPlayerScores, this.onTap, this.onPlayerCardTap})
       : super(key: key);
+
+  final String? cardTitle;
+  final ValueChanged<bool>? onPlayerCardTap;
+  final ValueChanged<Player>? onTap;
+  final List<int>? sortedPlayerIds;
+  final List<PlayerGameInfo>? sortedPlayerScores;
 
   @override
   PlayersCardState createState() => PlayersCardState();
 }
 
 class PlayersCardState extends State<PlayersCard> {
-  List<int> selectedPlayerIds = [];
   Player? loggedInUser = UserProvider().loggedInUser;
-  List<int> scoresToShow = [];
-  List<Player> sortedPlayers = [];
   List<Player> playerFriends = [];
+  List<int> scoresToShow = [];
+  List<int> selectedPlayerIds = [];
+  List<Player> sortedPlayers = [];
 
   @override
   void initState() {
@@ -50,24 +50,6 @@ class PlayersCardState extends State<PlayersCard> {
           }));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-        child: GestureDetector(
-            onTap: widget.onPlayerCardTap != null ? () => {widget.onPlayerCardTap!(true)} : null,
-            child: Card(
-                elevation: 6,
-                child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(children: <Widget>[
-                      ListTile(
-                        title: Text(widget.cardTitle ?? "Friends"),
-                      ),
-                      SingleChildScrollView(
-                          scrollDirection: Axis.horizontal, child: Row(children: getPlayerCards(context))),
-                    ])))));
-  }
-
   List<Widget> getPlayerCards(BuildContext context) {
     List<Widget> playerCards = [];
     for (var i = 0; i < sortedPlayers.length; i++) {
@@ -90,5 +72,23 @@ class PlayersCardState extends State<PlayersCard> {
       ));
     }
     return playerCards;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: GestureDetector(
+            onTap: widget.onPlayerCardTap != null ? () => {widget.onPlayerCardTap!(true)} : null,
+            child: Card(
+                elevation: 6,
+                child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(children: <Widget>[
+                      ListTile(
+                        title: Text(widget.cardTitle ?? "Friends"),
+                      ),
+                      SingleChildScrollView(
+                          scrollDirection: Axis.horizontal, child: Row(children: getPlayerCards(context))),
+                    ])))));
   }
 }
