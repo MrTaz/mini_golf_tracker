@@ -5,7 +5,7 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
-    // Note: kotlin-android is now built-in to AGP 9.0+, so id("kotlin-android") is removed
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
