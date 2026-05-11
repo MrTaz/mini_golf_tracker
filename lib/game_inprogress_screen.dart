@@ -73,6 +73,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
         Player.updatePlayerScoreInDatabase(currentPlayer);
       }
       // Navigate to the PastGameDetailsScreen if the game is completed
+      if (!mounted) return;
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) {
           Utilities.debugPrintWithCallerInfo(
@@ -420,10 +421,12 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-        onWillPop: () async {
-          _updateGame(); // Save the current game
-          return true; // Return true to allow the back navigation
+    return PopScope(
+        canPop: true,
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (didPop) {
+            _updateGame(); // Save the current game
+          }
         },
         child: Scaffold(
             backgroundColor: Colors.white,
@@ -434,7 +437,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
             body: Stack(children: [
               Utilities.backdropImageContinerWidget(),
               SingleChildScrollView(
-                child: Container(
+                child: SizedBox(
                   height: MediaQuery.of(context).size.height + 200,
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),

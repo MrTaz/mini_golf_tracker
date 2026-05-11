@@ -28,7 +28,7 @@ class GameStartScreenState extends State<GameStartScreen> {
 
   bool _isCreatingGame = false;
   late TextEditingController _nameController;
-  late Course? _newGameCourse = null;
+  Course? _newGameCourse;
   late List<PlayerGameInfo> _playersInfo;
 
   @override
@@ -465,12 +465,14 @@ class GameStartScreenState extends State<GameStartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (!_isCreatingGame) {
-          [await _updateUnstartedGame()];
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) {
+          if (!_isCreatingGame) {
+            _updateUnstartedGame();
+          }
         }
-        return true; // Return true to allow the back navigation
       },
       child: Scaffold(
         backgroundColor: Colors.white,

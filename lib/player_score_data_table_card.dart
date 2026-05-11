@@ -222,7 +222,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
 
     return Container(
         height: 48.0 * (widget.game.course.numberOfHoles + 2),
-        color: Colors.white.withOpacity(0.8),
+        color: Colors.white.withValues(alpha: 0.8),
         child: Align(
           alignment: Alignment.topLeft,
           child: SingleChildScrollView(

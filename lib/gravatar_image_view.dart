@@ -11,19 +11,19 @@ class GravatarImageView extends StatelessWidget {
   final double? height;
   final double? width;
 
-  static final Map<String, String> _GravatarImgUrlCache = {};
+  static final Map<String, String> _gravatarImgUrlCache = {};
 
   Future<String> getFriendAvatarImage() async {
     return Future.microtask(() async {
       Utilities.debugPrintWithCallerInfo('Getting gravatar data for $email');
       if (email.isNotEmpty) {
-        if (_GravatarImgUrlCache.containsKey(email)) {
-          return _GravatarImgUrlCache[email] as String;
+        if (_gravatarImgUrlCache.containsKey(email)) {
+          return _gravatarImgUrlCache[email] as String;
         }
         String gravatarImgUrl =
             Gravatar(email).imageUrl(size: width?.toInt() ?? 120, defaultImage: defaultFriendAvatarImageStr);
         Utilities.debugPrintWithCallerInfo('found gravatar image url for $email, $gravatarImgUrl');
-        _GravatarImgUrlCache[email] = gravatarImgUrl;
+        _gravatarImgUrlCache[email] = gravatarImgUrl;
         return gravatarImgUrl;
       }
       return defaultFriendAvatarImageStr;

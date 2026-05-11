@@ -50,8 +50,8 @@ class PastGameListItemState extends State<PastGameListItem> {
               // )
             ),
             selected: isSelected,
-            iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-              return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+            iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
+              return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
             }),
             onTap: widget.onPastGameCardTap != null
                 ? () => {widget.onPastGameCardTap!(true)}

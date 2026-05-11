@@ -81,8 +81,8 @@ class PlayerListItemState extends State<PlayerListItem> {
               leading: _buildLeadingWidget(),
               enabled: _enabled,
               selected: widget.isSelected,
-              iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-                return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+              iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
+                return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
               }),
               onTap: () {
                 setState(() {

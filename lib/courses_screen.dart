@@ -92,6 +92,7 @@ class CoursesScreenState extends State<CoursesScreen> {
         courses = loadedCourses.whereType<Course>().toList();
       });
     } catch (exception) {
+      if (!mounted) return;
       _showDuplicateCourseDialog(context);
     }
   }
@@ -128,8 +129,8 @@ class CoursesScreenState extends State<CoursesScreen> {
             subtitle: Text("${course.numberOfHoles} holes"),
             leading: const Icon(Icons.golf_course),
             selected: isSelected,
-            iconColor: MaterialStateColor.resolveWith((Set<MaterialState> states) {
-              return states.contains(MaterialState.selected) ? Colors.green : Colors.teal;
+            iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
+              return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
             }),
             onTap: () => _showCourseDetails(course),
             // trailing: _buildCourseSelectionSwitch(course)
@@ -185,7 +186,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      value: numberOfHoles,
+                      initialValue: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -220,7 +221,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  value: parStrokes[index],
+                                  initialValue: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
@@ -259,13 +260,10 @@ class CoursesScreenState extends State<CoursesScreen> {
                           id: 0, //DateTime.now().millisecondsSinceEpoch,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
-                          parStrokes: Map<int, int>.fromIterable(
-                            List.generate(numberOfHoles!, (index) => index + 1),
-                            key: (holeNumber) => holeNumber,
-                            value: (holeNumber) => parStrokes[holeNumber - 1],
-                          ),
+                          parStrokes: { for (var holeNumber in List.generate(numberOfHoles!, (index) => index + 1)) holeNumber : parStrokes[holeNumber - 1] },
                         );
                         await _saveCourse(newCourse);
+                        if (!context.mounted) return;
                         Navigator.of(context).pop(newCourse);
                       }
                     },
@@ -374,7 +372,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      value: numberOfHoles,
+                      initialValue: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -409,7 +407,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  value: parStrokes[index],
+                                  initialValue: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
@@ -448,13 +446,10 @@ class CoursesScreenState extends State<CoursesScreen> {
                           id: course.id,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
-                          parStrokes: Map<int, int>.fromIterable(
-                            List.generate(numberOfHoles!, (index) => index + 1),
-                            key: (holeNumber) => holeNumber,
-                            value: (holeNumber) => parStrokes[holeNumber - 1],
-                          ),
+                          parStrokes: { for (var holeNumber in List.generate(numberOfHoles!, (index) => index + 1)) holeNumber : parStrokes[holeNumber - 1] },
                         );
                         await _saveCourse(updatedCourse);
+                        if (!context.mounted) return;
                         Navigator.of(context).pop(updatedCourse);
                       }
                     },
@@ -478,9 +473,9 @@ class CoursesScreenState extends State<CoursesScreen> {
 
     setState(() {
       courses = loadedCourses.whereType<Course>().toList();
-      ;
     });
 
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 

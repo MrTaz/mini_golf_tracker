@@ -148,7 +148,7 @@ class LoginScreen extends StatelessWidget {
                 theme: LoginTheme(
                     pageColorLight: Colors.transparent,
                     pageColorDark: Colors.transparent,
-                    cardTheme: CardTheme(color: Colors.white.withOpacity(0.9)),
+                    cardTheme: CardTheme(color: Colors.white.withValues(alpha: 0.9)),
                     logoWidth: 0),
                 // initialAuthMode: AuthMode.signup,
                 // disableCustomPageTransformer: true,

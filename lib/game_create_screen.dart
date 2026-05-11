@@ -88,6 +88,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
       final String gameJson = jsonEncode(newGame);
       await prefs.setString(newGame.id, gameJson);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Game created successfully'),
       ));
@@ -148,6 +149,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                     );
 
                     if (selectedTime != null) {
+                      if (!context.mounted) return;
                       final TimeOfDay? selectedTimeOfDay = await showTimePicker(
                         context: context,
                         initialTime: TimeOfDay.fromDateTime(_scheduledTime),

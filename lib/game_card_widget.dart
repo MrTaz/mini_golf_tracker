@@ -107,6 +107,7 @@ class GameCardWidgetState extends State<GameCardWidget> {
                     ElevatedButton(
                       onPressed: () {
                         deleteSavedGame().then((_) {
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Deleted saved game')),
                           );
@@ -178,6 +179,7 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                       child: ElevatedButton(
                                         onPressed: () {
                                           deleteSavedGame(gameToDelete: game).then((_) {
+                                            if (!context.mounted) return;
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Deleted saved game')),
                                             );
