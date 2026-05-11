@@ -40,9 +40,28 @@ class PastGameListItemState extends State<PastGameListItem> {
       child: Column(
         children: [
           ListTile(
-            title: Text(
-                "${widget.pastGame.name} - ${(widget.pastGame.completedTime != null) ? "Played ${Utilities.formatStartTime(widget.pastGame.completedTime!)}" : ""}",
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic)),
+            title: widget.pastGame.completedTime != null
+                ? FutureBuilder<String>(
+                    future: Utilities.formatStartTime(widget.pastGame.completedTime!),
+                    builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                      String timeText;
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        timeText = "Loading...";
+                      } else if (snapshot.hasData) {
+                        timeText = "Played ${snapshot.data}";
+                      } else {
+                        timeText = ""; // Or handle error
+                      }
+                      return Text(
+                        "${widget.pastGame.name} - $timeText",
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
+                      );
+                    },
+                  )
+                : Text(
+                    widget.pastGame.name,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
+                  ),
             subtitle: Text(
               'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, Winner: ${loggedInUser!.getPlayerFriendById(widget.pastGame.getWinner().playerId)!.nickname}',
               // style: const TextStyle(

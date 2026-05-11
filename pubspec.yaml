@@ -12,32 +12,31 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: any
-  flutter_login: any
-  font_awesome_flutter: any
-  flutter_gravatar: any
-  transparent_image: any
-  word_generator: any
-  recase: any
-  shared_preferences: any
-  random_x: any
-  uuid: any
-  animated_background: any
-  confetti: any
-  intl: any
-  holiday_event_api: any
-  calendarific_dart: any
-  cached_network_image: any
-  supabase_flutter: any
-  firebase_core: any
+  cupertino_icons: ^1.0.0
+  flutter_login: ^6.0.0
+  font_awesome_flutter: ^10.0.0
+  flutter_gravatar: ^2.0.0
+  transparent_image: ^2.0.0
+  word_generator: ^0.6.0
+  recase: ^4.1.0
+  shared_preferences: ^2.5.5
+  random_x: ^0.3.1
+  uuid: ^4.5.3
+  animated_background: ^2.0.0
+  confetti: ^0.8.0
+  intl: ^0.20.2
+  cached_network_image: ^3.3.1
+  supabase_flutter: ^2.5.7
+  firebase_core: ^4.8.0
+  world_holidays: ^2.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: any
+  flutter_lints: ^6.0.0
 
 dependency_overrides:
-  sign_in_with_apple: any
+  sign_in_with_apple: ^6.1.0
 
 flutter:
   uses-material-design: true

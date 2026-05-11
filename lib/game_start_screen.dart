@@ -255,8 +255,10 @@ class GameStartScreenState extends State<GameStartScreen> {
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }
 
+    final String formattedTime = await Utilities.formatStartTime(widget.unstartedGame!.scheduledTime);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Scheduling your game to start ${Utilities.formatStartTime(widget.unstartedGame!.scheduledTime)}.'),
+      content: Text('Scheduling your game to start $formattedTime.'),
     ));
     await _updateUnstartedGame();
     if (!mounted) return;
@@ -454,7 +456,16 @@ class GameStartScreenState extends State<GameStartScreen> {
                 ],
               ),
               ListTile(
-                title: Text(Utilities.formatStartTime(widget.unstartedGame!.scheduledTime)),
+                title: FutureBuilder<String>(
+                  future: Utilities.formatStartTime(widget.unstartedGame!.scheduledTime),
+                  builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(snapshot.data!);
+                    } else {
+                      return const Text("Loading...");
+                    }
+                  },
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.schedule),
                   onPressed: _editStartTime,
@@ -533,30 +544,3 @@ class GameStartScreenState extends State<GameStartScreen> {
     );
   }
 }
-
-//         // bottomSheet: Container(
-//         //   padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-//         //   color: Colors.grey[300],
-//         //   child: Row(
-//         //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         //     children: [
-//         //       const Text(
-//         //         'Press and hold a player to drag and reorder.',
-//         //         style: TextStyle(fontStyle: FontStyle.italic),
-//         //       ),
-//         //       DropdownButton<int>(
-//         //         value: 1, // Add your logic to set the selected value of the dropdown
-//         //         items: _playersInfo.asMap().entries.map((entry) {
-//         //           final playerIndex = entry.key;
-//         //           return DropdownMenuItem<int>(
-//         //             value: playerIndex + 1,
-//         //             child: Text('${playerIndex + 1}${getPlayerPositionSuffix(playerIndex + 1)}'),
-//         //           );
-//         //         }).toList(),
-//         //         onChanged: (newValue) {
-//         //           // Add your logic to handle when the dropdown value is changed
-//         //         },
-//         //       ),
-//         //     ],
-//         //   ),
-//         // ),

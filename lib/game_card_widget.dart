@@ -130,8 +130,20 @@ class GameCardWidgetState extends State<GameCardWidget> {
                               elevation: 6,
                               child: Column(children: [
                                 ListTile(
-                                  title: Text(
-                                      "${game.name} - ${(game.status != "unstarted_game" && game.startTime != null) ? "Started at ${Utilities.formatStartTime(game.startTime!)}" : "Scheduled for ${Utilities.formatStartTime(game.scheduledTime)}"}"),
+                                  title: FutureBuilder<String>(
+                                    future: Utilities.formatStartTime(
+                                        game.status != "unstarted_game" && game.startTime != null
+                                            ? game.startTime!
+                                            : game.scheduledTime),
+                                    builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                                      if (snapshot.hasData) {
+                                        return Text(
+                                            "${game.name} - ${(game.status != "unstarted_game" && game.startTime != null) ? "Started at ${snapshot.data}" : "Scheduled for ${snapshot.data}"}");
+                                      } else {
+                                        return const Text("Loading...");
+                                      }
+                                    },
+                                  ),
                                   subtitle: Text(
                                       'Course: ${game.course.name} (${game.course.numberOfHoles} holes) - ${game.players.length} players'),
                                 ),

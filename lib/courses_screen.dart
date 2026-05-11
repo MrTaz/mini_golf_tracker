@@ -6,7 +6,8 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CoursesScreen extends StatefulWidget {
-  const CoursesScreen({super.key, this.creatingGame = false, this.selectedCourse});
+  const CoursesScreen(
+      {super.key, this.creatingGame = false, this.selectedCourse});
 
   final bool? creatingGame;
   final Course? selectedCourse;
@@ -55,29 +56,36 @@ class CoursesScreenState extends State<CoursesScreen> {
 
       if (coursesJson != null) {
         Utilities.debugPrintWithCallerInfo("Loading courses from sharedprefs");
-        loadedCourses = coursesJson.map((String courseJson) => Course.fromJson(jsonDecode(courseJson))).toList();
+        loadedCourses = coursesJson
+            .map((String courseJson) => Course.fromJson(jsonDecode(courseJson)))
+            .toList();
       } else {
         Utilities.debugPrintWithCallerInfo("Loading courses from database");
         final List<Course?> dbcourses = await Course.fetchCourses();
         if (dbcourses.isNotEmpty) {
           loadedCourses = dbcourses.whereType<Course>().toList();
-          await _saveLocalCourses(loadedCourses); //save courses locally if we loaded them from db
+          await _saveLocalCourses(
+              loadedCourses); //save courses locally if we loaded them from db
         }
       }
-      Utilities.debugPrintWithCallerInfo("Loaded courses: ${loadedCourses.map((course) => course.toJson())}");
+      Utilities.debugPrintWithCallerInfo(
+          "Loaded courses: ${loadedCourses.map((course) => course.toJson())}");
       setState(() {
         courses = loadedCourses; // Update the courses list after loading
       });
       return loadedCourses; // Returns an empty list if no courses are found
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("Exception when loading courses: ${exception.toString()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Exception when loading courses: ${exception.toString()}");
       return [];
     }
   }
 
   Future<void> _saveLocalCourses(List<Course> coursesToSaveLocally) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final List<String> coursesString = coursesToSaveLocally.map((course) => jsonEncode(course.toJson())).toList();
+    final List<String> coursesString = coursesToSaveLocally
+        .map((course) => jsonEncode(course.toJson()))
+        .toList();
     await prefs.setStringList('courses', coursesString);
   }
 
@@ -103,7 +111,8 @@ class CoursesScreenState extends State<CoursesScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Duplicate Course'),
-          content: const Text('A course with the same name and number of holes already exists.'),
+          content: const Text(
+              'A course with the same name and number of holes already exists.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -119,7 +128,8 @@ class CoursesScreenState extends State<CoursesScreen> {
 
   Widget _buildCourseListItem(int index) {
     final Course course = courses[index];
-    final bool isSelected = selectedCourse != null && course.id == selectedCourse!.id;
+    final bool isSelected =
+        selectedCourse != null && course.id == selectedCourse!.id;
 
     return Card(
       child: Column(
@@ -130,10 +140,14 @@ class CoursesScreenState extends State<CoursesScreen> {
             leading: const Icon(Icons.golf_course),
             selected: isSelected,
             iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
-              return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
+              return states.contains(WidgetState.selected)
+                  ? Colors.green
+                  : Colors.teal;
             }),
             onTap: () => _showCourseDetails(course),
-            trailing: widget.creatingGame! ? _buildCourseSelectionSwitch(course) : null,
+            trailing: widget.creatingGame!
+                ? _buildCourseSelectionSwitch(course)
+                : null,
           ),
         ],
       ),
@@ -146,7 +160,8 @@ class CoursesScreenState extends State<CoursesScreen> {
       onPressed: () {
         setState(() {
           selectedCourse = course;
-          _handleCourseSelection(course); // Call the method to handle course selection
+          _handleCourseSelection(
+              course); // Call the method to handle course selection
         });
       },
     );
@@ -160,7 +175,8 @@ class CoursesScreenState extends State<CoursesScreen> {
   Future<void> _createNewCourse(BuildContext context) async {
     String courseName = '';
     int? numberOfHoles;
-    List<int> parStrokes = List.filled(18, 3); // Default par stroke is 3 for each hole
+    List<int> parStrokes =
+        List.filled(18, 3); // Default par stroke is 3 for each hole
 
     await showDialog<Course>(
       context: context,
@@ -259,7 +275,11 @@ class CoursesScreenState extends State<CoursesScreen> {
                           id: 0,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
-                          parStrokes: { for (var holeNumber in List.generate(numberOfHoles!, (index) => index + 1)) holeNumber : parStrokes[holeNumber - 1] },
+                          parStrokes: {
+                            for (var holeNumber in List.generate(
+                                numberOfHoles!, (index) => index + 1))
+                              holeNumber: parStrokes[holeNumber - 1]
+                          },
                         );
                         await _saveCourse(newCourse);
                         if (!context.mounted) return;
@@ -436,7 +456,11 @@ class CoursesScreenState extends State<CoursesScreen> {
                           id: course.id,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
-                          parStrokes: { for (var holeNumber in List.generate(numberOfHoles!, (index) => index + 1)) holeNumber : parStrokes[holeNumber - 1] },
+                          parStrokes: {
+                            for (var holeNumber in List.generate(
+                                numberOfHoles!, (index) => index + 1))
+                              holeNumber: parStrokes[holeNumber - 1]
+                          },
                         );
                         await _saveCourse(updatedCourse);
                         if (!context.mounted) return;
@@ -458,7 +482,8 @@ class CoursesScreenState extends State<CoursesScreen> {
     final List<Course?> loadedCourses = await _initializeCourses();
     loadedCourses.removeWhere((c) => c?.id == course.id);
 
-    final List<String> coursesJson = loadedCourses.map((course) => jsonEncode(course?.toJson())).toList();
+    final List<String> coursesJson =
+        loadedCourses.map((course) => jsonEncode(course?.toJson())).toList();
     await prefs.setStringList('courses', coursesJson);
 
     setState(() {
@@ -488,7 +513,8 @@ class CoursesScreenState extends State<CoursesScreen> {
             child: showCreateForm
                 ? FutureBuilder(
                     future: _createNewCourse(context),
-                    builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+                    builder:
+                        (BuildContext context, AsyncSnapshot<void> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator();
                       } else if (snapshot.hasError) {
@@ -514,8 +540,11 @@ class CoursesScreenState extends State<CoursesScreen> {
         ),
       ]),
       floatingActionButton: FloatingActionButton(
-        onPressed: showCloseButton ? closeCreateScreen : () => _createNewCourse(context),
-        child: showCloseButton ? const Icon(Icons.close) : const Icon(Icons.add),
+        onPressed: showCloseButton
+            ? closeCreateScreen
+            : () => _createNewCourse(context),
+        child:
+            showCloseButton ? const Icon(Icons.close) : const Icon(Icons.add),
       ),
     );
   }
