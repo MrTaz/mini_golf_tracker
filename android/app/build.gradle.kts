@@ -5,7 +5,7 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
-    id("kotlin-android")
+    // REMOVED: id("kotlin-android") -> AGP 9.0+ forces built-in Kotlin natively
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -43,8 +43,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // Modern replacement for kotlinOptions that works seamlessly with built-in Kotlin
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 
     defaultConfig {
