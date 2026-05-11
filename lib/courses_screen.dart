@@ -186,7 +186,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      initialValue: numberOfHoles,
+                      value: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -221,7 +221,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  initialValue: parStrokes[index],
+                                  value: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
@@ -372,7 +372,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      initialValue: numberOfHoles,
+                      value: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -407,7 +407,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  initialValue: parStrokes[index],
+                                  value: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
