@@ -53,6 +53,11 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
+      - name: Debug Keystore Fingerprint
+        run: |
+          echo "### Keystore Fingerprint in GitHub Actions ###"
+          keytool -list -v -keystore android/app/upload-keystore.jks -alias ${{ secrets.KEY_ALIAS }} -storepass ${{ secrets.KEYSTORE_PASSWORD }} | grep "SHA256:"
+
       - name: Create key.properties
         run: |
           cat <<EOF > android/key.properties
