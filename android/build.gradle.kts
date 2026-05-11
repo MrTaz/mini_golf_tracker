@@ -21,12 +21,17 @@ subprojects {
     }
 }
 
-// Fix for 'app_links' and other sub-project dependency issues
+// Fix for 'app_links', 'jni', and other sub-project dependency validation crashes
 subprojects {
     project.beforeEvaluate {
         if (project.name != "app") {
-            // In Kotlin DSL, use 'extra' to manage dynamic project properties
+            // 1. Inject the flutter object
             project.extra.set("flutter", rootProject.extra.get("flutter"))
+            
+            // 2. FORCE fallback NDK configurations for AGP 9.2+ compilation compliance
+            project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
+                ndkVersion = "26.1.10909125" // Sets a stable baseline NDK version
+            }
         }
     }
 }
