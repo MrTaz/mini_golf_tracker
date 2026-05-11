@@ -27,7 +27,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0' # Or any specific 3.x version you prefer
+          flutter-version: '3.24.0' # Updated to 3.24.0 to support new APIs like WidgetState and Color.withValues()
           channel: 'stable'
           
       - name: Get dependencies
