@@ -31,10 +31,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// Expose flutter sdk versions to the root project
+rootProject.ext.flutter = [
+    compileSdkVersion: flutter.compileSdkVersion,
+    minSdkVersion: flutter.minSdkVersion,
+    targetSdkVersion: flutter.targetSdkVersion
+]
+
 android {
     namespace "org.dahome.mini_golf_tracker"
-    compileSdk flutter.compileSdkVersion
-    rootProject.ext.compileSdkVersion = flutter.compileSdkVersion
+    // Use the exposed property to ensure consistency
+    compileSdk rootProject.ext.flutter.compileSdkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -47,8 +54,9 @@ android {
 
     defaultConfig {
         applicationId "org.dahome.mini_golf_tracker"
-        minSdk flutter.minSdkVersion
-        targetSdk flutter.targetSdkVersion
+        // Use the exposed properties here as well
+        minSdk rootProject.ext.flutter.minSdkVersion
+        targetSdk rootProject.ext.flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

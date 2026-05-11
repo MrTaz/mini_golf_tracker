@@ -22,17 +22,20 @@ rootProject.layout.buildDirectory = rootProject.layout.projectDirectory.dir("../
 
 subprojects {
     project.layout.buildDirectory = rootProject.layout.buildDirectory.dir(project.name)
+
+    // This block ensures all sub-projects are configured after the app project,
+    // making the flutter extension available.
+    if (project.name != 'app') {
+        project.evaluationDependsOn(':app')
+    }
 }
 
+// Inject the flutter object into all sub-projects before they are evaluated.
+// This is the definitive fix for the 'app_links' build issue.
 subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-// Replaces the previous afterEvaluate block to fix the build failure
-subprojects {
-    project.plugins.withId('com.android.library') {
-        android {
-            compileSdkVersion rootProject.ext.compileSdkVersion
+    project.beforeEvaluate {
+        if (project.name != 'app') {
+            project.ext.flutter = rootProject.ext.flutter
         }
     }
 }
