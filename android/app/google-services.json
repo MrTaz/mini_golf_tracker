@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "114725116317",
+    "project_id": "mini-golf-tracker-dahome",
+    "storage_bucket": "mini-golf-tracker-dahome.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:114725116317:android:299f9af42a67950a903774",
+        "android_client_info": {
+          "package_name": "org.dahome.mini_golf_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEydUasAiDm-RcK4nLYPWBCXcZomz8Eac"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
