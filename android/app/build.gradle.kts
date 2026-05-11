@@ -44,9 +44,9 @@ android {
     }
 
     // Modern replacement for kotlinOptions that works seamlessly with built-in Kotlin
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
+    // compilerOptions {
+    //    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    // }
 
     defaultConfig {
         applicationId = "org.dahome.mini_golf_tracker"
