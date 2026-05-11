@@ -34,6 +34,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "org.dahome.mini_golf_tracker"
     compileSdk flutter.compileSdkVersion
+    rootProject.ext.compileSdkVersion = flutter.compileSdkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
