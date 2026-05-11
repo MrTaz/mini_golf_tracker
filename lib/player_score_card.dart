@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'player_game_info.dart';
 
 class PlayerScoreCard extends StatefulWidget {
-  const PlayerScoreCard({Key? key, required this.sortedPlayerScores}) : super(key: key);
+  const PlayerScoreCard({super.key, required this.sortedPlayerScores});
 
   final List<PlayerGameInfo> sortedPlayerScores;
 

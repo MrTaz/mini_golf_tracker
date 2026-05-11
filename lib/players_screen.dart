@@ -8,7 +8,7 @@ import 'players_list_screen.dart';
 import 'utilities.dart';
 
 class PlayersScreen extends StatefulWidget {
-  const PlayersScreen({Key? key, this.creatingGame = false, this.currentlySelectedPlayers}) : super(key: key);
+  const PlayersScreen({super.key, this.creatingGame = false, this.currentlySelectedPlayers});
 
   final bool? creatingGame;
   final List<PlayerGameInfo?>? currentlySelectedPlayers;
@@ -51,11 +51,11 @@ class PlayersScreenState extends State<PlayersScreen> {
     });
   }
 
-  _addPlayers() {
+  void _addPlayers() {
     Navigator.pop(context, selectedPlayers);
   }
 
-  _handlePlayerSelection(Player player) {
+  void _handlePlayerSelection(Player player) {
     setState(() {
       if (selectedPlayers.contains(player)) {
         selectedPlayers.remove(player);
@@ -65,7 +65,7 @@ class PlayersScreenState extends State<PlayersScreen> {
     });
   }
 
-  _initializePlayers() {
+  void _initializePlayers() {
     if (widget.currentlySelectedPlayers != null && widget.currentlySelectedPlayers!.isNotEmpty) {
       Iterable<PlayerGameInfo> passedInSelectedPlayers =
           widget.currentlySelectedPlayers!.where((player) => player != null).cast<PlayerGameInfo>();

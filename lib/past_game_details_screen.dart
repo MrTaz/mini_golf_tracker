@@ -9,7 +9,7 @@ import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameDetailsScreen extends StatefulWidget {
-  const PastGameDetailsScreen({Key? key, required this.passedGame}) : super(key: key);
+  const PastGameDetailsScreen({super.key, required this.passedGame});
 
   final Game passedGame;
 

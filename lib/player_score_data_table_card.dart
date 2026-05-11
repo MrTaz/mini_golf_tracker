@@ -5,11 +5,11 @@ import 'package:mini_golf_tracker/player_game_info.dart';
 
 class PlayerScoreDataTable extends StatefulWidget {
   const PlayerScoreDataTable({
-    Key? key,
+    super.key,
     required this.clickedPlayers,
     required this.clickedPlayerScores,
     required this.game,
-  }) : super(key: key);
+  });
 
   final List<PlayerGameInfo> clickedPlayerScores;
   final List<Player> clickedPlayers;
@@ -222,7 +222,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
 
     return Container(
         height: 48.0 * (widget.game.course.numberOfHoles + 2),
-        color: Colors.white.withOpacity(0.8),
+        color: Colors.white.withAlpha(204),
         child: Align(
           alignment: Alignment.topLeft,
           child: SingleChildScrollView(

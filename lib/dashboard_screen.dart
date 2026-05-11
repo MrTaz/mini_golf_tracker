@@ -14,7 +14,7 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   DashBoardScreenState createState() => DashBoardScreenState();
@@ -86,7 +86,7 @@ class DashBoardScreenState extends State<DashboardScreen> {
 }
 
 class DashBoardLayout extends StatefulWidget {
-  const DashBoardLayout({Key? key, required this.updateBottomNavChangeNotifier}) : super(key: key);
+  const DashBoardLayout({super.key, required this.updateBottomNavChangeNotifier});
 
   final ValueChanged<bool> updateBottomNavChangeNotifier;
 

@@ -3,11 +3,11 @@ import 'package:mini_golf_tracker/course.dart';
 
 class CourseListItem extends StatefulWidget {
   const CourseListItem({
-    Key? key,
+    super.key,
     required this.course,
     required this.onDelete,
     required this.onModify,
-  }) : super(key: key);
+  });
 
   final Course course;
   final VoidCallback onDelete;

@@ -133,7 +133,6 @@ class CoursesScreenState extends State<CoursesScreen> {
               return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
             }),
             onTap: () => _showCourseDetails(course),
-            // trailing: _buildCourseSelectionSwitch(course)
             trailing: widget.creatingGame! ? _buildCourseSelectionSwitch(course) : null,
           ),
         ],
@@ -158,7 +157,7 @@ class CoursesScreenState extends State<CoursesScreen> {
     Navigator.pop(context, course);
   }
 
-  _createNewCourse(BuildContext context) async {
+  Future<void> _createNewCourse(BuildContext context) async {
     String courseName = '';
     int? numberOfHoles;
     List<int> parStrokes = List.filled(18, 3); // Default par stroke is 3 for each hole
@@ -186,7 +185,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      value: numberOfHoles,
+                      initialValue: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -221,7 +220,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  value: parStrokes[index],
+                                  initialValue: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
@@ -257,7 +256,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     onPressed: () async {
                       if (courseName.isNotEmpty && parStrokes.isNotEmpty) {
                         final Course newCourse = Course(
-                          id: 0, //DateTime.now().millisecondsSinceEpoch,
+                          id: 0,
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
                           parStrokes: { for (var holeNumber in List.generate(numberOfHoles!, (index) => index + 1)) holeNumber : parStrokes[holeNumber - 1] },
@@ -290,15 +289,6 @@ class CoursesScreenState extends State<CoursesScreen> {
               const SizedBox(height: 16.0),
               ...List.generate(course.numberOfHoles, (index) {
                 return _buildHoleDetailsRow(course, index);
-                // final holeNumber = index + 1;
-                // final parStroke = course.parStrokes[holeNumber] ?? 3;
-                // return Row(
-                //   children: [
-                //     Text('Hole $holeNumber:'),
-                //     const SizedBox(width: 8.0),
-                //     Text('Par: $parStroke'),
-                //   ],
-                // );
               }),
             ],
           ),
@@ -372,7 +362,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
-                      value: numberOfHoles,
+                      initialValue: numberOfHoles,
                       items: const [
                         DropdownMenuItem<int>(
                           value: null,
@@ -407,7 +397,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                               const SizedBox(width: 8.0),
                               Expanded(
                                 child: DropdownButtonFormField<int>(
-                                  value: parStrokes[index],
+                                  initialValue: parStrokes[index],
                                   items: List.generate(5, (value) {
                                     return DropdownMenuItem<int>(
                                       value: value + 1,
@@ -496,7 +486,18 @@ class CoursesScreenState extends State<CoursesScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: showCreateForm
-                ? _createNewCourse(context)
+                ? FutureBuilder(
+                    future: _createNewCourse(context),
+                    builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else {
+                        return const SizedBox();
+                      }
+                    },
+                  )
                 : Column(
                     children: <Widget>[
                       ListView.builder(

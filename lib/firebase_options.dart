@@ -24,21 +24,6 @@ class DefaultFirebaseOptions {
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
-      case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -46,7 +31,7 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
+  static final FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDb_YP2kMPuhxV531NJFMPfFoUKxlsaQi8',
     appId: '1:114725116317:web:0c58ae746a1956a8903774',
     messagingSenderId: '114725116317',
@@ -55,7 +40,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'mini-golf-tracker-dahome.firebasestorage.app',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
+  static final FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCEydUasAiDm-RcK4nLYPWBCXcZomz8Eac',
     appId: '1:114725116317:android:299f9af42a67950a903774',
     messagingSenderId: '114725116317',
@@ -63,7 +48,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'mini-golf-tracker-dahome.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
+  static final FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyC108oyI_oyCAFPERH1DlXs_5xHF-g4kLw',
     appId: '1:114725116317:ios:61765a6d7b137631903774',
     messagingSenderId: '114725116317',

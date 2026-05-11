@@ -8,15 +8,14 @@ import 'player_form_widget.dart';
 
 class PlayerListItem extends StatefulWidget {
   const PlayerListItem(
-      {Key? key,
+      {super.key,
       required this.player,
       this.onChanged,
       this.creatingGame,
       this.onPlayerSelected,
       this.isSelected = false,
       this.listOrderNumber,
-      this.onRemove})
-      : super(key: key);
+      this.onRemove});
 
   final bool? creatingGame;
   final bool isSelected;

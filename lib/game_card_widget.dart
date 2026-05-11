@@ -8,7 +8,7 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameCardWidget extends StatefulWidget {
-  const GameCardWidget({Key? key}) : super(key: key);
+  const GameCardWidget({super.key});
 
   @override
   GameCardWidgetState createState() => GameCardWidgetState();
@@ -21,7 +21,7 @@ class GameCardWidgetState extends State<GameCardWidget> {
     super.initState();
   }
 
-  updateGameCard() async {
+  Future<void> updateGameCard() async {
     await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {});
   }

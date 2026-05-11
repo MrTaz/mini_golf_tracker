@@ -134,6 +134,7 @@ class GameStartScreenState extends State<GameStartScreen> {
               )),
     );
 
+    if (!mounted) return;
     if (selectedCourse != null) {
       setState(() {
         Utilities.debugPrintWithCallerInfo("Setting course to ${selectedCourse.toJson()}");
@@ -146,7 +147,7 @@ class GameStartScreenState extends State<GameStartScreen> {
     }
   }
 
-  void _editStartTime(context) async {
+  void _editStartTime() async {
     final DateTime? selectedTime = await showDatePicker(
       context: context,
       initialDate: widget.unstartedGame!.scheduledTime,
@@ -156,6 +157,7 @@ class GameStartScreenState extends State<GameStartScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
+    if (!mounted) return;
     if (selectedTime != null) {
       final TimeOfDay? selectedTimeOfDay = await showTimePicker(
         context: context,
@@ -185,6 +187,8 @@ class GameStartScreenState extends State<GameStartScreen> {
           builder: (context) =>
               PlayersScreen(creatingGame: true, currentlySelectedPlayers: widget.unstartedGame!.players)),
     );
+
+    if (!mounted) return;
     if (selectedPlayers != null && selectedPlayers.isNotEmpty) {
       setState(() {
         _playersInfo.clear();
@@ -226,7 +230,7 @@ class GameStartScreenState extends State<GameStartScreen> {
     }
   }
 
-  void _scheduleGame(context) async {
+  void _scheduleGame() async {
     if (widget.unstartedGame == null) {
       return;
     }
@@ -255,10 +259,11 @@ class GameStartScreenState extends State<GameStartScreen> {
       content: Text('Scheduling your game to start ${Utilities.formatStartTime(widget.unstartedGame!.scheduledTime)}.'),
     ));
     await _updateUnstartedGame();
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
-  void _startGame(context) async {
+  void _startGame() async {
     if (widget.unstartedGame == null) {
       return;
     }
@@ -297,6 +302,7 @@ class GameStartScreenState extends State<GameStartScreen> {
     await _updateUnstartedGame();
     await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
 
+    if (!mounted) return;
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) {
         return GameInprogressScreen(currentGame: widget.unstartedGame!);
@@ -451,9 +457,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                 title: Text(Utilities.formatStartTime(widget.unstartedGame!.scheduledTime)),
                 trailing: IconButton(
                   icon: const Icon(Icons.schedule),
-                  onPressed: () {
-                    _editStartTime(context);
-                  },
+                  onPressed: _editStartTime,
                 ),
               ),
             ],
@@ -510,18 +514,14 @@ class GameStartScreenState extends State<GameStartScreen> {
             children: [
               FloatingActionButton.extended(
                 heroTag: "btnScheduleGame",
-                onPressed: () {
-                  _scheduleGame(context);
-                },
+                onPressed: _scheduleGame,
                 label: const Row(
                   children: [Icon(Icons.schedule), Text("Schedule game")],
                 ),
               ),
               FloatingActionButton.extended(
                 heroTag: "btnStartGame",
-                onPressed: () {
-                  _startGame(context);
-                },
+                onPressed: _startGame,
                 label: const Row(
                   children: [Icon(Icons.sports_golf_rounded), Text("Start the game!")],
                 ),

@@ -5,7 +5,7 @@ import 'package:mini_golf_tracker/past_game_list_item.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameCardWidget extends StatefulWidget {
-  const PastGameCardWidget({Key? key}) : super(key: key);
+  const PastGameCardWidget({super.key});
 
   @override
   PastGameCardWidgetState createState() => PastGameCardWidgetState();

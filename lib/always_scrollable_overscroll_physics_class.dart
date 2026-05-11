@@ -7,6 +7,7 @@
 ///
 /// Adapted from
 /// https://gist.github.com/makoConstruct/d069651b51d573a7a94bae13c8730656
+library;
 
 import 'dart:math';
 
@@ -16,8 +17,8 @@ class AlwaysScrollableOverscrollPhysics extends AlwaysScrollableScrollPhysics {
   const AlwaysScrollableOverscrollPhysics({
     this.overscrollStart = 0,
     this.overscrollEnd = 0,
-    ScrollPhysics? parent,
-  }) : super(parent: parent);
+    super.parent,
+  });
 
   final double overscrollEnd;
   final double overscrollStart;
@@ -85,8 +86,8 @@ class NeverScrollableOverscrollPhysics extends NeverScrollableScrollPhysics {
   const NeverScrollableOverscrollPhysics({
     this.overscrollStart = 0,
     this.overscrollEnd = 0,
-    ScrollPhysics? parent,
-  }) : super(parent: parent);
+    super.parent,
+  });
 
   final double overscrollEnd;
   final double overscrollStart;

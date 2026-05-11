@@ -7,8 +7,7 @@ import 'player_profile_widget.dart';
 
 class PlayersCard extends StatefulWidget {
   const PlayersCard(
-      {Key? key, this.cardTitle, this.sortedPlayerIds, this.sortedPlayerScores, this.onTap, this.onPlayerCardTap})
-      : super(key: key);
+      {super.key, this.cardTitle, this.sortedPlayerIds, this.sortedPlayerScores, this.onTap, this.onPlayerCardTap});
 
   final String? cardTitle;
   final ValueChanged<bool>? onPlayerCardTap;

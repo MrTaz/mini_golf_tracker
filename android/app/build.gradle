@@ -34,7 +34,6 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "org.dahome.mini_golf_tracker"
     compileSdk flutter.compileSdkVersion
-    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -46,7 +45,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "org.dahome.mini_golf_tracker"
         minSdk flutter.minSdkVersion
         targetSdk flutter.targetSdkVersion
@@ -65,7 +63,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
             signingConfig signingConfigs.release
         }
     }

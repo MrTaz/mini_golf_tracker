@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class GameCreateScreen extends StatefulWidget {
-  const GameCreateScreen({Key? key}) : super(key: key);
+  const GameCreateScreen({super.key});
 
   @override
   GameCreateScreenState createState() => GameCreateScreenState();

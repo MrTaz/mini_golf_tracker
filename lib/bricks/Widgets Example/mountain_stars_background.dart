@@ -5,8 +5,7 @@ class BackgroundImageFb1 extends StatelessWidget {
   final Widget child;
   final String imageUrl;
   const BackgroundImageFb1(
-      {required this.child, required this.imageUrl, Key? key})
-      : super(key: key);
+      {required this.child, required this.imageUrl, super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,7 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'utilities.dart';
 
 class PastGamesScreen extends StatefulWidget {
-  const PastGamesScreen({Key? key, this.currentlySelectedGame}) : super(key: key);
+  const PastGamesScreen({super.key, this.currentlySelectedGame});
 
   final Game? currentlySelectedGame;
 
@@ -26,7 +26,7 @@ class PastGameScreenState extends State<PastGamesScreen> {
     _loadPastGames();
   }
 
-  _loadPastGames() async {
+  Future<void> _loadPastGames() async {
     List<Game?> loadedPastGames = await Game.getLocallySavedGames(gameStatusTypes: ["completed"]);
     List<Game> filteredLoadedPastGames = loadedPastGames.whereType<Game>().toList();
     setState(() {

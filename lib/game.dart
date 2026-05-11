@@ -364,7 +364,7 @@ class Game {
   static Future<List<Game>> fetchGamesForCurrentUser(int currentUserId) async {
     try {
       // Fetch the games from the database where the current user is a player
-      final response = await db
+      final response = await DatabaseConnection.client
           .from('games')
           .select('*, players:player_game_info(*), course:courses(*)')
           .eq('creator_id', currentUserId)
@@ -375,7 +375,7 @@ class Game {
 
       // Convert the response data into a list of Game objects
       final List<Game> games = [];
-      if (response is List<dynamic> && response.isNotEmpty) {
+      if (response.isNotEmpty) {
         for (final gameData in response) {
           final game = Game.fromJson(jsonEncode(gameData));
           games.add(game);
@@ -414,7 +414,7 @@ class Game {
       };
 
       // 2. Save the game data to the games table and get the saved game ID
-      final gameResponse = await db.from('games').upsert([gameData]);
+      final gameResponse = await DatabaseConnection.client.from('games').upsert([gameData]);
       Utilities.debugPrintWithCallerInfo(
           "Saved game to database, returned ${gameResponse.toString()}");
 
@@ -429,7 +429,7 @@ class Game {
           'scores': player.scores,
           'total_score': player.totalScore,
         };
-        final pgiResponse = await db
+        final pgiResponse = await DatabaseConnection.client
             .from('player_game_info')
             .upsert([playerGameInfoData], onConflict: 'game_id, player_id');
         Utilities.debugPrintWithCallerInfo(

@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class GravatarImageView extends StatelessWidget {
-  const GravatarImageView({Key? key, required this.email, this.width, this.height = 0.0}) : super(key: key);
+  const GravatarImageView({super.key, required this.email, this.width, this.height = 0.0});
 
   final String defaultFriendAvatarImageStr = "assets/images/avatars_3d_avatar_28.png";
   final String email;
@@ -30,7 +30,7 @@ class GravatarImageView extends StatelessWidget {
     });
   }
 
-  Widget _fadeInWidget(imgUrlStr) {
+  Widget _fadeInWidget(String imgUrlStr) {
     return FadeInImage(
         placeholder: AssetImage(defaultFriendAvatarImageStr),
         image: CachedNetworkImageProvider(imgUrlStr),

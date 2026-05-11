@@ -14,8 +14,6 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatelessWidget {
-  // bool _isSnackOpen = false;
-  // final Snapkit _snapkit = Snapkit();
   LoginScreen({super.key});
 
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -77,17 +75,17 @@ class LoginScreen extends StatelessWidget {
   Future<String?> _signupUser(SignupData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Signup Name: ${data.name}, Password: ${data.password}, ${data.additionalSignupData.toString()}');
-    final email = data.name;
-    final additionalData = data.additionalSignupData;
-    final playerName = additionalData!['playerName'];
-    final nickname = additionalData['nickname'];
+    final email = data.name!;
+    final additionalData = data.additionalSignupData!;
+    final playerName = additionalData['playerName']!;
+    final nickname = additionalData['nickname']!;
     final phoneNumber = additionalData['phoneNumber'] ?? "";
 
     final newPlayer = Player.empty();
 
     try {
       Player loggedInPlayer = await newPlayer.createPlayer(
-          playerName!, email!, phoneNumber, nickname!);
+          playerName, email, phoneNumber, nickname);
       _initializeLoggedInPlayer(loggedInPlayer);
       return null;
     } catch (exception) {
@@ -97,10 +95,10 @@ class LoginScreen extends StatelessWidget {
     }
   }
 
-  Future<String> _recoverPassword(String name) {
+  Future<String?> _recoverPassword(String name) {
     Utilities.debugPrintWithCallerInfo('Name: $name');
     return Future.delayed(loginTime).then((_) {
-      return "";
+      return null;
     });
   }
 
@@ -125,7 +123,6 @@ class LoginScreen extends StatelessWidget {
               child: FlutterLogin(
                 onLogin: _authUser,
                 onSignup: _signupUser,
-                userType: LoginUserType.email,
                 showDebugButtons: (kDebugMode) ? true : false,
                 scrollable: true,
                 additionalSignupFields: const [
@@ -148,17 +145,11 @@ class LoginScreen extends StatelessWidget {
                 theme: LoginTheme(
                     pageColorLight: Colors.transparent,
                     pageColorDark: Colors.transparent,
-                    cardTheme: CardTheme(color: Colors.white.withOpacity(0.9)),
+                    cardTheme: CardTheme(color: Colors.white.withAlpha(240)),
                     logoWidth: 0),
-                // initialAuthMode: AuthMode.signup,
-                // disableCustomPageTransformer: true,
-                // loginAfterSignUp: true,
-                // hideProvidersTitle: true,
-                // scrollable: true,
                 loginProviders: <LoginProvider>[
                   LoginProvider(
                     icon: FontAwesomeIcons.google,
-                    // label: 'Google',
                     callback: () async {
                       Utilities.debugPrintWithCallerInfo(
                           'start google sign in');
@@ -169,7 +160,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.facebookF,
-                    // label: 'Facebook',
                     callback: () async {
                       Utilities.debugPrintWithCallerInfo(
                           'start facebook sign in');
@@ -204,9 +194,6 @@ class LoginScreen extends StatelessWidget {
                 ],
                 onSubmitAnimationCompleted: () {
                   Navigator.pushNamedAndRemoveUntil(context, "/", (_) => false);
-                  // Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  //   builder: (context) => const HomePage(),
-                  // ));
                 },
                 onRecoverPassword: _recoverPassword,
               ),

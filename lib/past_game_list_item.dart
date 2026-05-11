@@ -6,11 +6,11 @@ import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameListItem extends StatefulWidget {
   const PastGameListItem({
-    Key? key,
+    super.key,
     required this.pastGame,
     this.onPastGameCardTap,
     this.isSelected = false,
-  }) : super(key: key);
+  });
 
   final bool isSelected;
   final ValueChanged<bool>? onPastGameCardTap;

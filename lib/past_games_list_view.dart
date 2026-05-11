@@ -7,12 +7,12 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGamesListView extends StatelessWidget {
-  PastGamesListView({Key? key}) : super(key: key);
+  PastGamesListView({super.key});
 
   final Player? loggedInUser = UserProvider().loggedInUser;
   final List<Game> previousGames = [];
 
-  getGames(BuildContext context) {
+  Widget getGames(BuildContext context) {
     if (previousGames.isNotEmpty) {
       return Expanded(
           child: ListView.separated(
@@ -23,14 +23,17 @@ class PastGamesListView extends StatelessWidget {
         itemBuilder: (BuildContext context, int index) {
           // Utilities.debugPrintWithCallerInfo("Current Game: ${previousGames[index].toJson()}");
           return FutureBuilder<String>(
-            future: Future.value(Utilities.formatStartTime(previousGames[index].startTime!)),
+            future: Future.value(
+                Utilities.formatStartTime(previousGames[index].startTime!)),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return InkWell(
                     onTap: () => {
                           // Utilities.debugPrintWithCallerInfo("game tapped: $index"),
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                            return PastGameDetailsScreen(passedGame: previousGames[index]);
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(builder: (context) {
+                            return PastGameDetailsScreen(
+                                passedGame: previousGames[index]);
                           }))
                         },
                     child: SizedBox(
@@ -43,19 +46,27 @@ class PastGamesListView extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(previousGames[index].course.name), // Game Name
-                                  Text("Number of Players: ${previousGames[index].players.length.toString()}",
-                                      style: const TextStyle(fontSize: 8.0)), //Winners
+                                  Text(previousGames[index]
+                                      .course
+                                      .name), // Game Name
+                                  Text(
+                                      "Number of Players: ${previousGames[index].players.length.toString()}",
+                                      style: const TextStyle(
+                                          fontSize: 8.0)), //Winners
                                   Text(
                                       "Winner ${loggedInUser?.getPlayerFriendById(previousGames[index].getWinner().playerId)!.nickname}")
                                 ]),
-                            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Text(
-                                snapshot.data ?? "",
-                                style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
-                              )
-                            ])
+                            Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    snapshot.data ?? "",
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w300,
+                                        fontStyle: FontStyle.italic),
+                                  )
+                                ])
                           ],
                         )));
               } else if (snapshot.hasError) {
@@ -72,7 +83,8 @@ class PastGamesListView extends StatelessWidget {
       return SizedBox(
           height: MediaQuery.of(context).size.height,
           width: MediaQuery.of(context).size.width * 0.9,
-          child: const Align(alignment: Alignment.center, child: Text("Let's play!")));
+          child: const Align(
+              alignment: Alignment.center, child: Text("Let's play!")));
     }
   }
 
@@ -80,11 +92,15 @@ class PastGamesListView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (loggedInUser != null) {
       Future.microtask(() async {
-        Utilities.debugPrintWithCallerInfo('Loading games for user ${loggedInUser!.playerName}');
-        List<Game> retrievedGames = await Game.fetchGamesForCurrentUser(loggedInUser!.id);
-        Utilities.debugPrintWithCallerInfo('Retrieved Games loaded ${retrievedGames.length}');
+        Utilities.debugPrintWithCallerInfo(
+            'Loading games for user ${loggedInUser!.playerName}');
+        List<Game> retrievedGames =
+            await Game.fetchGamesForCurrentUser(loggedInUser!.id);
+        Utilities.debugPrintWithCallerInfo(
+            'Retrieved Games loaded ${retrievedGames.length}');
         previousGames.addAll(retrievedGames);
-        Utilities.debugPrintWithCallerInfo('Games loaded ${previousGames.length}');
+        Utilities.debugPrintWithCallerInfo(
+            'Games loaded ${previousGames.length}');
       });
     } else {
       throw "Loading Past Games: User is not logged in";

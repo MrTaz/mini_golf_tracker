@@ -40,7 +40,6 @@ class Player {
   }
 
   static List<Player> players = [];
-
   String? avatarImageLocation;
   String? email;
   final int id;
@@ -50,6 +49,8 @@ class Player {
   String playerName;
   String? status;
   num totalScore;
+
+  SupabaseClient get db => DatabaseConnection.client;
 
   Map<String, dynamic> toJson() {
     return {
@@ -66,7 +67,7 @@ class Player {
   }
 
   Future<void> loadUserPlayers() async {
-    if (players.isEmpty && !ownerId.isNaN) {
+    if (players.isEmpty && ownerId != 0) {
       final loadedPlayers = await _getAllPlayersFromDBByOwnerId(ownerId);
       players.addAll(loadedPlayers);
     }
@@ -77,21 +78,11 @@ class Player {
   }
 
   Player? getPlayerFriendById(int playerId) {
-    for (final player in getAllPlayerFriends()) {
-      if (player.id == playerId) {
-        return player;
-      }
-    }
-    return null;
+    return players.firstWhere((player) => player.id == playerId, orElse: () => Player.empty());
   }
 
   Player? getPlayerFriendByEmail(String email) {
-    for (final player in players) {
-      if (player.email == email) {
-        return player;
-      }
-    }
-    return null;
+    return players.firstWhere((player) => player.email == email, orElse: () => Player.empty());
   }
 
   void addPlayerFriend(Player player) {
@@ -129,13 +120,13 @@ class Player {
 
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
     final response =
-        await db.from('players').select().eq('email', email).single();
+        await DatabaseConnection.client.from('players').select().eq('email', email).single();
 
-    if (response == null) {
+    if (response.isEmpty) {
       return null;
     }
 
-    return Player.fromJson(response as Map<String, dynamic>);
+    return Player.fromJson(response);
   }
 
   static Future<void> updatePlayerScoreInDatabase(Player playerToUpdate) async {
@@ -146,7 +137,7 @@ class Player {
       };
 
       // Update the player's score in the players table
-      await db
+      await DatabaseConnection.client
           .from('players')
           .update(playerScoreData)
           .eq('id', playerToUpdate.id);
@@ -174,9 +165,9 @@ class Player {
       return createdPlayer;
     } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo(
-          'Failed to update player score: ${e.message}');
+          'Failed to create player: ${e.message}');
       throw DatabaseConnectionError(
-          'Failed to update player score: ${e.message}');
+          'Failed to create player: ${e.message}');
     }
   }
 
@@ -203,7 +194,7 @@ class Player {
   // }
 
   static Future<List<Player>> _getAllPlayersFromDBByOwnerId(int ownerId) async {
-    final response = await db.from('players').select().eq('owner_id', ownerId);
+    final response = await DatabaseConnection.client.from('players').select().eq('owner_id', ownerId);
     // if (response.status == 400 || response.status == 401) {
     //   throw DatabaseConnectionError('Error loading players from Supabase');
     // }
@@ -213,7 +204,7 @@ class Player {
   }
 
   Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
-    final response = await db
+    final response = await DatabaseConnection.client
         .from('players')
         .select()
         .or('email.eq.$email,phone_number.eq.$phoneNumber');
@@ -263,9 +254,9 @@ class Player {
       return Player.fromJson(responseWithOwnerId);
     } on PostgrestException catch (e) {
       Utilities.debugPrintWithCallerInfo(
-          'Failed to update player score: ${e.message}');
+          'Failed to create player in DB: ${e.message}');
       throw DatabaseConnectionError(
-          'Failed to update player score: ${e.message}');
+          'Failed to create player in DB: ${e.message}');
     }
   }
 }
