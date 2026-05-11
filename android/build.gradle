@@ -28,12 +28,11 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Replaces the previous afterEvaluate block to fix the build failure
 subprojects {
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin('com.android.library')) {
-            android {
-                compileSdkVersion rootProject.ext.compileSdkVersion
-            }
+    project.plugins.withId('com.android.library') {
+        android {
+            compileSdkVersion rootProject.ext.compileSdkVersion
         }
     }
 }
