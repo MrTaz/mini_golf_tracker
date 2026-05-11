@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Local SDKs and private credentials should stay outside the app repo.
+/flutter/
+assets/client_secret_*.json
+
 # Symbolication related
 app.*.symbols
 

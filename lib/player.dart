@@ -77,34 +77,50 @@ class Player {
   }
 
   Player? getPlayerFriendById(int playerId) {
-    return getAllPlayerFriends().firstWhere((player) => player.id == playerId, orElse: () => null as Player);
+    for (final player in getAllPlayerFriends()) {
+      if (player.id == playerId) {
+        return player;
+      }
+    }
+    return null;
   }
 
   Player? getPlayerFriendByEmail(String email) {
-    return players.firstWhere((player) => player.email == email, orElse: () => null as Player);
+    for (final player in players) {
+      if (player.email == email) {
+        return player;
+      }
+    }
+    return null;
   }
 
   void addPlayerFriend(Player player) {
     Future.microtask(() async {
-      Utilities.debugPrintWithCallerInfo('Checking if user is already in database');
-      final isExistingUser = await _isDuplicatePlayer(player.email, player.phoneNumber);
+      Utilities.debugPrintWithCallerInfo(
+          'Checking if user is already in database');
+      final isExistingUser =
+          await _isDuplicatePlayer(player.email, player.phoneNumber);
       if (isExistingUser) {
         Utilities.debugPrintWithCallerInfo('Getting player details');
-        final updatedPlayer = await Player.getPlayerByEmailFromDB(player.email!);
+        final updatedPlayer =
+            await Player.getPlayerByEmailFromDB(player.email!);
         if (updatedPlayer != null) {
-          Utilities.debugPrintWithCallerInfo('Adding ${updatedPlayer.playerName} as friend for $playerName');
-          final response = await _addFriend(id, updatedPlayer.id);
+          Utilities.debugPrintWithCallerInfo(
+              'Adding ${updatedPlayer.playerName} as friend for $playerName');
+          await _addFriend(id, updatedPlayer.id);
           players.add(updatedPlayer);
         } else {
           throw "Existing user, but unable to retrieve from database";
         }
       } else {
-        final newPlayer = await _createPlayerInDB(
-            player.playerName, player.email!, player.phoneNumber!, player.nickname,
+        final newPlayer = await _createPlayerInDB(player.playerName,
+            player.email!, player.phoneNumber!, player.nickname,
             ownerId: ownerId);
-        Utilities.debugPrintWithCallerInfo('New player friend created: ${newPlayer.toJson()}');
-        Utilities.debugPrintWithCallerInfo('Adding ${newPlayer.playerName} as friend for $playerName');
-        final response = await _addFriend(id, newPlayer.id);
+        Utilities.debugPrintWithCallerInfo(
+            'New player friend created: ${newPlayer.toJson()}');
+        Utilities.debugPrintWithCallerInfo(
+            'Adding ${newPlayer.playerName} as friend for $playerName');
+        await _addFriend(id, newPlayer.id);
         players.add(newPlayer);
       }
     });
@@ -112,7 +128,8 @@ class Player {
   }
 
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
-    final response = await db.from('players').select().eq('email', email).single();
+    final response =
+        await db.from('players').select().eq('email', email).single();
 
     if (response == null) {
       return null;
@@ -129,33 +146,43 @@ class Player {
       };
 
       // Update the player's score in the players table
-      await db.from('players').update(playerScoreData).eq('id', playerToUpdate.id);
+      await db
+          .from('players')
+          .update(playerScoreData)
+          .eq('id', playerToUpdate.id);
     } on PostgrestException catch (e) {
-      Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
-      throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to update player score: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to update player score: ${e.message}');
     }
   }
 
-  Future<Player> createPlayer(String playerName, String email, String phoneNumber, String nickname) async {
+  Future<Player> createPlayer(String playerName, String email,
+      String phoneNumber, String nickname) async {
     try {
       if (await _isDuplicatePlayer(email, phoneNumber)) {
         throw DatabaseConnectionError(
             'Player with the same email or phone number already exists'); //TODO: fix error handling
       }
 
-      final createdPlayer = await _createPlayerInDB(playerName, email, phoneNumber, nickname);
-      Utilities.debugPrintWithCallerInfo("Player saved to db, returning: ${createdPlayer.toJson()}");
+      final createdPlayer =
+          await _createPlayerInDB(playerName, email, phoneNumber, nickname);
+      Utilities.debugPrintWithCallerInfo(
+          "Player saved to db, returning: ${createdPlayer.toJson()}");
 
       return createdPlayer;
     } on PostgrestException catch (e) {
-      Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
-      throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to update player score: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to update player score: ${e.message}');
     }
   }
 
   // Private method to add friend relationship
   Future<void> _addFriend(int playerId, int friendId) async {
-    final response = await db.from('friends').upsert([
+    await db.from('friends').upsert([
       {'player_id': playerId, 'friend_id': friendId},
       {'player_id': friendId, 'friend_id': playerId},
     ]);
@@ -180,11 +207,16 @@ class Player {
     // if (response.status == 400 || response.status == 401) {
     //   throw DatabaseConnectionError('Error loading players from Supabase');
     // }
-    return (response as List<dynamic>).map((data) => Player.fromJson(data)).toList();
+    return (response as List<dynamic>)
+        .map((data) => Player.fromJson(data))
+        .toList();
   }
 
   Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
-    final response = await db.from('players').select().or('email.eq.$email,phone_number.eq.$phoneNumber');
+    final response = await db
+        .from('players')
+        .select()
+        .or('email.eq.$email,phone_number.eq.$phoneNumber');
     // if (response.status == 400 || response.status == 401) {
     //   throw DatabaseConnectionError('Error checking duplicate players from Supabase');
     // }
@@ -193,7 +225,8 @@ class Player {
   }
 
   // Private method to create a player in Supabase and add friend relationship
-  Future<Player> _createPlayerInDB(String playerName, String email, String phoneNumber, String nickname,
+  Future<Player> _createPlayerInDB(
+      String playerName, String email, String phoneNumber, String nickname,
       {int? ownerId}) async {
     try {
       Map<String, dynamic> userToCreate = {
@@ -205,24 +238,34 @@ class Player {
         "total_score": 0
       };
 
-      final response = await db.from('players').upsert(userToCreate).select().single();
-      Utilities.debugPrintWithCallerInfo("Create Player in Supabase response: $response");
+      final response =
+          await db.from('players').upsert(userToCreate).select().single();
+      Utilities.debugPrintWithCallerInfo(
+          "Create Player in Supabase response: $response");
       final playerWithoutOwnerId = Player.fromJson(response);
-      Utilities.debugPrintWithCallerInfo("Created Player: ${playerWithoutOwnerId.toJson()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Created Player: ${playerWithoutOwnerId.toJson()}");
       Map<String, dynamic> responseWithOwnerId = {};
       if (playerWithoutOwnerId.ownerId == 0) {
         playerWithoutOwnerId.ownerId = playerWithoutOwnerId.id;
         Utilities.debugPrintWithCallerInfo(
             "updating Player owner id: ${playerWithoutOwnerId.ownerId} with ${playerWithoutOwnerId.id}");
-        responseWithOwnerId = await db.from('players').upsert(playerWithoutOwnerId.toJson()).select().single();
+        responseWithOwnerId = await db
+            .from('players')
+            .upsert(playerWithoutOwnerId.toJson())
+            .select()
+            .single();
       } else {
         responseWithOwnerId = playerWithoutOwnerId.toJson();
       }
-      Utilities.debugPrintWithCallerInfo("Updated Player: $responseWithOwnerId");
+      Utilities.debugPrintWithCallerInfo(
+          "Updated Player: $responseWithOwnerId");
       return Player.fromJson(responseWithOwnerId);
     } on PostgrestException catch (e) {
-      Utilities.debugPrintWithCallerInfo('Failed to update player score: ${e.message}');
-      throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to update player score: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to update player score: ${e.message}');
     }
   }
 }

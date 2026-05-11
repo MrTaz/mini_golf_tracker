@@ -33,7 +33,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   void initState() {
     super.initState();
     _initializePlayersInfo();
-    currentHole = (widget.currentGame.players[0].scores.isEmpty) ? 1 : widget.currentGame.players[0].scores.length;
+    currentHole = (widget.currentGame.players[0].scores.isEmpty)
+        ? 1
+        : widget.currentGame.players[0].scores.length;
     currentHolePar = widget.currentGame.course.getParValue(currentHole);
   }
 
@@ -47,12 +49,14 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
             totalScore: player.totalScore,
             place: player.place))
         .toList();
-    _playersInfo.sort((a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
+    _playersInfo.sort(
+        (a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
   }
 
   Future<void> _updateGame() async {
     // Update the currentGame with the _playersInfo data
-    widget.currentGame.players.replaceRange(0, widget.currentGame.players.length, _playersInfo);
+    widget.currentGame.players
+        .replaceRange(0, widget.currentGame.players.length, _playersInfo);
 
     // Save the updated currentGame to SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -63,14 +67,16 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     if (gameCompleted) {
       // Update each players total score when the game is complete.
       for (PlayerGameInfo player in widget.currentGame.players) {
-        Player currentPlayer = loggedInUser!.getPlayerFriendById(player.playerId)!;
+        Player currentPlayer =
+            loggedInUser!.getPlayerFriendById(player.playerId)!;
         currentPlayer.totalScore = currentPlayer.totalScore + player.totalScore;
         Player.updatePlayerScoreInDatabase(currentPlayer);
       }
       // Navigate to the PastGameDetailsScreen if the game is completed
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) {
-          Utilities.debugPrintWithCallerInfo("PASSING Current game: ${widget.currentGame.toJson()}");
+          Utilities.debugPrintWithCallerInfo(
+              "PASSING Current game: ${widget.currentGame.toJson()}");
           return PastGameDetailsScreen(passedGame: widget.currentGame);
         }),
       );
@@ -85,7 +91,10 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            CourseListItem(course: widget.currentGame.course, onDelete: () {}, onModify: () {}),
+            CourseListItem(
+                course: widget.currentGame.course,
+                onDelete: () {},
+                onModify: () {}),
           ],
         ),
       ),
@@ -93,10 +102,19 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   }
 
   bool _checkAllPlayersScoredCurrentHole() {
-    return _playersInfo.every((pgi) {
-      if (pgi.scores.isEmpty) return false;
-      return true; // Allow proceeding even if the score is 1
-    });
+    return _playersInfo.every((pgi) => pgi.scores.length >= currentHole);
+  }
+
+  void _setScoreForCurrentHole(PlayerGameInfo playerGameInfo, int score) {
+    while (playerGameInfo.scores.length < currentHole - 1) {
+      playerGameInfo.scores.add(0);
+    }
+
+    if (playerGameInfo.scores.length == currentHole - 1) {
+      playerGameInfo.scores.add(score);
+    } else {
+      playerGameInfo.scores[currentHole - 1] = score;
+    }
   }
 
   void _resetAllPlayersTotalScores() {
@@ -109,7 +127,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     // Update total scores for previous holes
     for (int hole = 0; hole < currentHole; hole++) {
       for (int i = 0; i < _playersInfo.length; i++) {
-        _playersInfo[i].totalScore += (_playersInfo[i].scores.isEmpty ? 6 : _playersInfo[i].scores[hole]);
+        _playersInfo[i].totalScore +=
+            (_playersInfo[i].scores.isEmpty ? 6 : _playersInfo[i].scores[hole]);
       }
     }
   }
@@ -145,7 +164,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
       _updateAllPlayersTotalScoresFromPreviousHoles();
       _setAllPlayersPlaces();
       for (var playerInfo in _playersInfo) {
-        playerInfo.totalScore = playerInfo.scores.fold(0, (sum, score) => sum + score);
+        playerInfo.totalScore =
+            playerInfo.scores.fold(0, (sum, score) => sum + score);
       }
       gameCompleted = true;
       widget.currentGame.status = "completed";
@@ -173,13 +193,15 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Please record a score for all players before moving to the next hole.')),
+                        content: Text(
+                            'Please record a score for all players before moving to the next hole.')),
                   );
                 }
               } else {
                 await Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) {
-                    return PastGameDetailsScreen(passedGame: widget.currentGame);
+                    return PastGameDetailsScreen(
+                        passedGame: widget.currentGame);
                   }),
                 );
               }
@@ -187,7 +209,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
             child: FittedBox(
                 fit: BoxFit.fitWidth,
                 child: Text(
-                  (currentHole != widget.currentGame.course.numberOfHoles) ? 'Next Hole' : 'Complete Game',
+                  (currentHole != widget.currentGame.course.numberOfHoles)
+                      ? 'Next Hole'
+                      : 'Complete Game',
                   overflow: TextOverflow.clip,
                 )),
           ),
@@ -196,7 +220,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     );
   }
 
-  Widget _buildPlayerCard(PlayerGameInfo pgi, int playerScore, int playerScoreDropDownIndex) {
+  Widget _buildPlayerCard(
+      PlayerGameInfo pgi, int playerScore, int playerScoreDropDownIndex) {
     final textScale = MediaQuery.of(context).size.height * 0.01;
     // final screenHeight = MediaQuery.of(context).size.height;
 
@@ -222,7 +247,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
           SizedBox(
             width: 100,
             child: PlayerProfileWidget(
-                player: Player.empty().getPlayerFriendById(pgi.playerId)!, isSelected: false, rank: rank),
+                player: Player.empty().getPlayerFriendById(pgi.playerId)!,
+                isSelected: false,
+                rank: rank),
           ),
           const SizedBox(width: 2),
           Expanded(
@@ -242,23 +269,30 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                             FittedBox(
                                 fit: BoxFit.fill,
                                 child: Text('Current score: ${pgi.totalScore}',
-                                    style: TextStyle(fontSize: getTextSize(textScale, 20)))),
+                                    style: TextStyle(
+                                        fontSize: getTextSize(textScale, 20)))),
                             if (currentHole != 1) ...[
                               FittedBox(
                                   fit: BoxFit.fill,
                                   child: Row(
                                     children: [
                                       Text('Last hole (${currentHole - 1}): ',
-                                          style: TextStyle(fontSize: getTextSize(textScale, 18))),
+                                          style: TextStyle(
+                                              fontSize:
+                                                  getTextSize(textScale, 18))),
                                       Text(
                                         '${pgi.scores[currentHole - 2]}',
                                         style: TextStyle(
-                                            color: (pgi.scores[currentHole - 2] < currentHolePar)
+                                            color: (pgi.scores[
+                                                        currentHole - 2] <
+                                                    currentHolePar)
                                                 ? Colors.green
-                                                : (pgi.scores[currentHole - 2] > currentHolePar)
+                                                : (pgi.scores[currentHole - 2] >
+                                                        currentHolePar)
                                                     ? Colors.red
                                                     : Colors.black,
-                                            fontSize: getTextSize(textScale, 18)),
+                                            fontSize:
+                                                getTextSize(textScale, 18)),
                                       )
                                     ],
                                   ))
@@ -283,21 +317,21 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     foregroundColor: Colors.white,
                                     shadowColor: Colors.greenAccent,
                                     elevation: 3,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(32.0)),
                                     minimumSize: const Size(40, 40),
                                   ),
                                   onPressed: () {
                                     setState(() {
                                       if (playerScore > 1) {
-                                        playerScoreDropDownIndex = (playerScoreDropDownIndex == 0)
-                                            ? playerScoreDropDownIndex
-                                            : playerScoreDropDownIndex - 1;
+                                        playerScoreDropDownIndex =
+                                            (playerScoreDropDownIndex == 0)
+                                                ? playerScoreDropDownIndex
+                                                : playerScoreDropDownIndex - 1;
                                         playerScore--;
-                                        if (pgi.scores.isEmpty) {
-                                          pgi.scores.add(playerScore);
-                                        } else {
-                                          pgi.scores[currentHole - 1] = playerScore;
-                                        }
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       }
                                     });
                                   },
@@ -317,11 +351,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                       if (playerScore < 7 && playerScore > 0) {
                                         playerScoreDropDownIndex = value!;
                                         playerScore = value + 1;
-                                        if (pgi.scores.isEmpty) {
-                                          pgi.scores.add(playerScore);
-                                        } else {
-                                          pgi.scores[currentHole - 1] = playerScore;
-                                        }
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       }
                                     });
                                   },
@@ -333,7 +364,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     foregroundColor: Colors.white,
                                     shadowColor: Colors.greenAccent,
                                     elevation: 3,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(32.0)),
                                     minimumSize: const Size(40, 40),
                                   ),
                                   onPressed: () {
@@ -341,11 +374,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                       if (playerScore < 6) {
                                         playerScoreDropDownIndex++;
                                         playerScore++;
-                                        if (pgi.scores.isEmpty) {
-                                          pgi.scores.add(playerScore);
-                                        } else {
-                                          pgi.scores[currentHole - 1] = playerScore;
-                                        }
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       }
                                     });
                                   },
@@ -377,12 +407,11 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
         itemCount: widget.currentGame.players.length,
         itemBuilder: (BuildContext context, int index) {
           PlayerGameInfo pgi = _playersInfo[index];
-          // Initialize scores up to the current hole if needed
-          while (pgi.scores.length < currentHole) {
-            pgi.scores.add(1);
-          }
-          int playerScore = pgi.scores.isNotEmpty ? pgi.scores[currentHole - 1] : 1;
-          int playerScoreDropDownIndex = (playerScore == 1) ? 0 : playerScore - 1;
+          int playerScore = pgi.scores.length >= currentHole
+              ? pgi.scores[currentHole - 1]
+              : 1;
+          int playerScoreDropDownIndex =
+              (playerScore == 1) ? 0 : playerScore - 1;
           return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
         },
       ),

@@ -20,6 +20,15 @@ class PlayerScoreDataTable extends StatefulWidget {
 }
 
 class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
+  PlayerGameInfo? _findPlayerGameInfo(int playerId) {
+    for (final playerGameInfo in widget.clickedPlayerScores) {
+      if (playerGameInfo.playerId == playerId) {
+        return playerGameInfo;
+      }
+    }
+    return null;
+  }
+
   List<DataColumn> _buildColumns() {
     List<DataColumn> columns = [];
 
@@ -31,8 +40,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
     );
 
     for (final player in widget.clickedPlayers) {
-      final playerGameInfo = widget.clickedPlayerScores
-          .firstWhere((pgi) => pgi.playerId == player.id, orElse: () => null as PlayerGameInfo);
+      final playerGameInfo = _findPlayerGameInfo(player.id);
       if (playerGameInfo != null) {
         columns.add(
           DataColumn(
@@ -77,9 +85,8 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       );
 
       for (final player in widget.clickedPlayers) {
-        final playerGameInfo = widget.clickedPlayerScores
-            .firstWhere((pgi) => pgi.playerId == player.id, orElse: () => null as PlayerGameInfo);
-        if (i < playerGameInfo.scores.length) {
+        final playerGameInfo = _findPlayerGameInfo(player.id);
+        if (playerGameInfo != null && i < playerGameInfo.scores.length) {
           final score = playerGameInfo.scores[i];
           final difference = score - holePar;
 
@@ -144,8 +151,7 @@ class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
       ),
     );
     for (final player in widget.clickedPlayers) {
-      final playerGameInfo = widget.clickedPlayerScores
-          .firstWhere((pgi) => pgi.playerId == player.id, orElse: () => null as PlayerGameInfo);
+      final playerGameInfo = _findPlayerGameInfo(player.id);
       if (playerGameInfo != null) {
         final totalScore = _getTotalScore(playerGameInfo.scores);
         totalScoreCells.add(

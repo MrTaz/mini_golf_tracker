@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // final _formKey = GlobalKey<FormState>();
 
 void main() async {
-  // WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseConnection.initialize();
   runApp(const MyApp());
@@ -35,7 +35,8 @@ class MyApp extends StatelessWidget {
           primaryColor: const Color(0xFF009688),
           canvasColor: const Color(0xFFfafafa),
           fontFamily: 'Merriweather',
-          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal).copyWith(secondary: const Color(0xFF009688)),
+          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal)
+              .copyWith(secondary: const Color(0xFF009688)),
         ),
         home: const HomePage(),
         initialRoute: '/',
@@ -67,7 +68,6 @@ class MainScaffold extends State<HomePage> {
   );
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _userLoggedIn = false;
 
   @override
   void didChangeDependencies() {
@@ -107,16 +107,11 @@ class MainScaffold extends State<HomePage> {
     body = nextPage;
   }
 
-  void isLoggedIn(bool loggedIn) {
-    setState(() => _userLoggedIn = loggedIn);
-  }
-
   void logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("email");
     setState(() {
       loggedInPlayer = null;
-      isLoggedIn(false);
       body = const HomeScreen();
       final currentState = _scaffoldKey.currentState;
       if (currentState != null && currentState.isDrawerOpen) {
@@ -126,16 +121,15 @@ class MainScaffold extends State<HomePage> {
   }
 
   void changeProfileImage() async {
+    Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
+    final pref = await SharedPreferences.getInstance();
+    final loggedInEmail = pref.getString("email");
+    if (!mounted || loggedInEmail == null || loggedInEmail.isEmpty) {
+      return;
+    }
     setState(() {
-      Future.microtask(() async {
-        Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
-        SharedPreferences pref = await SharedPreferences.getInstance();
-        String loggedInEmail = pref.getString("email") as String;
-        if (loggedInEmail != "") {
-          String gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
-          profileImage = Image.network(gravatarImgUrl);
-        }
-      });
+      final gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
+      profileImage = Image.network(gravatarImgUrl);
     });
   }
 
@@ -152,14 +146,19 @@ class MainScaffold extends State<HomePage> {
           loggedInPlayer = Player.fromJson(jsonDecode(loggedInUserJson));
           if (loggedInPlayer != null) {
             UserProvider().loggedInUser = loggedInPlayer;
-            final loadingUsers = await loggedInPlayer?.loadUserPlayers();
-            isLoggedIn(true);
+            await loggedInPlayer?.loadUserPlayers();
             changeProfileImage();
-            body = const DashboardScreen();
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              body = const DashboardScreen();
+            });
           }
         }
       } catch (error) {
-        Utilities.debugPrintWithCallerInfo("Error fetching logged-in player: $error");
+        Utilities.debugPrintWithCallerInfo(
+            "Error fetching logged-in player: $error");
         logout();
       }
     }
@@ -180,7 +179,8 @@ class MainScaffold extends State<HomePage> {
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                Text(loggedInPlayer?.playerName ?? "", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(loggedInPlayer?.playerName ?? "",
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   loggedInPlayer?.nickname ?? "",
                   style: const TextStyle(fontStyle: FontStyle.italic),
@@ -189,7 +189,9 @@ class MainScaffold extends State<HomePage> {
             )
           ]),
           accountEmail: Text(loggedInPlayer?.email ?? ""),
-          currentAccountPicture: CircleAvatar(backgroundColor: Colors.teal, child: ClipOval(child: profileImage)),
+          currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.teal,
+              child: ClipOval(child: profileImage)),
           otherAccountsPictures: <Widget>[
             GestureDetector(
               onTap: () => logout(),
@@ -219,7 +221,9 @@ class MainScaffold extends State<HomePage> {
                 title: const Text('Mini Golf Tracker'),
               ),
               drawer: Drawer(
-                child: ListView(padding: const EdgeInsets.all(0), children: _buildDrawerList(context)),
+                child: ListView(
+                    padding: const EdgeInsets.all(0),
+                    children: _buildDrawerList(context)),
               ),
               body: body,
             );
@@ -232,7 +236,9 @@ class MainScaffold extends State<HomePage> {
                     lift: 80,
                     ratio: 0.25,
                     pause: 0.01,
-                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
+                    child: CustomPaint(
+                        painter: GolfBallPainter(),
+                        child: const SizedBox(width: 100, height: 100))),
               ),
             );
           }

@@ -33,12 +33,18 @@ class Game {
     String? id = data['id'];
     final String name = data['name'];
     final Course course = Course.fromJson(data['course']);
-    final List<PlayerGameInfo> players =
-        List<PlayerGameInfo>.from(data['players'].map((playerData) => PlayerGameInfo.fromJson(playerData)));
-    final DateTime? startTime = (data['start_time'] != null) ? DateTime.parse(data['start_time']) : null;
-    final DateTime scheduledTime =
-        (data['scheduled_time'] != null) ? DateTime.parse(data['scheduled_time']) : DateTime.now();
-    final DateTime? completedTime = (data['completed_time'] != null) ? DateTime.parse(data['completed_time']) : null;
+    final List<PlayerGameInfo> players = List<PlayerGameInfo>.from(
+        data['players']
+            .map((playerData) => PlayerGameInfo.fromJson(playerData)));
+    final DateTime? startTime = (data['start_time'] != null)
+        ? DateTime.parse(data['start_time'])
+        : null;
+    final DateTime scheduledTime = (data['scheduled_time'] != null)
+        ? DateTime.parse(data['scheduled_time'])
+        : DateTime.now();
+    final DateTime? completedTime = (data['completed_time'] != null)
+        ? DateTime.parse(data['completed_time'])
+        : null;
     String? status = data['status'];
 
     return Game(
@@ -81,7 +87,9 @@ class Game {
     }
     players.add(player);
     scores[player] = {
-      for (var holeNumber in List.generate(course.numberOfHoles, (index) => index + 1)) holeNumber: 0
+      for (var holeNumber
+          in List.generate(course.numberOfHoles, (index) => index + 1))
+        holeNumber: 0
     }; // Initialize scores
   }
 
@@ -93,7 +101,8 @@ class Game {
     if (!scores.containsKey(player)) {
       throw Exception('Player scores not initialized');
     }
-    Utilities.debugPrintWithCallerInfo("GameId: ${player.gameId}, Hole Number: $holeNumber, strokes: $strokes");
+    Utilities.debugPrintWithCallerInfo(
+        "GameId: ${player.gameId}, Hole Number: $holeNumber, strokes: $strokes");
     scores[player]![holeNumber] = strokes;
     player.scores = scores[player]!.values.toList();
     calculateTotalScore(player);
@@ -107,9 +116,11 @@ class Game {
 
     final List<int> playerScores = player.scores;
     if (playerScores.isEmpty) {
-      throw Exception('Player scores not initialized');
+      player.totalScore = 0;
+      return player.totalScore;
     }
-    player.totalScore = playerScores.fold<int>(0, (sum, strokes) => sum + strokes);
+    player.totalScore =
+        playerScores.fold<int>(0, (sum, strokes) => sum + strokes);
     return player.totalScore;
   }
 
@@ -147,7 +158,8 @@ class Game {
       if (a.totalScore != b.totalScore && b.totalScore != 0) {
         return a.totalScore.compareTo(b.totalScore);
       } else {
-        return a.playerId.compareTo(b.playerId); // Sort by playerId when scores are tied
+        return a.playerId
+            .compareTo(b.playerId); // Sort by playerId when scores are tied
       }
     });
     return playerScores;
@@ -187,12 +199,15 @@ class Game {
         }
       }
 
-      if (tiedPlayers.isNotEmpty && currentPlayer.scores[currentHoleIndex] != 0) {
+      if (tiedPlayers.isNotEmpty &&
+          currentPlayer.scores.isNotEmpty &&
+          currentPlayer.scores[currentHoleIndex] != 0) {
         tiedPlayers.add(currentPlayer);
         tiedPlayers.sort((a, b) => a.playerId.compareTo(b.playerId));
         int tiedPosition = currentPosition - tiedPlayers.length + 1;
         for (var tiedPlayer in tiedPlayers) {
-          tiedPlayer.place = '${Utilities.getPositionString(tiedPosition)} (tied)';
+          tiedPlayer.place =
+              '${Utilities.getPositionString(tiedPosition)} (tied)';
         }
       } else {
         currentPlayer.place = Utilities.getPositionString(currentPosition);
@@ -219,16 +234,21 @@ class Game {
 
     DateTime startDate = DateTime.now().subtract(const Duration(days: 365));
     DateTime endDate = DateTime.now();
-    List<DateTime> randomGameDateList =
-        RndX.generateRandomDates(count: numberOfGames!, start: startDate, end: endDate, uniqueList: true);
+    List<DateTime> randomGameDateList = RndX.generateRandomDates(
+        count: numberOfGames!,
+        start: startDate,
+        end: endDate,
+        uniqueList: true);
     randomGameDateList.sort((a, b) => b.compareTo(a));
 
     for (var i = 0; i < numberOfGames; i++) {
       String name = generateRandomGameName("Club");
       Map<int, int> parStrokes = {};
-      int courseNumberOfHoles = totalNumberOfHoles[rnd.nextInt(totalNumberOfHoles.length)];
+      int courseNumberOfHoles =
+          totalNumberOfHoles[rnd.nextInt(totalNumberOfHoles.length)];
       for (int j = 0; j < courseNumberOfHoles; j++) {
-        parStrokes[j + 1] = minHolePar + rnd.nextInt(maxHolePar + 1 - minHolePar);
+        parStrokes[j + 1] =
+            minHolePar + rnd.nextInt(maxHolePar + 1 - minHolePar);
       }
 
       Game game = Game(
@@ -247,13 +267,18 @@ class Game {
 
       int numOfPlayers = 2 + rnd.nextInt((5 + 1 - 2));
       for (int l = 0; l < numOfPlayers; l++) {
-        PlayerGameInfo player = PlayerGameInfo(playerId: l + 1, gameId: game.id, scores: []);
+        PlayerGameInfo player =
+            PlayerGameInfo(playerId: l + 1, gameId: game.id, scores: []);
         game.addPlayer(player);
       }
 
       for (int k = 0; k < courseNumberOfHoles; k++) {
         for (var player in game.players) {
-          game.recordScore(player, k + 1, minPlayerStrokes + rnd.nextInt((maxPlayerStrokes + 1 - minPlayerStrokes)));
+          game.recordScore(
+              player,
+              k + 1,
+              minPlayerStrokes +
+                  rnd.nextInt((maxPlayerStrokes + 1 - minPlayerStrokes)));
         }
       }
 
@@ -272,20 +297,25 @@ class Game {
   static Future<void> initializeLocalGames(Player loggedInUser) async {
     try {
       Utilities.debugPrintWithCallerInfo("Loading games from database");
-      final List<Game?> dbGames = await Game.fetchGamesForCurrentUser(loggedInUser.id);
+      final List<Game?> dbGames =
+          await Game.fetchGamesForCurrentUser(loggedInUser.id);
       if (dbGames.isNotEmpty) {
         List<Game> loadedGames = dbGames.whereType<Game>().toList();
         for (Game loadedGame in loadedGames) {
-          await Game.saveLocalGame(loadedGame); //save games locally if we loaded them from db
+          await Game.saveLocalGame(
+              loadedGame); //save games locally if we loaded them from db
         }
-        Utilities.debugPrintWithCallerInfo("Loaded games: ${dbGames.map((game) => game?.toJson())}");
+        Utilities.debugPrintWithCallerInfo(
+            "Loaded games: ${dbGames.map((game) => game?.toJson())}");
       }
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("Exception when initializing games: ${exception.toString()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Exception when initializing games: ${exception.toString()}");
     }
   }
 
-  static Future<List<Game?>> getLocallySavedGames({List<String>? gameStatusTypes}) async {
+  static Future<List<Game?>> getLocallySavedGames(
+      {List<String>? gameStatusTypes}) async {
     List<Game?> games = [];
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // Get all the keys
@@ -294,17 +324,22 @@ class Game {
     for (String key in keys) {
       if (key != "email" && key != "loggedInUser" && key != "courses") {
         dynamic value = prefs.get(key);
-        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
+        Utilities.debugPrintWithCallerInfo(
+            "Found shared preference: $key $value");
         if (value is String) {
           try {
-            Utilities.debugPrintWithCallerInfo("It's a JSON-formatted string: $json");
+            Utilities.debugPrintWithCallerInfo(
+                "It's a JSON-formatted string: $json");
             Game savedGame = Game.fromJson(value);
-            Utilities.debugPrintWithCallerInfo("It's a Game-formatted string: ${savedGame.toJson()}");
+            Utilities.debugPrintWithCallerInfo(
+                "It's a Game-formatted string: ${savedGame.toJson()}");
             if (gameStatusTypes != null && gameStatusTypes.isNotEmpty) {
-              Utilities.debugPrintWithCallerInfo("Loading games of type $gameStatusTypes");
+              Utilities.debugPrintWithCallerInfo(
+                  "Loading games of type $gameStatusTypes");
               for (String statusType in gameStatusTypes) {
                 if (savedGame.status == statusType) {
-                  Utilities.debugPrintWithCallerInfo("*** found ${savedGame.name}");
+                  Utilities.debugPrintWithCallerInfo(
+                      "*** found ${savedGame.name}");
                   games.add(savedGame);
                 }
               }
@@ -312,12 +347,14 @@ class Game {
               games.add(savedGame);
             }
           } catch (e) {
-            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
+            Utilities.debugPrintWithCallerInfo(
+                "Not a JSON-formatted string. Plain value: $value");
           }
         } else if (value is List<String>) {
           Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
         } else {
-          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
+          Utilities.debugPrintWithCallerInfo(
+              "Value cannot be parsed. Type: ${value.runtimeType}");
         }
       }
     }
@@ -347,11 +384,15 @@ class Game {
 
       return games;
     } on PostgrestException catch (e) {
-      Utilities.debugPrintWithCallerInfo('Failed to get games for current user: ${e.message}');
-      throw DatabaseConnectionError('Failed to get games for current user: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to get games for current user: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to get games for current user: ${e.message}');
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("General failure loading games for current user: $exception");
-      throw Exception("General failure loading games for current user: $exception");
+      Utilities.debugPrintWithCallerInfo(
+          "General failure loading games for current user: $exception");
+      throw Exception(
+          "General failure loading games for current user: $exception");
     }
   }
 
@@ -363,15 +404,19 @@ class Game {
         'name': game.name,
         'course_id': game.course.id,
         'scheduled_time': game.scheduledTime.toIso8601String(),
-        'start_time': (game.startTime != null) ? game.startTime!.toIso8601String() : null,
-        'completed_time': (game.completedTime != null) ? game.completedTime!.toIso8601String() : null,
+        'start_time':
+            (game.startTime != null) ? game.startTime!.toIso8601String() : null,
+        'completed_time': (game.completedTime != null)
+            ? game.completedTime!.toIso8601String()
+            : null,
         'status': game.status,
         'creator_id': creator.id
       };
 
       // 2. Save the game data to the games table and get the saved game ID
       final gameResponse = await db.from('games').upsert([gameData]);
-      Utilities.debugPrintWithCallerInfo("Saved game to database, returned ${gameResponse.toString()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Saved game to database, returned ${gameResponse.toString()}");
 
       // 3. Save player game info to the player_game_info table
       bool playerUpdated = false;
@@ -384,8 +429,9 @@ class Game {
           'scores': player.scores,
           'total_score': player.totalScore,
         };
-        final pgiResponse =
-            await db.from('player_game_info').upsert([playerGameInfoData], onConflict: 'game_id, player_id');
+        final pgiResponse = await db
+            .from('player_game_info')
+            .upsert([playerGameInfoData], onConflict: 'game_id, player_id');
         Utilities.debugPrintWithCallerInfo(
             "Saved player game info to database, $playerGameInfoData, returned ${pgiResponse.toString()}");
         if (pgiResponse != null) {
@@ -398,21 +444,29 @@ class Game {
       }
       if (gameResponse != null && playerUpdated) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString(game.id, game.toJson() as String);
+        await prefs.setString(game.id, jsonEncode(game.toJson()));
       }
     } on PostgrestException catch (e) {
-      Utilities.debugPrintWithCallerInfo('DB Failed to update player score: ${e.message}');
-      throw DatabaseConnectionError('Failed to update player score: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'DB Failed to update player score: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to update player score: ${e.message}');
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo('General failure to update player score: $exception');
+      Utilities.debugPrintWithCallerInfo(
+          'General failure to update player score: $exception');
       throw Exception('Failed to update player score: $exception');
     }
   }
 
-  static Map<PlayerGameInfo, Map<int, int>> _initializeScores(List<PlayerGameInfo> players, int numberOfHoles) {
+  static Map<PlayerGameInfo, Map<int, int>> _initializeScores(
+      List<PlayerGameInfo> players, int numberOfHoles) {
     final scores = <PlayerGameInfo, Map<int, int>>{};
     for (final player in players) {
-      scores[player] = {for (var holeNumber in List.generate(numberOfHoles, (index) => index + 1)) holeNumber: 0};
+      scores[player] = {
+        for (var holeNumber
+            in List.generate(numberOfHoles, (index) => index + 1))
+          holeNumber: 0
+      };
     }
     return scores;
   }

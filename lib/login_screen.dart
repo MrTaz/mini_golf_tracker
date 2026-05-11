@@ -18,7 +18,8 @@ class LoginScreen extends StatelessWidget {
   // final Snapkit _snapkit = Snapkit();
   LoginScreen({super.key});
 
-  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   Duration get loginTime => const Duration(milliseconds: 50);
 
@@ -30,7 +31,8 @@ class LoginScreen extends StatelessWidget {
   }
 
   Future<String?> _authUser(LoginData data) async {
-    Utilities.debugPrintWithCallerInfo('Email: ${data.name}, Password: ${data.password}');
+    Utilities.debugPrintWithCallerInfo(
+        'Email: ${data.name}, Password: ${data.password}');
     try {
       final loggedInPlayer = await Player.getPlayerByEmailFromDB(data.name);
       if (loggedInPlayer != null) {
@@ -39,7 +41,8 @@ class LoginScreen extends StatelessWidget {
         throw DatabaseConnectionError('User was not found.');
       }
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("Login Error was caught: ${exception.toString()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Login Error was caught: ${exception.toString()}");
       return 'An error occurred during user login.';
     }
     // Future.microtask(() async {
@@ -83,13 +86,13 @@ class LoginScreen extends StatelessWidget {
     final newPlayer = Player.empty();
 
     try {
-      Player loggedInPlayer = await newPlayer.createPlayer(playerName!, email!, phoneNumber, nickname!);
-      if (loggedInPlayer != null) {
-        _initializeLoggedInPlayer(loggedInPlayer);
-      }
+      Player loggedInPlayer = await newPlayer.createPlayer(
+          playerName!, email!, phoneNumber, nickname!);
+      _initializeLoggedInPlayer(loggedInPlayer);
       return null;
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("Signup Error was caught: ${exception.toString()}");
+      Utilities.debugPrintWithCallerInfo(
+          "Signup Error was caught: ${exception.toString()}");
       return 'An error occurred during user registration.';
     }
   }
@@ -157,7 +160,8 @@ class LoginScreen extends StatelessWidget {
                     icon: FontAwesomeIcons.google,
                     // label: 'Google',
                     callback: () async {
-                      Utilities.debugPrintWithCallerInfo('start google sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'start google sign in');
                       await Future.delayed(loginTime);
                       Utilities.debugPrintWithCallerInfo('stop google sign in');
                       return null;
@@ -167,27 +171,33 @@ class LoginScreen extends StatelessWidget {
                     icon: FontAwesomeIcons.facebookF,
                     // label: 'Facebook',
                     callback: () async {
-                      Utilities.debugPrintWithCallerInfo('start facebook sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'start facebook sign in');
                       await Future.delayed(loginTime);
-                      Utilities.debugPrintWithCallerInfo('stop facebook sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'stop facebook sign in');
                       return null;
                     },
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.snapchat,
                     callback: () async {
-                      Utilities.debugPrintWithCallerInfo('start snapchat sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'start snapchat sign in');
                       await _snapchatLoginUser();
-                      Utilities.debugPrintWithCallerInfo('stop snapchat sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'stop snapchat sign in');
                       return null;
                     },
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.instagram,
                     callback: () async {
-                      Utilities.debugPrintWithCallerInfo('start instagram sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'start instagram sign in');
                       await Future.delayed(loginTime);
-                      Utilities.debugPrintWithCallerInfo('stop instagram sign in');
+                      Utilities.debugPrintWithCallerInfo(
+                          'stop instagram sign in');
                       return null;
                     },
                   ),
