@@ -1,4 +1,14 @@
 {pkgs, ...}: {
+  # Installs the Java Development Kit required by Flutter/Gradle
+  packages = [
+    pkgs.jdk17
+  ];
+
+  # Automatically points Flutter to the newly installed Java package
+  env = {
+    JAVA_HOME = "${pkgs.jdk17}/lib/openjdk";
+  };
+
   # Enable previews and customize configuration
   idx.previews = {
     enable = true;

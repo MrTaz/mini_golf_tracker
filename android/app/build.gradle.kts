@@ -2,10 +2,8 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
-    // REMOVED: id("kotlin-android") -> AGP 9.0+ forces built-in Kotlin natively
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -26,27 +24,21 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
-// Ensure flutter sdk properties are available globally
-rootProject.extra.set("flutter", mapOf(
-    "compileSdkVersion" to flutter.compileSdkVersion,
-    "minSdkVersion" to flutter.minSdkVersion,
-    "targetSdkVersion" to flutter.targetSdkVersion
-))
-
 android {
-    // Set your specific namespace for org.dahome.mini_golf_tracker
     namespace = "org.dahome.mini_golf_tracker"
     compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion              // use Flutter's own NDK version — fixes the jni error
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Modern replacement for kotlinOptions that works seamlessly with built-in Kotlin
-    // compilerOptions {
-    //    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    // }
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        }
+    }
 
     defaultConfig {
         applicationId = "org.dahome.mini_golf_tracker"
