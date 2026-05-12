@@ -53,10 +53,10 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Debug Keystore Fingerprint
-        run: |
-          echo "### Keystore Fingerprint in GitHub Actions ###"
-          keytool -list -v -keystore android/app/upload-keystore.jks -alias ${{ secrets.KEY_ALIAS }} -storepass ${{ secrets.KEYSTORE_PASSWORD }} | grep "SHA256:"
+      # - name: Debug Keystore Fingerprint
+      #   run: |
+      #     echo "### Keystore Fingerprint in GitHub Actions ###"
+      #     keytool -list -v -keystore android/app/upload-keystore.jks -alias ${{ secrets.KEY_ALIAS }} -storepass ${{ secrets.KEYSTORE_PASSWORD }} | grep "SHA256:"
 
       - name: Create key.properties
         run: |
@@ -68,7 +68,7 @@ jobs:
           EOF
 
       - name: Build App Bundle
-        run: flutter build appbundle --build-name=${{ steps.semver.outputs.version }} --build-number=$((${{ github.run_number }} + 100))
+        run: flutter build appbundle --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }}
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
