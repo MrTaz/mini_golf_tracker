@@ -67,15 +67,15 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
-      - name: Build APK
-        run: flutter build apk --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }}
+      - name: Build App Bundle
+        run: flutter build appbundle --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }}
 
-      - name: Upload APK Artifact
+      - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 7
 
       - name: Upload to Firebase App Distribution
@@ -84,4 +84,4 @@ jobs:
           appId: '1:114725116317:android:299f9af42a67950a903774'
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
-          file: build/app/outputs/flutter-apk/app-release.apk
+          file: build/app/outputs/bundle/release/app-release.aab
