@@ -70,6 +70,14 @@ jobs:
       - name: Build App Bundle
         run: flutter build appbundle --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }}
 
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-release
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
+
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
