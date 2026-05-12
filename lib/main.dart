@@ -28,6 +28,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Mini Golf Tracker',
         theme: ThemeData(
           canvasColor: const Color(0xFFfafafa),
