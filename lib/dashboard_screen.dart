@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
@@ -7,7 +8,6 @@ import 'package:mini_golf_tracker/game_card_widget.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/past_game_card_widget.dart';
 import 'package:mini_golf_tracker/past_games_screen.dart';
-import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
@@ -22,32 +22,36 @@ class DashboardScreen extends StatefulWidget {
 
 class DashBoardScreenState extends State<DashboardScreen> {
   late Widget body;
-
-  final _pages = <Widget>[const HomeScreen(), const PlayersScreen(), const PastGamesScreen(), const CoursesScreen()];
+  final _pages = <Widget>[
+    const HomeScreen(),
+    const PlayersScreen(),
+    const PastGamesScreen(),
+    const CoursesScreen()
+  ];
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    body = DashBoardLayout(
-      updateBottomNavChangeNotifier: (bool value) {
-        _onBottomNavigationButtonTapped(1);
-      },
-    );
+    _updateBody();
+  }
+
+  void _updateBody() {
+    if (_selectedIndex == 0) {
+      body = DashBoardLayout(
+        updateBottomNavChangeNotifier: (bool value) {
+          _onBottomNavigationButtonTapped(1);
+        },
+      );
+    } else {
+      body = _pages.elementAt(_selectedIndex);
+    }
   }
 
   void _onBottomNavigationButtonTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if (index == 0) {
-        body = DashBoardLayout(
-          updateBottomNavChangeNotifier: (bool value) {
-            _onBottomNavigationButtonTapped(1);
-          },
-        );
-      } else {
-        body = _pages.elementAt(_selectedIndex);
-      }
+      _updateBody();
     });
   }
 
@@ -60,6 +64,7 @@ class DashBoardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: const Color(0xFF009688),
         unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -96,13 +101,40 @@ class DashBoardLayout extends StatefulWidget {
 
 class _DashBoardLayoutState extends State<DashBoardLayout> {
   bool isShowFriendsScreen = false;
-  final Player? loggedInUser = UserProvider().loggedInUser;
+
+  @override
+  void initState() {
+    super.initState();
+    UserProvider().addListener(_onUserChanged);
+  }
+
+  @override
+  void dispose() {
+    UserProvider().removeListener(_onUserChanged);
+    super.dispose();
+  }
+
+  void _onUserChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final loggedInUser = UserProvider().loggedInUser;
+
+    if (loggedInUser == null) {
+      return const Center(child: Text("Please log in"));
+    }
+
+    final avatarUrl = (loggedInUser.avatarImageLocation != null && loggedInUser.avatarImageLocation!.isNotEmpty)
+        ? loggedInUser.avatarImageLocation!
+        : Gravatar(loggedInUser.email ?? "").imageUrl(size: 60);
+
     return FutureBuilder(
         future: Future.wait([
-          Game.initializeLocalGames(loggedInUser!),
+          Game.initializeLocalGames(loggedInUser),
         ]),
         builder: (BuildContext context, AsyncSnapshot snap) {
           if (snap.connectionState != ConnectionState.waiting) {
@@ -117,11 +149,48 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                           mainAxisAlignment: MainAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
+                            const SizedBox(height: 10),
+                            Card(
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: NetworkImage(avatarUrl),
+                                      backgroundColor: Colors.teal,
+                                    ),
+                                    const SizedBox(width: 15),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Hi, ${loggedInUser.nickname}!",
+                                          style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          loggedInUser.playerName,
+                                          style: TextStyle(
+                                              fontSize: 14, color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
                             const GameCardWidget(),
                             PlayersCard(onPlayerCardTap: (bool arg) {
                               setState(() {
                                 isShowFriendsScreen = !isShowFriendsScreen;
-                                widget.updateBottomNavChangeNotifier(isShowFriendsScreen);
+                                widget.updateBottomNavChangeNotifier(
+                                    isShowFriendsScreen);
                               });
                             }),
                             const PastGameCardWidget()
@@ -139,7 +208,9 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                     lift: 80,
                     ratio: 0.25,
                     pause: 0.01,
-                    child: CustomPaint(painter: GolfBallPainter(), child: const SizedBox(width: 100, height: 100))),
+                    child: CustomPaint(
+                        painter: GolfBallPainter(),
+                        child: const SizedBox(width: 100, height: 100))),
               ),
             );
           }

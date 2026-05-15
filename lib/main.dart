@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
@@ -9,16 +8,14 @@ import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
-import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/utilities.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseConnection.initialize();
+  await UserProvider().initialize();
   runApp(const MyApp());
 }
 
@@ -57,7 +54,6 @@ class MainScaffold extends State<HomePage> {
   MainScaffold();
 
   Widget body = const HomeScreen();
-  Player? loggedInPlayer;
   Image profileImage = Image.asset(
     "assets/images/avatars_3d_avatar_28.png",
     width: 120,
@@ -73,30 +69,33 @@ class MainScaffold extends State<HomePage> {
 
   @override
   void dispose() {
+    UserProvider().removeListener(_onUserChanged);
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    // backgroundImage = const AppImage.backgroundMainScreens;
-    _initializeLoggedInPlayer();
-    // Future.microtask(() async {
-    //   WidgetsFlutterBinding.ensureInitialized();
-    //   final prefs = await SharedPreferences.getInstance();
-    //   final email = prefs.getString("email");
-    //   setState(() async {
-    //     Utilities.debugPrintWithCallerInfo('Setting init state, $email');
-    //     if (email == null) {
-    //       logout();
-    //     } else {
-    //       loggedInPlayer = await Player.empty().getPlayerByEmail(email);
-    //       isLoggedIn(true);
-    //       changeProfileImage();
-    //       body = const DashboardScreen();
-    //     }
-    //   });
-    // });
+    UserProvider().addListener(_onUserChanged);
+    _updateState();
+  }
+
+  void _onUserChanged() {
+    if (mounted) {
+      setState(() {
+        _updateState();
+      });
+    }
+  }
+
+  void _updateState() {
+    final user = UserProvider().loggedInUser;
+    if (user != null) {
+      body = const DashboardScreen();
+      changeProfileImage();
+    } else {
+      body = const HomeScreen();
+    }
   }
 
   void changeBodyCallback(Widget nextPage) {
@@ -104,71 +103,35 @@ class MainScaffold extends State<HomePage> {
   }
 
   void logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove("email");
-    setState(() {
-      loggedInPlayer = null;
-      body = const HomeScreen();
-      final currentState = _scaffoldKey.currentState;
-      if (currentState != null && currentState.isDrawerOpen) {
-        _scaffoldKey.currentState!.openEndDrawer();
-      }
-    });
+    await UserProvider().logout();
   }
 
   void changeProfileImage() async {
-    Utilities.debugPrintWithCallerInfo('Getting email for gravatar');
-    final pref = await SharedPreferences.getInstance();
-    final loggedInEmail = pref.getString("email");
-    if (!mounted || loggedInEmail == null || loggedInEmail.isEmpty) {
+    final loggedInUser = UserProvider().loggedInUser;
+    if (!mounted || loggedInUser == null) {
       return;
     }
     setState(() {
-      final gravatarImgUrl = Gravatar(loggedInEmail).imageUrl(size: 120);
-      profileImage = Image.network(gravatarImgUrl);
+      if (loggedInUser.avatarImageLocation != null && loggedInUser.avatarImageLocation!.isNotEmpty) {
+        profileImage = Image.network(loggedInUser.avatarImageLocation!);
+      } else {
+        final gravatarImgUrl = Gravatar(loggedInUser.email ?? "").imageUrl(size: 120);
+        profileImage = Image.network(gravatarImgUrl);
+      }
     });
   }
 
-  Future<void> _initializeLoggedInPlayer() async {
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString("email");
-
-    if (email == null) {
-      logout();
-    } else {
-      try {
-        String? loggedInUserJson = prefs.getString("loggedInUser");
-        if (loggedInUserJson != null) {
-          loggedInPlayer = Player.fromJson(jsonDecode(loggedInUserJson));
-          if (loggedInPlayer != null) {
-            UserProvider().loggedInUser = loggedInPlayer;
-            await loggedInPlayer?.loadUserPlayers();
-            changeProfileImage();
-            if (!mounted) {
-              return;
-            }
-            setState(() {
-              body = const DashboardScreen();
-            });
-          }
-        }
-      } catch (error) {
-        Utilities.debugPrintWithCallerInfo(
-            "Error fetching logged-in player: $error");
-        logout();
-      }
-    }
-  }
 
   List<Widget> _buildDrawerList(BuildContext context) {
     List<Widget> children = [];
-    if (loggedInPlayer != null) {
+    if (UserProvider().loggedInUser != null) {
       children.addAll(_buildUserAccounts(context));
     }
     return children;
   }
 
   List<Widget> _buildUserAccounts(BuildContext context) {
+    final loggedInPlayer = UserProvider().loggedInUser;
     return [
       UserAccountsDrawerHeader(
           accountName: Row(children: <Widget>[
