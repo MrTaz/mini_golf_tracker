@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -12,6 +14,7 @@ class UserProvider extends ChangeNotifier {
   UserProvider._internal();
 
   FirebaseAuth? _auth;
+  StreamSubscription<User?>? _authStateSubscription;
   FirebaseAuth get auth => _auth ?? FirebaseAuth.instance;
 
   // For testing purposes
@@ -22,6 +25,16 @@ class UserProvider extends ChangeNotifier {
   Player? _loggedInUser;
   Player? get loggedInUser => _loggedInUser;
   List<Player> players = [];
+  
+  // For testing purposes
+  @visibleForTesting
+  void resetForTesting() {
+    _loggedInUser = null;
+    players = [];
+    _auth = null;
+    _authStateSubscription?.cancel();
+    _authStateSubscription = null;
+  }
 
   set loggedInUser(Player? player) {
     _loggedInUser = player;
@@ -56,7 +69,10 @@ class UserProvider extends ChangeNotifier {
     }
 
     // Listen to Firebase Auth changes
-    auth.authStateChanges().listen((User? user) async {
+    await _authStateSubscription?.cancel();
+    _authStateSubscription = auth.authStateChanges().listen((User? user) async {
+      final String? listenerTargetUid = user?.uid;
+
       if (user == null) {
         if (_loggedInUser != null) {
           _loggedInUser = null;
@@ -66,18 +82,43 @@ class UserProvider extends ChangeNotifier {
           notifyListeners();
         }
       } else {
-        // If Firebase says we are logged in, but our local state is empty,
-        // try to fetch the player profile.
-        if (_loggedInUser == null || _loggedInUser!.email != user.email) {
-          final player = await Player.getPlayerByEmailFromDB(user.email!);
+        // If Firebase says we are logged in, but our local state is empty or different,
+        // try to fetch the player profile using the UID.
+        if (_loggedInUser == null || _loggedInUser!.id != user.uid) {
+          Player? player = await Player.fetchPlayerFromDatabase(user.uid);
+          
+          // Verify we are still looking at the same user before updating state
+          if (auth.currentUser?.uid != listenerTargetUid) return;
+
           if (player != null) {
             // Update avatar if provided by Firebase and not set in player profile
             if (user.photoURL != null && player.avatarImageLocation != user.photoURL) {
               player.avatarImageLocation = user.photoURL;
-              // Ideally we should save this back to DB, but for now we update local state
-              // To ensure it persists, we can add a method to update player profile
             }
             await login(player);
+          } else {
+            // New user from social login (like Google) - create their profile
+            Utilities.debugPrintWithCallerInfo('Creating new player profile for social user: ${user.email}');
+            Utilities.debugPrintWithCallerInfo('No Firestore profile found for user ${user.email}. Creating one now...');
+          
+            final newUserProfile = await Player.createPlayer(
+              user.displayName ?? 'New User',
+              user.displayName ?? 'user_${user.uid.substring(0, 5)}',
+              email: user.email,
+              id: user.uid, // Use Firebase UID as Firestore Document ID
+            );
+          
+            // Double check user hasn't changed/logged out during the async createPlayer call
+            if (auth.currentUser?.uid != listenerTargetUid) return;
+
+            Utilities.debugPrintWithCallerInfo('Auto-created Firestore profile: ${newUserProfile.id}');
+            
+            // Sync the photoURL if available
+            if (user.photoURL != null) {
+              newUserProfile.avatarImageLocation = user.photoURL;
+            }
+            
+            await login(newUserProfile);
           }
         }
       }

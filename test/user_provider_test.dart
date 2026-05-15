@@ -20,6 +20,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     
     userProvider = UserProvider();
+    userProvider.resetForTesting();
     userProvider.setAuthInstanceForTesting(mockAuth);
   });
 
@@ -46,6 +47,18 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('email'), 'test@example.com');
       expect(prefs.getString('loggedInUser'), isNotNull);
+    });
+
+    test('loggedInUser setter updates state', () {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+      );
+      userProvider.loggedInUser = player;
+      expect(userProvider.loggedInUser, player);
     });
 
     test('logout() clears state and signed out from Firebase', () async {
@@ -92,28 +105,27 @@ void main() {
 
     test('Listen to auth state changes - user logged in via Firebase', () async {
       // Setup: user in Firestore but not in local state
+      final userCredential = await mockAuth.createUserWithEmailAndPassword(
+        email: 'test@example.com',
+        password: 'password123',
+      );
+      final uid = userCredential.user!.uid;
+      
       final player = Player(
-        id: 'user123',
+        id: uid,
         playerName: 'Test User',
         nickname: 'Tester',
-        ownerId: 'user123',
+        ownerId: uid,
         totalScore: 100,
         email: 'test@example.com',
       );
       
-      await fakeFirestore.collection('players').doc('user123').set(player.toJson());
+      await fakeFirestore.collection('players').doc(uid).set(player.toJson());
       
       await userProvider.initialize();
-      expect(userProvider.loggedInUser, isNull);
-
-      // Act: Trigger Firebase Auth login
-      await mockAuth.createUserWithEmailAndPassword(
-        email: 'test@example.com',
-        password: 'password123',
-      );
-
+      // Initially not logged in until the stream processes
       // Wait for stream listener to process
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Assert: local state should be updated automatically
       expect(userProvider.loggedInUser, isNotNull);
@@ -122,19 +134,21 @@ void main() {
 
     test('Listen to auth state changes - user logged out via Firebase', () async {
       // Setup: user logged in locally and in Firebase
+      final userCredential = await mockAuth.createUserWithEmailAndPassword(
+        email: 'test@example.com',
+        password: 'password123',
+      );
+      final uid = userCredential.user!.uid;
+
       final player = Player(
-        id: 'user123',
+        id: uid,
         playerName: 'Test User',
         nickname: 'Tester',
-        ownerId: 'user123',
+        ownerId: uid,
         totalScore: 100,
         email: 'test@example.com',
       );
       
-      await mockAuth.createUserWithEmailAndPassword(
-        email: 'test@example.com',
-        password: 'password123',
-      );
       await userProvider.login(player);
       
       await userProvider.initialize();
@@ -144,10 +158,40 @@ void main() {
       await mockAuth.signOut();
 
       // Wait for stream listener to process
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Assert: local state should be cleared automatically
       expect(userProvider.loggedInUser, isNull);
+    });
+
+    test('Auto-creation of Firestore profile for new social login', () async {
+      // Setup: No player in Firestore
+      await userProvider.initialize();
+      expect(userProvider.loggedInUser, isNull);
+
+      // Act: Trigger login for a user that doesn't exist in Firestore
+      final userCredential = await mockAuth.createUserWithEmailAndPassword(
+        email: 'new_google_user@example.com',
+        password: 'password123',
+      );
+      
+      // Simulate Firebase user having a display name and photo
+      // Note: MockUser doesn't have a direct setter for these, but we can mock them if needed
+      // For simplicity, we just check that a profile is created.
+
+      // Wait for stream listener to process
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Assert: Profile should be auto-created in Firestore
+      final uid = userCredential.user!.uid;
+      final doc = await fakeFirestore.collection('players').doc(uid).get();
+      
+      expect(doc.exists, isTrue, reason: 'Firestore profile should be created with UID as ID');
+      expect(doc.data()?['email'], 'new_google_user@example.com');
+      
+      // Assert: Local state should be updated
+      expect(userProvider.loggedInUser, isNotNull);
+      expect(userProvider.loggedInUser!.id, uid);
     });
   });
 }

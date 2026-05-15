@@ -118,6 +118,15 @@ class Player {
     //TODO: Notify player that they have been added to a game
   }
 
+  static Future<Player?> fetchPlayerFromDatabase(String id) async {
+    final doc = await DatabaseConnection.client.collection('players').doc(id).get();
+    if (!doc.exists) return null;
+    
+    var data = doc.data()!;
+    data['id'] = doc.id;
+    return Player.fromJson(data);
+  }
+
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
     final snapshot =
         await DatabaseConnection.client.collection('players').where('email', isEqualTo: email).limit(1).get();
@@ -151,20 +160,39 @@ class Player {
     }
   }
 
-  static Future<Player> createPlayer(String playerName, String email,
-      String phoneNumber, String nickname) async {
+  static Future<Player> createPlayer(
+    String playerName,
+    String nickname, {
+    String? email,
+    String? phoneNumber,
+    String? id,
+  }) async {
     try {
       if (await _isDuplicatePlayer(email, phoneNumber)) {
         throw DatabaseConnectionError(
             'Player with the same email or phone number already exists'); //TODO: fix error handling
       }
 
-      final createdPlayer =
-          await _createPlayerInDB(playerName, email, phoneNumber, nickname);
-      Utilities.debugPrintWithCallerInfo(
-          "Player saved to db, returning: ${createdPlayer.toJson()}");
+      final docRef = id != null 
+          ? DatabaseConnection.client.collection('players').doc(id)
+          : DatabaseConnection.client.collection('players').doc();
+          
+      final player = Player(
+        id: docRef.id,
+        playerName: playerName,
+        nickname: nickname,
+        ownerId: docRef.id,
+        totalScore: 0,
+        email: email,
+        phoneNumber: phoneNumber,
+      );
 
-      return createdPlayer;
+      await docRef.set(player.toJson());
+
+      Utilities.debugPrintWithCallerInfo(
+          "Player saved to db, returning: ${player.toJson()}");
+
+      return player;
     } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to create player: ${e.message}');
@@ -175,11 +203,11 @@ class Player {
 
   // Private method to add friend relationship
   Future<void> _addFriend(String playerId, String friendId) async {
-    await db.collection('friends').doc('${playerId}_$friendId').set({
+    await DatabaseConnection.client.collection('friends').doc('${playerId}_$friendId').set({
       'player_id': playerId,
       'friend_id': friendId,
     });
-    await db.collection('friends').doc('${friendId}_$playerId').set({
+    await DatabaseConnection.client.collection('friends').doc('${friendId}_$playerId').set({
       'player_id': friendId,
       'friend_id': playerId,
     });
@@ -196,12 +224,21 @@ class Player {
   }
 
   static Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
+    List<Filter> filters = [];
+    if (email != null && email.isNotEmpty) {
+      filters.add(Filter('email', isEqualTo: email));
+    }
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      filters.add(Filter('phone_number', isEqualTo: phoneNumber));
+    }
+
+    if (filters.isEmpty) return false;
+
     final snapshot = await DatabaseConnection.client
         .collection('players')
-        .where(Filter.or(
-          Filter('email', isEqualTo: email),
-          Filter('phone_number', isEqualTo: phoneNumber)
-        )).limit(1).get();
+        .where(Filter.or(filters[0], filters.length > 1 ? filters[1] : filters[0]))
+        .limit(1)
+        .get();
 
     return snapshot.docs.isNotEmpty;
   }

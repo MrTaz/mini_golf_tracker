@@ -106,6 +106,126 @@ void main() {
     });
   });
 
+  group('Player.fetchPlayerFromDatabase', () {
+    test('returns player by ID', () async {
+      await fakeFirestore.collection('players').doc('uid-123').set({
+        'player_name': 'Bob',
+        'nickname': 'Bobby',
+        'owner_id': 'uid-123',
+        'total_score': 50,
+      });
+      final p = await Player.fetchPlayerFromDatabase('uid-123');
+      expect(p, isNotNull);
+      expect(p!.playerName, 'Bob');
+      expect(p.id, 'uid-123');
+    });
+
+    test('returns null when ID not found', () async {
+      final p = await Player.fetchPlayerFromDatabase('non-existent');
+      expect(p, isNull);
+    });
+  });
+
+  group('Player.createPlayer', () {
+    test('creates new player in DB and returns it', () async {
+      final p = await Player.createPlayer('New Player', 'NewNick', email: 'new@test.com');
+      expect(p.playerName, 'New Player');
+      expect(p.email, 'new@test.com');
+      
+      final doc = await fakeFirestore.collection('players').doc(p.id).get();
+      expect(doc.exists, isTrue);
+      expect(doc.data()!['player_name'], 'New Player');
+    });
+
+    test('throws error if duplicate email', () async {
+      await fakeFirestore.collection('players').doc('existing').set({
+        'email': 'dup@test.com',
+        'player_name': 'Existing',
+        'nickname': 'Ex',
+      });
+      
+      expect(
+        () => Player.createPlayer('Dup', 'D', email: 'dup@test.com'),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+    });
+    });
+
+  group('Player.addPlayerFriend', () {
+    test('adds existing player as friend', () async {
+      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
+      final friend = Player(id: 'f1', playerName: 'Friend', nickname: 'F', ownerId: 'f1', totalScore: 0, email: 'friend@test.com');
+      
+      // Setup existing friend in DB
+      await fakeFirestore.collection('players').doc('f1').set(friend.toJson());
+      
+      owner.addPlayerFriend(friend);
+      
+      // Wait for microtask
+      await Future.delayed(Duration(milliseconds: 100));
+      
+      expect(Player.players.any((p) => p.id == 'f1'), isTrue);
+      
+      final friendDoc = await fakeFirestore.collection('friends').doc('o1_f1').get();
+      expect(friendDoc.exists, isTrue);
+      expect(friendDoc.data()!['friend_id'], 'f1');
+    });
+
+    test('creates new player in DB and adds as friend if not exists', () async {
+      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
+      final newFriend = Player(id: 'temp', playerName: 'Newbie', nickname: 'N', ownerId: 'o1', totalScore: 0, email: 'newbie@test.com', phoneNumber: '123');
+      
+      owner.addPlayerFriend(newFriend);
+      
+      // Wait for microtask
+      await Future.delayed(Duration(milliseconds: 100));
+      
+      final playersInDb = await fakeFirestore.collection('players').where('email', isEqualTo: 'newbie@test.com').get();
+      expect(playersInDb.docs.isNotEmpty, isTrue);
+      
+      final createdFriendId = playersInDb.docs.first.id;
+      expect(Player.players.any((p) => p.id == createdFriendId), isTrue);
+      
+      final friendDoc = await fakeFirestore.collection('friends').doc('o1_$createdFriendId').get();
+      expect(friendDoc.exists, isTrue);
+    });
+  });
+
+  group('Player.loadUserPlayers', () {
+    test('loads players from DB by ownerId', () async {
+      Player.players = [];
+      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
+      
+      await fakeFirestore.collection('players').doc('f1').set({
+        'player_name': 'Friend 1',
+        'nickname': 'F1',
+        'owner_id': 'o1',
+        'total_score': 10,
+      });
+      await fakeFirestore.collection('players').doc('f2').set({
+        'player_name': 'Friend 2',
+        'nickname': 'F2',
+        'owner_id': 'o1',
+        'total_score': 20,
+      });
+      
+      await owner.loadUserPlayers();
+      
+      expect(Player.players.length, 2);
+      expect(Player.players.any((p) => p.playerName == 'Friend 1'), isTrue);
+      expect(Player.players.any((p) => p.playerName == 'Friend 2'), isTrue);
+    });
+
+    test('does not reload if players already populated', () async {
+      Player.players = [Player.empty()];
+      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
+      
+      await owner.loadUserPlayers();
+      
+      expect(Player.players.length, 1); // Should still be 1, didn't fetch from DB
+    });
+  });
+
   group('Player.updatePlayerScoreInDatabase', () {
     test('updates total_score in Firestore', () async {
       await fakeFirestore.collection('players').doc('p1').set({
@@ -191,7 +311,7 @@ void main() {
   group('Player.createPlayer', () {
     test('creates and returns a new player', () async {
       final created = await Player.createPlayer(
-          'NewPerson', 'new@test.com', '555-0001', 'NP');
+          'NewPerson', 'NP', email: 'new@test.com', phoneNumber: '555-0001');
       expect(created.playerName, 'NewPerson');
       expect(created.id, isNotEmpty);
       final doc = await fakeFirestore
@@ -211,14 +331,14 @@ void main() {
         'total_score': 0,
       });
       expect(
-          () => Player.createPlayer('Dup', 'dup@test.com', '555-0000', 'D'),
+          () => Player.createPlayer('Dup', 'D', email: 'dup@test.com', phoneNumber: '555-0000'),
           throwsA(anything));
     });
 
     test('sets ownerId to player id when ownerId is empty', () async {
       // Create with no explicit ownerId (uses instance's empty logic internally)
       final created = await Player.createPlayer(
-          'SelfOwned', 'selfowned@test.com', '555-0002', 'SO');
+          'SelfOwned', 'SO', email: 'selfowned@test.com', phoneNumber: '555-0002');
       // createPlayer delegates to _createPlayerInDB with no ownerId → sets own id
       expect(created.ownerId, isNotEmpty);
     });
@@ -582,7 +702,7 @@ void main() {
   group('Player._createPlayerInDB edge cases', () {
     test('updates owner_id to doc ID when ownerId is empty', () async {
       // Indirectly test via createPlayer with no ownerId
-      final p = await Player.createPlayer('EmptyOwner', 'empty@test.com', '000', 'EO');
+      final p = await Player.createPlayer('EmptyOwner', 'EO', email: 'empty@test.com', phoneNumber: '000');
       expect(p.ownerId, p.id);
       
       final doc = await fakeFirestore.collection('players').doc(p.id).get();

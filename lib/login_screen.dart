@@ -69,29 +69,40 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<String?> _signupUser(SignupData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Signup Name: ${data.name}, Password: ${data.password}, ${data.additionalSignupData.toString()}');
-    final email = data.name!;
+    
     final additionalData = data.additionalSignupData!;
     final playerName = additionalData['playerName']!;
     final nickname = additionalData['nickname']!;
     final phoneNumber = additionalData['phoneNumber'] ?? "";
 
     try {
+      Utilities.debugPrintWithCallerInfo('Starting Firebase Auth Registration for ${data.name}');
       final userCredential = await UserProvider().auth.createUserWithEmailAndPassword(
-            email: email,
-            password: data.password!,
-          );
+        email: data.name!,
+        password: data.password!,
+      );
 
       if (userCredential.user != null) {
+        Utilities.debugPrintWithCallerInfo('Firebase Auth User Created: ${userCredential.user!.uid}');
+        
         Player loggedInPlayer = await Player.createPlayer(
-            playerName, email, phoneNumber, nickname);
+          playerName,
+          nickname,
+          email: data.name,
+          phoneNumber: phoneNumber,
+          id: userCredential.user!.uid, // Use Firebase UID
+        );
+        
+        Utilities.debugPrintWithCallerInfo('Firestore Player Profile Created: ${loggedInPlayer.id}');
         await UserProvider().login(loggedInPlayer);
+        return null;
       }
-      return null;
+      return 'Failed to create user account.';
     } on FirebaseAuthException catch (e) {
+      Utilities.debugPrintWithCallerInfo('FirebaseAuthException: ${e.code} - ${e.message}');
       return e.message ?? 'An error occurred during registration.';
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo(
-          "Signup Error was caught: ${exception.toString()}");
+      Utilities.debugPrintWithCallerInfo('Registration Error: $exception');
       return 'An error occurred during user registration.';
     }
   }
@@ -103,30 +114,35 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<String?> _handleGoogleLogin() async {
-    Utilities.debugPrintWithCallerInfo('Starting Google Sign-In Simulation');
-    
-    // In a real app, this would use google_sign_in package
-    // For simulation/mocking, we can use a fixed email
-    const String googleEmail = "google_user@example.com";
-    
+  Future<String?> _simulateSocialLogin(String name, String nickname, String email) async {
+    Utilities.debugPrintWithCallerInfo('Starting Social Sign-In Simulation: $email');
     try {
-      // Check if user exists in Firestore first (or create if simulation)
-      var player = await Player.getPlayerByEmailFromDB(googleEmail);
+      var player = await Player.getPlayerByEmailFromDB(email);
       player ??= await Player.createPlayer(
-          "Google User", googleEmail, "555-0199", "Googler");
-
-      // In tests/simulation, we might want to "force" a login if we can't do real Google Auth
-      // Here we just ensure UserProvider is updated.
-      // If we are in a mock environment (e.g. tests), UserProvider().auth is a MockFirebaseAuth
-      // and we can't easily "simulate" the Google popup, but we can sign in anonymously or with a fake credential.
+          name, nickname, email: email, phoneNumber: "555-SOCIAL");
       
       await UserProvider().login(player);
-      Utilities.debugPrintWithCallerInfo('Google Sign-In Simulated Successfully');
+      Utilities.debugPrintWithCallerInfo('Social Sign-In Simulated Successfully: $email');
       return null;
     } catch (e) {
-      return "Google Sign-In failed: $e";
+      return "Sign-In failed: $e";
     }
+  }
+
+  Future<String?> _handleGoogleLogin() async {
+    return _simulateSocialLogin("Google User", "Googler", "google_user@example.com");
+  }
+
+  Future<String?> _handleFacebookLogin() async {
+    return _simulateSocialLogin("Facebook User", "FB-Player", "facebook_user@example.com");
+  }
+
+  Future<String?> _handleSnapchatLogin() async {
+    return _simulateSocialLogin("Snapchat User", "Snap-Player", "snapchat_user@example.com");
+  }
+
+  Future<String?> _handleInstagramLogin() async {
+    return _simulateSocialLogin("Instagram User", "Insta-Player", "instagram_user@example.com");
   }
 
   @override
@@ -237,21 +253,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.facebookF,
-                    callback: () async {
-                      return "Facebook login not implemented";
-                    },
+                    callback: _handleFacebookLogin,
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.snapchat,
-                    callback: () async {
-                      return "Snapchat login not implemented";
-                    },
+                    callback: _handleSnapchatLogin,
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.instagram,
-                    callback: () async {
-                      return "Instagram login not implemented";
-                    },
+                    callback: _handleInstagramLogin,
                   ),
                 ],
                 onSubmitAnimationCompleted: () {
