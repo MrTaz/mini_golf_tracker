@@ -190,12 +190,6 @@ void main() {
 
   group('Player.createPlayer', () {
     test('creates and returns a new player', () async {
-      final owner = Player(
-          id: 'owner-1',
-          playerName: 'Owner',
-          nickname: 'O',
-          ownerId: 'owner-1',
-          totalScore: 0);
       final created = await Player.createPlayer(
           'NewPerson', 'new@test.com', '555-0001', 'NP');
       expect(created.playerName, 'NewPerson');
@@ -216,20 +210,12 @@ void main() {
         'owner_id': 'o1',
         'total_score': 0,
       });
-      final owner = Player(
-          id: 'o1', playerName: 'O', nickname: 'O', ownerId: 'o1', totalScore: 0);
       expect(
           () => Player.createPlayer('Dup', 'dup@test.com', '555-0000', 'D'),
           throwsA(anything));
     });
 
     test('sets ownerId to player id when ownerId is empty', () async {
-      final owner = Player(
-          id: 'owner-2',
-          playerName: 'Owner',
-          nickname: 'O',
-          ownerId: 'owner-2',
-          totalScore: 0);
       // Create with no explicit ownerId (uses instance's empty logic internally)
       final created = await Player.createPlayer(
           'SelfOwned', 'selfowned@test.com', '555-0002', 'SO');
@@ -930,7 +916,7 @@ void main() {
   // FirebaseException catch blocks — using fake_cloud_firestore's whenCalling
   // ════════════════════════════════════════════════════════════════════════════
 
-  final _firestoreError = FirebaseException(plugin: 'cloud_firestore', message: 'simulated error');
+  final firestoreError = FirebaseException(plugin: 'cloud_firestore', message: 'simulated error');
 
   group('Player.updatePlayerScoreInDatabase — FirebaseException catch', () {
     test('rethrows as DatabaseConnectionError on Firestore failure', () async {
@@ -942,7 +928,7 @@ void main() {
         'total_score': 0,
       });
       final doc = fakeFirestore.collection('players').doc('p-err');
-      whenCalling(Invocation.method(#update, null)).on(doc).thenThrow(_firestoreError);
+      whenCalling(Invocation.method(#update, null)).on(doc).thenThrow(firestoreError);
 
       final player = Player(
           id: 'p-err', playerName: 'Err', nickname: 'E', ownerId: 'o', totalScore: 99);
@@ -967,7 +953,7 @@ void main() {
         'player_name': 'X', 'email': 'update-fail@x.com',
         'phone_number': '000', 'nickname': 'X', 'owner_id': '', 'total_score': 0
       });
-      whenCalling(Invocation.method(#update, null)).on(knownDocRef).thenThrow(_firestoreError);
+      whenCalling(Invocation.method(#update, null)).on(knownDocRef).thenThrow(firestoreError);
 
       // Now call _createPlayerInDB indirectly via createPlayer.
       // Since .add() generates a random ID (not 'known-id'), the update() on
@@ -976,7 +962,7 @@ void main() {
       // that IS a concrete DocumentReference path we already test at line 800.
       // For _createPlayerInDB's FirebaseException, we test via the docRef.get()
       // on the known doc being broken:
-      whenCalling(Invocation.method(#get, null)).on(knownDocRef).thenThrow(_firestoreError);
+      whenCalling(Invocation.method(#get, null)).on(knownDocRef).thenThrow(firestoreError);
 
       // This confirms the FirebaseException is properly wrapped:
       await expectLater(
@@ -1040,7 +1026,7 @@ void main() {
       DatabaseConnection.setFirestoreInstanceForTesting(failFirestore);
 
       final doc = failFirestore.collection('games').doc('fail-game');
-      whenCalling(Invocation.method(#set, null)).on(doc).thenThrow(_firestoreError);
+      whenCalling(Invocation.method(#set, null)).on(doc).thenThrow(firestoreError);
 
       final game = _makeGame(id: 'fail-game');
       await expectLater(

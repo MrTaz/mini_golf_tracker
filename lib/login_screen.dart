@@ -81,10 +81,8 @@ class LoginScreen extends StatelessWidget {
     final nickname = additionalData['nickname']!;
     final phoneNumber = additionalData['phoneNumber'] ?? "";
 
-    final newPlayer = Player.empty();
-
     try {
-      Player loggedInPlayer = await newPlayer.createPlayer(
+      Player loggedInPlayer = await Player.createPlayer(
           playerName, email, phoneNumber, nickname);
       _initializeLoggedInPlayer(loggedInPlayer);
       return null;
