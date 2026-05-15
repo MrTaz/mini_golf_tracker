@@ -16,7 +16,7 @@ class PlayerProfileWidget extends StatefulWidget {
 }
 
 class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
-  List<int> selectedPlayerIds = [];
+  List<String> selectedPlayerIds = [];
 
   Color getRankBorderColor(int? currentRank) {
     currentRank ??= 99;

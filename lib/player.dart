@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Player {
   Player(
@@ -18,39 +18,39 @@ class Player {
   // Factory method to create a Player object without populating fields
   factory Player.empty() {
     return Player(
-      id: 0,
+      id: '',
       playerName: '',
       nickname: '',
-      ownerId: 0,
+      ownerId: '',
       totalScore: 0,
     );
   }
 
   factory Player.fromJson(Map<String, dynamic> json) {
     return Player(
-        id: json['id'],
-        playerName: json['player_name'],
-        nickname: json['nickname'],
-        ownerId: json['owner_id'],
+        id: json['id'] ?? '',
+        playerName: json['player_name'] ?? '',
+        nickname: json['nickname'] ?? '',
+        ownerId: json['owner_id'] ?? '',
         email: json['email'],
         phoneNumber: json['phone_number'],
         status: json['status'],
-        totalScore: json['total_score'],
+        totalScore: json['total_score'] ?? 0,
         avatarImageLocation: json['avatar_image_location']);
   }
 
   static List<Player> players = [];
   String? avatarImageLocation;
   String? email;
-  final int id;
+  final String id;
   String nickname;
-  int ownerId;
+  String ownerId;
   String? phoneNumber;
   String playerName;
   String? status;
   num totalScore;
 
-  SupabaseClient get db => DatabaseConnection.client;
+  FirebaseFirestore get db => DatabaseConnection.client;
 
   Map<String, dynamic> toJson() {
     return {
@@ -67,7 +67,7 @@ class Player {
   }
 
   Future<void> loadUserPlayers() async {
-    if (players.isEmpty && ownerId != 0) {
+    if (players.isEmpty && ownerId != '') {
       final loadedPlayers = await _getAllPlayersFromDBByOwnerId(ownerId);
       players.addAll(loadedPlayers);
     }
@@ -77,7 +77,7 @@ class Player {
     return players;
   }
 
-  Player? getPlayerFriendById(int playerId) {
+  Player? getPlayerFriendById(String playerId) {
     return players.firstWhere((player) => player.id == playerId, orElse: () => Player.empty());
   }
 
@@ -119,14 +119,16 @@ class Player {
   }
 
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
-    final response =
-        await DatabaseConnection.client.from('players').select().eq('email', email).single();
+    final snapshot =
+        await DatabaseConnection.client.collection('players').where('email', isEqualTo: email).limit(1).get();
 
-    if (response.isEmpty) {
+    if (snapshot.docs.isEmpty) {
       return null;
     }
 
-    return Player.fromJson(response);
+    var data = snapshot.docs.first.data();
+    data['id'] = snapshot.docs.first.id;
+    return Player.fromJson(data);
   }
 
   static Future<void> updatePlayerScoreInDatabase(Player playerToUpdate) async {
@@ -138,10 +140,10 @@ class Player {
 
       // Update the player's score in the players table
       await DatabaseConnection.client
-          .from('players')
-          .update(playerScoreData)
-          .eq('id', playerToUpdate.id);
-    } on PostgrestException catch (e) {
+          .collection('players')
+          .doc(playerToUpdate.id)
+          .update(playerScoreData);
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to update player score: ${e.message}');
       throw DatabaseConnectionError(
@@ -149,7 +151,7 @@ class Player {
     }
   }
 
-  Future<Player> createPlayer(String playerName, String email,
+  static Future<Player> createPlayer(String playerName, String email,
       String phoneNumber, String nickname) async {
     try {
       if (await _isDuplicatePlayer(email, phoneNumber)) {
@@ -163,7 +165,7 @@ class Player {
           "Player saved to db, returning: ${createdPlayer.toJson()}");
 
       return createdPlayer;
-    } on PostgrestException catch (e) {
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to create player: ${e.message}');
       throw DatabaseConnectionError(
@@ -172,87 +174,65 @@ class Player {
   }
 
   // Private method to add friend relationship
-  Future<void> _addFriend(int playerId, int friendId) async {
-    await db.from('friends').upsert([
-      {'player_id': playerId, 'friend_id': friendId},
-      {'player_id': friendId, 'friend_id': playerId},
-    ]);
+  Future<void> _addFriend(String playerId, String friendId) async {
+    await db.collection('friends').doc('${playerId}_$friendId').set({
+      'player_id': playerId,
+      'friend_id': friendId,
+    });
+    await db.collection('friends').doc('${friendId}_$playerId').set({
+      'player_id': friendId,
+      'friend_id': playerId,
+    });
   }
 
-  // static Future<Player?> _getPlayerByIdFromDB(int playerId) async {
-  //   final response = await db.from('players').select().eq('id', playerId).single();
-
-  //   // if (response.status == 400 || response.status == 401) {
-  //   //   throw DatabaseConnectionError('Error retrieving player from Supabase');
-  //   // }
-
-  //   if (response == null) {
-  //     return null;
-  //   }
-
-  //   return Player.fromJson(response as Map<String, dynamic>);
-  // }
-
-  static Future<List<Player>> _getAllPlayersFromDBByOwnerId(int ownerId) async {
-    final response = await DatabaseConnection.client.from('players').select().eq('owner_id', ownerId);
-    // if (response.status == 400 || response.status == 401) {
-    //   throw DatabaseConnectionError('Error loading players from Supabase');
-    // }
-    return (response as List<dynamic>)
-        .map((data) => Player.fromJson(data))
-        .toList();
+  static Future<List<Player>> _getAllPlayersFromDBByOwnerId(String ownerId) async {
+    final snapshot = await DatabaseConnection.client.collection('players').where('owner_id', isEqualTo: ownerId).get();
+    
+    return snapshot.docs.map((doc) {
+      var data = doc.data();
+      data['id'] = doc.id;
+      return Player.fromJson(data);
+    }).toList();
   }
 
-  Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
-    final response = await DatabaseConnection.client
-        .from('players')
-        .select()
-        .or('email.eq.$email,phone_number.eq.$phoneNumber');
-    // if (response.status == 400 || response.status == 401) {
-    //   throw DatabaseConnectionError('Error checking duplicate players from Supabase');
-    // }
-    Utilities.debugPrintWithCallerInfo("Is duplicate response: $response");
-    return (response as List<dynamic>).isNotEmpty;
+  static Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
+    final snapshot = await DatabaseConnection.client
+        .collection('players')
+        .where(Filter.or(
+          Filter('email', isEqualTo: email),
+          Filter('phone_number', isEqualTo: phoneNumber)
+        )).limit(1).get();
+
+    return snapshot.docs.isNotEmpty;
   }
 
-  // Private method to create a player in Supabase and add friend relationship
-  Future<Player> _createPlayerInDB(
+  static Future<Player> _createPlayerInDB(
       String playerName, String email, String phoneNumber, String nickname,
-      {int? ownerId}) async {
+      {String? ownerId}) async {
     try {
       Map<String, dynamic> userToCreate = {
         "player_name": playerName,
         "email": email,
         "phone_number": phoneNumber,
         "nickname": nickname,
-        "owner_id": ownerId ?? 0,
+        "owner_id": ownerId ?? '',
         "total_score": 0
       };
 
-      final response =
-          await db.from('players').upsert(userToCreate).select().single();
-      Utilities.debugPrintWithCallerInfo(
-          "Create Player in Supabase response: $response");
-      final playerWithoutOwnerId = Player.fromJson(response);
-      Utilities.debugPrintWithCallerInfo(
-          "Created Player: ${playerWithoutOwnerId.toJson()}");
-      Map<String, dynamic> responseWithOwnerId = {};
-      if (playerWithoutOwnerId.ownerId == 0) {
+      final docRef = await DatabaseConnection.client.collection('players').add(userToCreate);
+      var doc = await docRef.get();
+      var data = doc.data()!;
+      data['id'] = doc.id;
+      
+      final playerWithoutOwnerId = Player.fromJson(data);
+      
+      if (playerWithoutOwnerId.ownerId == '') {
         playerWithoutOwnerId.ownerId = playerWithoutOwnerId.id;
-        Utilities.debugPrintWithCallerInfo(
-            "updating Player owner id: ${playerWithoutOwnerId.ownerId} with ${playerWithoutOwnerId.id}");
-        responseWithOwnerId = await db
-            .from('players')
-            .upsert(playerWithoutOwnerId.toJson())
-            .select()
-            .single();
-      } else {
-        responseWithOwnerId = playerWithoutOwnerId.toJson();
+        await docRef.update({'owner_id': playerWithoutOwnerId.id});
       }
-      Utilities.debugPrintWithCallerInfo(
-          "Updated Player: $responseWithOwnerId");
-      return Player.fromJson(responseWithOwnerId);
-    } on PostgrestException catch (e) {
+      
+      return playerWithoutOwnerId;
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to create player in DB: ${e.message}');
       throw DatabaseConnectionError(

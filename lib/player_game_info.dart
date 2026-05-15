@@ -16,14 +16,14 @@ class PlayerGameInfo {
       playOrderPosition: json['play_order_position'],
       place: json['place'],
       totalScore: json['total_score'],
-      strokes: json['strokes'],
+      strokes: json['strokes'] ?? 0,
     );
   }
 
   final String gameId;
   String? place;
   int? playOrderPosition;
-  final int playerId;
+  final String playerId;
   List<int> scores;
   int totalScore;
   int strokes;

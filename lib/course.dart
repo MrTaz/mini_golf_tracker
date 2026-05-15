@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Course {
   Course({
@@ -12,12 +12,17 @@ class Course {
     required this.parStrokes,
   });
 
+  factory Course.empty() {
+    return Course(id: '', name: '', numberOfHoles: 0, parStrokes: {});
+  }
+
   factory Course.fromJson(Map<String, dynamic> json) {
-    final int id = json['id'];
-    final String name = json['name'];
-    final int numberOfHoles = json['number_of_holes'];
-    final Map<int, int> parStrokes = (json['par_strokes'] as Map<String, dynamic>)
-        .map((key, value) => MapEntry(int.parse(key), value as int));
+    final String id = json['id'] ?? '';
+    final String name = json['name'] ?? '';
+    final int numberOfHoles = json['number_of_holes'] ?? 0;
+    final Map<int, int> parStrokes = (json['par_strokes'] as Map<String, dynamic>?)
+            ?.map((key, value) => MapEntry(int.parse(key), value as int)) ??
+        {};
 
     return Course(
       id: id,
@@ -32,19 +37,19 @@ class Course {
         .map((key, value) => MapEntry(int.parse(key), value as int));
 
     return Course(
-      id: map['id'] as int,
+      id: map['id'] as String,
       name: map['name'] as String,
       numberOfHoles: map['numberOfHoles'] as int,
       parStrokes: parStrokes,
     );
   }
 
-  final int id;
+  final String id;
   String name;
   final int numberOfHoles;
   final Map<int, int> parStrokes; // Map to store par strokes for each hole
 
-  SupabaseClient get db => DatabaseConnection.client;
+  FirebaseFirestore get db => DatabaseConnection.client;
 
   Map<String, dynamic> toJson() {
     return {
@@ -67,17 +72,18 @@ class Course {
   static Future<List<Course?>> fetchCourses() async {
     try {
       // Fetch the courses from the database
-      final response = await DatabaseConnection.client.from('courses').select('*');
-      final coursesData = response as List<dynamic>;
-      final courses = coursesData
-          .map<Course?>((data) => Course.fromJson(data as Map<String, dynamic>))
-          .toList();
+      final snapshot = await DatabaseConnection.client.collection('courses').get();
+      final courses = snapshot.docs.map<Course?>((doc) {
+        var data = doc.data();
+        data['id'] = doc.id;
+        return Course.fromJson(data);
+      }).toList();
 
       Utilities.debugPrintWithCallerInfo(
           "Recieved courses: ${courses.map((course) => course?.toJson())}");
 
       return courses;
-    } on PostgrestException catch (e) {
+    } on FirebaseException catch (e) {
       // Handle error if any
       if (kDebugMode) {
         print('Error fetching courses: ${e.message}');
@@ -86,37 +92,18 @@ class Course {
     }
   }
 
-  // Future<Course> fetchCourseDetails(int selectedCourseId) async {
-  //   try {
-  //     final response = await supabase.from('courses').select().eq('id', selectedCourseId).single();
-  //     final courseData = response.data;
-  //     if (courseData == null) {
-  //       throw DatabaseConnectionError('Course not found: $selectedCourseId');
-  //     }
-
-  //     final course = Course.fromMap(courseData);
-  //     return course;
-  //   } on PostgrestException catch (e) {
-  //     // Handle error if any
-  //     if (kDebugMode) {
-  //       print('Error fetching courses: ${e.message}');
-  //     }
-  //     throw DatabaseConnectionError('Failed to fetch courses: ${e.message}');
-  //   }
-  // }
-
   Future<Course> saveCourseToDatabase() async {
     try {
       // Fetch existing courses with the same name from the database
-      final existingCoursesResponse = await db
-          .from('courses')
-          .select('id')
-          .eq('name', name)
-          .eq('number_of_holes', numberOfHoles)
-          .limit(1);
+      final existingCoursesSnapshot = await db
+          .collection('courses')
+          .where('name', isEqualTo: name)
+          .where('number_of_holes', isEqualTo: numberOfHoles)
+          .limit(1)
+          .get();
 
       // If there's an existing course with the same name and number of holes, do not save
-      if (existingCoursesResponse.isNotEmpty) {
+      if (existingCoursesSnapshot.docs.isNotEmpty) {
         throw Exception(
             'Course with the same name and number of holes already exists.');
       }
@@ -130,12 +117,17 @@ class Course {
       };
 
       // Save the course data to the database
-      final updatedCourse = await db.from('courses').insert([courseData]).select().single();
-      Utilities.debugPrintWithCallerInfo(
-          "Updated course returned: $updatedCourse");
+      final docRef = await db.collection('courses').add(courseData);
+      var docSnapshot = await docRef.get();
+      var data = docSnapshot.data()!;
+      data['id'] = docRef.id;
 
-      return Course.fromJson(updatedCourse);
-    } on PostgrestException catch (e) {
+      final updatedCourse = Course.fromJson(data);
+      Utilities.debugPrintWithCallerInfo(
+          "Updated course returned: ${updatedCourse.toJson()}");
+
+      return updatedCourse;
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to save course: ${e.message}');
       throw DatabaseConnectionError('Failed to save course: ${e.message}');

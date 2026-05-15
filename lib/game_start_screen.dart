@@ -83,7 +83,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                     final newGame = Game(
                         name: _nameController.text,
                         players: [],
-                        course: Course(id: 0, name: "Please select course", numberOfHoles: 0, parStrokes: {}),
+                        course: Course(id: "", name: "Please select course", numberOfHoles: 0, parStrokes: {}),
                         scheduledTime: DateTime.now());
                     Navigator.pop(context, true);
                     Navigator.pushReplacement(

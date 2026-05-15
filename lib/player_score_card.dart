@@ -12,7 +12,7 @@ class PlayerScoreCard extends StatefulWidget {
 }
 
 class PlayerScoreCardState extends State<PlayerScoreCard> {
-  List<int> selectedPlayerIds = [];
+  List<String> selectedPlayerIds = [];
 
   @override
   Widget build(BuildContext context) {

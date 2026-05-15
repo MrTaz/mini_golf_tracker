@@ -20,7 +20,7 @@ class PlayerScoreDataTable extends StatefulWidget {
 }
 
 class PlayerScoreDataTableState extends State<PlayerScoreDataTable> {
-  PlayerGameInfo? _findPlayerGameInfo(int playerId) {
+  PlayerGameInfo? _findPlayerGameInfo(String playerId) {
     for (final playerGameInfo in widget.clickedPlayerScores) {
       if (playerGameInfo.playerId == playerId) {
         return playerGameInfo;

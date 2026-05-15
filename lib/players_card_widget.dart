@@ -12,7 +12,7 @@ class PlayersCard extends StatefulWidget {
   final String? cardTitle;
   final ValueChanged<bool>? onPlayerCardTap;
   final ValueChanged<Player>? onTap;
-  final List<int>? sortedPlayerIds;
+  final List<String>? sortedPlayerIds;
   final List<PlayerGameInfo>? sortedPlayerScores;
 
   @override
@@ -22,8 +22,7 @@ class PlayersCard extends StatefulWidget {
 class PlayersCardState extends State<PlayersCard> {
   Player? loggedInUser = UserProvider().loggedInUser;
   List<Player> playerFriends = [];
-  List<int> scoresToShow = [];
-  List<int> selectedPlayerIds = [];
+  List<String> selectedPlayerIds = [];
   List<Player> sortedPlayers = [];
 
   @override

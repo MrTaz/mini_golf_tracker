@@ -1,1 +1,7 @@
-{"projects":{"default":"mini-golf-tracker-dahome"}}
+{
+  "projects": {
+    "default": "mini-golf-tracker-dahome"
+  },
+  "targets": {},
+  "etags": {}
+}

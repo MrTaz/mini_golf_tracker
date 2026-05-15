@@ -1,16 +1,20 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-const supabaseUrl = 'https://hiuiqbsaqexyyyasabqo.supabase.co';
-const supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpdWlxYnNhcWV4eXl5YXNhYnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1MDAyNzEsImV4cCI6MjAwMDA3NjI3MX0.CgGzYPYvrU0EtnZPl83mBR8zL57mIBdXMCFxAfIBI2Y';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 
 class DatabaseConnection {
   static Future<void> initialize() async {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
   }
 
-  static SupabaseClient get client => Supabase.instance.client;
+  static FirebaseFirestore? _firestoreInstance;
+
+  static void setFirestoreInstanceForTesting(FirebaseFirestore? instance) {
+    _firestoreInstance = instance;
+  }
+
+  static FirebaseFirestore get client => _firestoreInstance ?? FirebaseFirestore.instance;
+  static FirebaseFirestore getFirestore() => client;
 }

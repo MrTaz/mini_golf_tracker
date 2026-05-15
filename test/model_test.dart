@@ -9,14 +9,14 @@ void main() {
   group('Course', () {
     test('round trips database JSON shape', () {
       final course = Course(
-        id: 7,
+        id: "7",
         name: 'Putter Park',
         numberOfHoles: 3,
         parStrokes: {1: 2, 2: 3, 3: 4},
       );
 
       expect(course.toJson(), {
-        'id': 7,
+        'id': "7",
         'name': 'Putter Park',
         'number_of_holes': 3,
         'par_strokes': {'1': 2, '2': 3, '3': 4},
@@ -24,7 +24,7 @@ void main() {
 
       final decoded = Course.fromJson(course.toJson());
 
-      expect(decoded.id, 7);
+      expect(decoded.id, "7");
       expect(decoded.name, 'Putter Park');
       expect(decoded.numberOfHoles, 3);
       expect(decoded.parStrokes, {1: 2, 2: 3, 3: 4});
@@ -32,7 +32,7 @@ void main() {
 
     test('throws for invalid hole number', () {
       final course = Course(
-        id: 1,
+        id: "1",
         name: 'Short Course',
         numberOfHoles: 1,
         parStrokes: {1: 2},
@@ -45,7 +45,7 @@ void main() {
   group('PlayerGameInfo', () {
     test('round trips JSON shape', () {
       final playerGameInfo = PlayerGameInfo(
-        playerId: 12,
+        playerId: "12",
         gameId: 'game-1',
         scores: [2, 3, 4],
         playOrderPosition: 1,
@@ -54,17 +54,18 @@ void main() {
       );
 
       expect(playerGameInfo.toJson(), {
-        'player_id': 12,
+        'player_id': "12",
         'game_id': 'game-1',
         'scores': [2, 3, 4],
         'play_order_position': 1,
         'place': '1st',
         'total_score': 9,
+        'strokes': 0,
       });
 
       final decoded = PlayerGameInfo.fromJson(playerGameInfo.toJson());
 
-      expect(decoded.playerId, 12);
+      expect(decoded.playerId, "12");
       expect(decoded.gameId, 'game-1');
       expect(decoded.scores, [2, 3, 4]);
       expect(decoded.playOrderPosition, 1);
@@ -115,14 +116,14 @@ Game _buildGame() {
     id: 'game-1',
     name: 'Friday League',
     course: Course(
-      id: 7,
+      id: "7",
       name: 'Putter Park',
       numberOfHoles: 3,
       parStrokes: {1: 2, 2: 3, 3: 4},
     ),
     players: [
-      PlayerGameInfo(playerId: 1, gameId: 'game-1', scores: []),
-      PlayerGameInfo(playerId: 2, gameId: 'game-1', scores: []),
+      PlayerGameInfo(playerId: "1", gameId: 'game-1', scores: []),
+      PlayerGameInfo(playerId: "2", gameId: 'game-1', scores: []),
     ],
     scheduledTime: DateTime(2026, 5, 10, 12),
   );

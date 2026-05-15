@@ -272,7 +272,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                     onPressed: () async {
                       if (courseName.isNotEmpty && parStrokes.isNotEmpty) {
                         final Course newCourse = Course(
-                          id: 0,
+                          id: "",
                           name: courseName,
                           numberOfHoles: numberOfHoles!,
                           parStrokes: {

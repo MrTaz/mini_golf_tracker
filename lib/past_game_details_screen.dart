@@ -77,7 +77,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   //       });
   // }
 
-  PlayerGameInfo? _getPlayerGameInfo(int playerId) {
+  PlayerGameInfo? _getPlayerGameInfo(String playerId) {
     return sortedPlayerScores.firstWhere((gameInfo) => gameInfo.playerId == playerId,
         orElse: () => throw Exception("No PlayerGameInfo found for playerId: $playerId"));
   }

@@ -19,7 +19,7 @@ class PlayerCreateScreenState extends State<PlayerCreateScreen> {
   @override
   void initState() {
     super.initState();
-    newPlayer = Player(id: 0, playerName: '', nickname: '', ownerId: 0, totalScore: 0);
+    newPlayer = Player(id: "", playerName: '', nickname: '', ownerId: "", totalScore: 0);
   }
 
   void savePlayer() {

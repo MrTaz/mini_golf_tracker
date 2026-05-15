@@ -7,7 +7,7 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:random_x/random_x.dart';
 import 'package:recase/recase.dart';
@@ -56,6 +56,16 @@ class Game {
         scheduledTime: scheduledTime,
         completedTime: completedTime,
         status: status);
+  }
+
+  factory Game.empty() {
+    return Game(
+      name: '',
+      course: Course.empty(),
+      players: [],
+      scheduledTime: DateTime.now(),
+      id: '',
+    );
   }
 
   DateTime? completedTime;
@@ -120,7 +130,7 @@ class Game {
       return player.totalScore;
     }
     player.totalScore =
-        playerScores.fold<int>(0, (sum, strokes) => sum + strokes);
+        playerScores.fold<int>(0, (totalSum, strokes) => totalSum + strokes);
     return player.totalScore;
   }
 
@@ -254,7 +264,7 @@ class Game {
       Game game = Game(
           name: generateRandomGameName(),
           course: Course(
-            id: i,
+            id: i.toString(),
             name: name,
             numberOfHoles: courseNumberOfHoles,
             parStrokes: parStrokes,
@@ -268,7 +278,7 @@ class Game {
       int numOfPlayers = 2 + rnd.nextInt((5 + 1 - 2));
       for (int l = 0; l < numOfPlayers; l++) {
         PlayerGameInfo player =
-            PlayerGameInfo(playerId: l + 1, gameId: game.id, scores: []);
+            PlayerGameInfo(playerId: (l + 1).toString(), gameId: game.id, scores: []);
         game.addPlayer(player);
       }
 
@@ -361,29 +371,33 @@ class Game {
     return games;
   }
 
-  static Future<List<Game>> fetchGamesForCurrentUser(int currentUserId) async {
+  static Future<List<Game>> fetchGamesForCurrentUser(String currentUserId) async {
     try {
       // Fetch the games from the database where the current user is a player
-      final response = await DatabaseConnection.client
-          .from('games')
-          .select('*, players:player_game_info(*), course:courses(*)')
-          .eq('creator_id', currentUserId)
-          // .or('players_game_info.player_id.eq.$currentUserId')
-          .order('scheduled_time', ascending: true);
+      // Firestore does not easily support deep relational joins like Supabase, 
+      // but if we store game info redundantly or query games where the creator_id is the user
+      final snapshot = await DatabaseConnection.client
+          .collection('games')
+          .where('creator_id', isEqualTo: currentUserId)
+          .orderBy('scheduled_time', descending: false)
+          .get();
 
-      Utilities.debugPrintWithCallerInfo("Fetching games: $response");
+      Utilities.debugPrintWithCallerInfo("Fetching games: ${snapshot.docs.length}");
 
       // Convert the response data into a list of Game objects
       final List<Game> games = [];
-      if (response.isNotEmpty) {
-        for (final gameData in response) {
-          final game = Game.fromJson(jsonEncode(gameData));
-          games.add(game);
-        }
+      for (final doc in snapshot.docs) {
+        var gameData = doc.data();
+        gameData['id'] = doc.id;
+        
+        // Fetch players and courses if stored separately, or if they're embedded
+        // Assuming we embed them for now or they are nested in Firestore
+        final game = Game.fromJson(jsonEncode(gameData));
+        games.add(game);
       }
 
       return games;
-    } on PostgrestException catch (e) {
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to get games for current user: ${e.message}');
       throw DatabaseConnectionError(
@@ -410,16 +424,18 @@ class Game {
             ? game.completedTime!.toIso8601String()
             : null,
         'status': game.status,
-        'creator_id': creator.id
+        'creator_id': creator.id,
+        'course': game.course.toJson(),
+        'players': game.players.map((p) => p.toJson()).toList()
       };
 
-      // 2. Save the game data to the games table and get the saved game ID
-      final gameResponse = await DatabaseConnection.client.from('games').upsert([gameData]);
-      Utilities.debugPrintWithCallerInfo(
-          "Saved game to database, returned ${gameResponse.toString()}");
+      // 2. Save the game data to the games table
+      await DatabaseConnection.client.collection('games').doc(game.id).set(gameData);
+      Utilities.debugPrintWithCallerInfo("Saved game to database");
 
-      // 3. Save player game info to the player_game_info table
+      // 3. Save player game info to the player_game_info subcollection
       bool playerUpdated = false;
+      var batch = DatabaseConnection.client.batch();
       for (final player in game.players) {
         final playerGameInfoData = {
           'game_id': game.id,
@@ -429,32 +445,25 @@ class Game {
           'scores': player.scores,
           'total_score': player.totalScore,
         };
-        final pgiResponse = await DatabaseConnection.client
-            .from('player_game_info')
-            .upsert([playerGameInfoData], onConflict: 'game_id, player_id');
-        Utilities.debugPrintWithCallerInfo(
-            "Saved player game info to database, $playerGameInfoData, returned ${pgiResponse.toString()}");
-        if (pgiResponse != null) {
-          //if response was not null
-          if (!playerUpdated) {
-            //only change the flag to true if it is still false.
-            playerUpdated = true;
-          }
-        }
+        var pgiRef = DatabaseConnection.client.collection('player_game_info').doc('${game.id}_${player.playerId}');
+        batch.set(pgiRef, playerGameInfoData);
+        playerUpdated = true;
       }
-      if (gameResponse != null && playerUpdated) {
+      await batch.commit();
+      
+      if (playerUpdated) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString(game.id, jsonEncode(game.toJson()));
       }
-    } on PostgrestException catch (e) {
+    } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
-          'DB Failed to update player score: ${e.message}');
+          'DB Failed to update game: ${e.message}');
       throw DatabaseConnectionError(
-          'Failed to update player score: ${e.message}');
+          'Failed to update game: ${e.message}');
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo(
-          'General failure to update player score: $exception');
-      throw Exception('Failed to update player score: $exception');
+          'General failure to update game: $exception');
+      throw Exception('Failed to update game: $exception');
     }
   }
 

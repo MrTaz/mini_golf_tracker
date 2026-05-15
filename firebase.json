@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mini-golf-tracker-dahome","appId":"1:114725116317:android:299f9af42a67950a903774","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"mini-golf-tracker-dahome","appId":"1:114725116317:ios:61765a6d7b137631903774","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"mini-golf-tracker-dahome","configurations":{"android":"1:114725116317:android:299f9af42a67950a903774","ios":"1:114725116317:ios:61765a6d7b137631903774","web":"1:114725116317:web:0c58ae746a1956a8903774"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mini-golf-tracker-dahome",
+          "appId": "1:114725116317:android:299f9af42a67950a903774",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "mini-golf-tracker-dahome",
+          "appId": "1:114725116317:ios:61765a6d7b137631903774",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mini-golf-tracker-dahome",
+          "configurations": {
+            "android": "1:114725116317:android:299f9af42a67950a903774",
+            "ios": "1:114725116317:ios:61765a6d7b137631903774",
+            "web": "1:114725116317:web:0c58ae746a1956a8903774"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
