@@ -50,8 +50,6 @@ class Player {
   String? status;
   num totalScore;
 
-  FirebaseFirestore get db => DatabaseConnection.client;
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -104,9 +102,13 @@ class Player {
           throw "Existing user, but unable to retrieve from database";
         }
       } else {
-        final newPlayer = await _createPlayerInDB(player.playerName,
-            player.email!, player.phoneNumber!, player.nickname,
-            ownerId: ownerId);
+        final newPlayer = await Player.createPlayer(
+          player.playerName,
+          player.nickname,
+          email: player.email,
+          phoneNumber: player.phoneNumber,
+          ownerId: ownerId,
+        );
         Utilities.debugPrintWithCallerInfo(
             'New player friend created: ${newPlayer.toJson()}');
         Utilities.debugPrintWithCallerInfo(
@@ -166,6 +168,7 @@ class Player {
     String? email,
     String? phoneNumber,
     String? id,
+    String? ownerId,
   }) async {
     try {
       if (await _isDuplicatePlayer(email, phoneNumber)) {
@@ -181,7 +184,7 @@ class Player {
         id: docRef.id,
         playerName: playerName,
         nickname: nickname,
-        ownerId: docRef.id,
+        ownerId: ownerId ?? docRef.id,
         totalScore: 0,
         email: email,
         phoneNumber: phoneNumber,
@@ -243,37 +246,4 @@ class Player {
     return snapshot.docs.isNotEmpty;
   }
 
-  static Future<Player> _createPlayerInDB(
-      String playerName, String email, String phoneNumber, String nickname,
-      {String? ownerId}) async {
-    try {
-      Map<String, dynamic> userToCreate = {
-        "player_name": playerName,
-        "email": email,
-        "phone_number": phoneNumber,
-        "nickname": nickname,
-        "owner_id": ownerId ?? '',
-        "total_score": 0
-      };
-
-      final docRef = await DatabaseConnection.client.collection('players').add(userToCreate);
-      var doc = await docRef.get();
-      var data = doc.data()!;
-      data['id'] = doc.id;
-      
-      final playerWithoutOwnerId = Player.fromJson(data);
-      
-      if (playerWithoutOwnerId.ownerId == '') {
-        playerWithoutOwnerId.ownerId = playerWithoutOwnerId.id;
-        await docRef.update({'owner_id': playerWithoutOwnerId.id});
-      }
-      
-      return playerWithoutOwnerId;
-    } on FirebaseException catch (e) {
-      Utilities.debugPrintWithCallerInfo(
-          'Failed to create player in DB: ${e.message}');
-      throw DatabaseConnectionError(
-          'Failed to create player in DB: ${e.message}');
-    }
-  }
 }

@@ -339,7 +339,7 @@ void main() {
       // Create with no explicit ownerId (uses instance's empty logic internally)
       final created = await Player.createPlayer(
           'SelfOwned', 'SO', email: 'selfowned@test.com', phoneNumber: '555-0002');
-      // createPlayer delegates to _createPlayerInDB with no ownerId → sets own id
+      // createPlayer defaults ownerId to its docRef.id when no ownerId is provided
       expect(created.ownerId, isNotEmpty);
     });
   });
@@ -699,7 +699,7 @@ void main() {
   // Player._addFriend — bidirectional write
   // ════════════════════════════════════════════════════════════════════════════
 
-  group('Player._createPlayerInDB edge cases', () {
+  group('Player.createPlayer edge cases', () {
     test('updates owner_id to doc ID when ownerId is empty', () async {
       // Indirectly test via createPlayer with no ownerId
       final p = await Player.createPlayer('EmptyOwner', 'EO', email: 'empty@test.com', phoneNumber: '000');
@@ -754,7 +754,7 @@ void main() {
 
   group('Player._addFriend (via createPlayer + addPlayerFriend)', () {
     test('writes bidirectional friend docs', () async {
-      // Directly test via the public path: createPlayer calls _createPlayerInDB
+      // Directly test via the public path: addPlayerFriend uses createPlayer
       // then _addFriend is called inside addPlayerFriend
       await fakeFirestore.collection('players').doc('p-a').set({
         'player_name': 'A',
@@ -1058,36 +1058,18 @@ void main() {
     });
   });
 
-  group('Player.createPlayer - FirebaseException catch (_createPlayerInDB)', () {
-    test('rethrows as DatabaseConnectionError when docRef.update(owner_id) fails', () async {
-      // _createPlayerInDB calls docRef.update({'owner_id': ...}) when ownerId is empty.
-      // We arrange this by: seeding an existing player doc, then intercepting .update()
-      // on that specific doc reference. We use a known doc ID by calling .doc(id).set()
-      // (which mimics what add() does), then break the subsequent .update() call.
+  group('Player.createPlayer - FirebaseException catch', () {
+    test('rethrows as DatabaseConnectionError on Firestore set failure', () async {
       final failFirestore = FakeFirebaseFirestore();
       DatabaseConnection.setFirestoreInstanceForTesting(failFirestore);
 
-      // Create a doc at a known path to hold the ref
-      final knownDocRef = failFirestore.collection('players').doc('known-id');
-      await knownDocRef.set({
-        'player_name': 'X', 'email': 'update-fail@x.com',
-        'phone_number': '000', 'nickname': 'X', 'owner_id': '', 'total_score': 0
-      });
-      whenCalling(Invocation.method(#update, null)).on(knownDocRef).thenThrow(firestoreError);
+      final doc = failFirestore.collection('players').doc('fail-doc');
+      whenCalling(Invocation.method(#set, null)).on(doc).thenThrow(firestoreError);
 
-      // Now call _createPlayerInDB indirectly via createPlayer.
-      // Since .add() generates a random ID (not 'known-id'), the update() on
-      // the ADD result won't hit our mock. Instead, test the outer
-      // updatePlayerScoreInDatabase path (which uses .doc(id).update()) since
-      // that IS a concrete DocumentReference path we already test at line 800.
-      // For _createPlayerInDB's FirebaseException, we test via the docRef.get()
-      // on the known doc being broken:
-      whenCalling(Invocation.method(#get, null)).on(knownDocRef).thenThrow(firestoreError);
-
-      // This confirms the FirebaseException is properly wrapped:
       await expectLater(
-          knownDocRef.get(),
-          throwsA(isA<FirebaseException>()));
+        Player.createPlayer('Fail', 'F', id: 'fail-doc'),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
