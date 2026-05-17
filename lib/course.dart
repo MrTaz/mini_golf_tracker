@@ -19,10 +19,23 @@ class Course {
   factory Course.fromJson(Map<String, dynamic> json) {
     final String id = json['id'] ?? '';
     final String name = json['name'] ?? '';
-    final int numberOfHoles = json['number_of_holes'] ?? 0;
-    final Map<int, int> parStrokes = (json['par_strokes'] as Map<String, dynamic>?)
-            ?.map((key, value) => MapEntry(int.parse(key), value as int)) ??
-        {};
+    final int numberOfHoles = _parseInt(json['number_of_holes'] ?? json['numberOfHoles']);
+    
+    final Map<int, int> parStrokes = {};
+    final dynamic rawParStrokes = json['par_strokes'] ?? json['parStrokes'];
+    if (rawParStrokes is Map) {
+      rawParStrokes.forEach((key, value) {
+        final int? parsedKey = int.tryParse(key.toString()) ?? double.tryParse(key.toString())?.toInt();
+        final int? parsedValue = value is int
+            ? value
+            : value is double
+                ? value.toInt()
+                : int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.toInt();
+        if (parsedKey != null && parsedValue != null) {
+          parStrokes[parsedKey] = parsedValue;
+        }
+      });
+    }
 
     return Course(
       id: id,
@@ -33,13 +46,30 @@ class Course {
   }
 
   factory Course.fromMap(Map<String, dynamic> map) {
-    final parStrokes = (map['parStrokes'] as Map<String, dynamic>)
-        .map((key, value) => MapEntry(int.parse(key), value as int));
+    final String id = map['id'] as String? ?? '';
+    final String name = map['name'] as String? ?? '';
+    final int numberOfHoles = _parseInt(map['numberOfHoles'] ?? map['number_of_holes']);
+
+    final Map<int, int> parStrokes = {};
+    final dynamic rawParStrokes = map['parStrokes'] ?? map['par_strokes'];
+    if (rawParStrokes is Map) {
+      rawParStrokes.forEach((key, value) {
+        final int? parsedKey = int.tryParse(key.toString()) ?? double.tryParse(key.toString())?.toInt();
+        final int? parsedValue = value is int
+            ? value
+            : value is double
+                ? value.toInt()
+                : int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.toInt();
+        if (parsedKey != null && parsedValue != null) {
+          parStrokes[parsedKey] = parsedValue;
+        }
+      });
+    }
 
     return Course(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      numberOfHoles: map['numberOfHoles'] as int,
+      id: id,
+      name: name,
+      numberOfHoles: numberOfHoles,
       parStrokes: parStrokes,
     );
   }
@@ -133,4 +163,59 @@ class Course {
       throw DatabaseConnectionError('Failed to save course: ${e.message}');
     }
   }
+
+  Future<void> deleteCourseFromDatabase() async {
+    try {
+      await db.collection('courses').doc(id).delete();
+      Utilities.debugPrintWithCallerInfo("Deleted course: $id");
+    } on FirebaseException catch (e) {
+      Utilities.debugPrintWithCallerInfo('Failed to delete course: ${e.message}');
+      throw DatabaseConnectionError('Failed to delete course: ${e.message}');
+    }
+  }
+
+  static Future<CourseFetchResult> fetchCoursesPaginated({
+    DocumentSnapshot? startAfter,
+    required int limit,
+  }) async {
+    try {
+      Query query = DatabaseConnection.client.collection('courses').orderBy('name');
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      query = query.limit(limit);
+
+      final snapshot = await query.get();
+      final coursesList = snapshot.docs.map<Course>((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Course.fromJson(data);
+      }).toList();
+
+      final lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+      return CourseFetchResult(courses: coursesList, lastDocument: lastDoc);
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        print('Error fetching courses paginated: ${e.message}');
+      }
+      throw DatabaseConnectionError('Failed to fetch courses: ${e.message}');
+    }
+  }
+}
+
+class CourseFetchResult {
+  final List<Course> courses;
+  final DocumentSnapshot? lastDocument;
+
+  CourseFetchResult({required this.courses, this.lastDocument});
+}
+
+int _parseInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt() ?? 0;
+  }
+  return 0;
 }

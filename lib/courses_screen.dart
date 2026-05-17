@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
+import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,65 +22,137 @@ class CoursesScreen extends StatefulWidget {
 class CoursesScreenState extends State<CoursesScreen> {
   late List<Course> courses = [];
   Course? selectedCourse; // Allow null value for selectedCourse
-  bool showCloseButton = false;
-  bool showCreateForm = false;
 
   final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
+  final int _pageSize = 5;
 
   @override
   void initState() {
     super.initState();
     _initializeCourses();
+    _scrollController.addListener(_scrollListener);
     setState(() {
       selectedCourse = widget.selectedCourse;
     });
   }
 
-  void fabPressed() {
-    setState(() {
-      showCreateForm = true;
-      showCloseButton = true;
-    });
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  void closeCreateScreen() {
-    setState(() {
-      showCreateForm = false;
-      showCloseButton = false;
-    });
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreCourses();
+    }
   }
 
-  Future<List<Course?>> _initializeCourses() async {
+
+
+  Future<List<Course>> _initializeCourses() async {
+    if (_isLoading) return courses;
+    setState(() {
+      _isLoading = true;
+      courses = [];
+      _lastDocument = null;
+      _hasMore = true;
+    });
+
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final List<String>? coursesJson = prefs.getStringList('courses');
-      Utilities.debugPrintWithCallerInfo("Courses saved locally: $coursesJson");
-      List<Course> loadedCourses = [];
+      Utilities.debugPrintWithCallerInfo("Loading courses from database (first page)");
+      final result = await Course.fetchCoursesPaginated(
+        limit: _pageSize,
+      );
+      final List<Course> loadedCourses = result.courses;
 
-      if (coursesJson != null) {
-        Utilities.debugPrintWithCallerInfo("Loading courses from sharedprefs");
-        loadedCourses = coursesJson
-            .map((String courseJson) => Course.fromJson(jsonDecode(courseJson)))
-            .toList();
-      } else {
-        Utilities.debugPrintWithCallerInfo("Loading courses from database");
-        final List<Course?> dbcourses = await Course.fetchCourses();
-        if (dbcourses.isNotEmpty) {
-          loadedCourses = dbcourses.whereType<Course>().toList();
-          await _saveLocalCourses(
-              loadedCourses); //save courses locally if we loaded them from db
-        }
-      }
+      await _saveLocalCourses(loadedCourses); // Save courses locally to keep cache updated
+
       Utilities.debugPrintWithCallerInfo(
-          "Loaded courses: ${loadedCourses.map((course) => course.toJson())}");
-      setState(() {
-        courses = loadedCourses; // Update the courses list after loading
-      });
-      return loadedCourses; // Returns an empty list if no courses are found
+          "Loaded courses from DB: ${loadedCourses.map((course) => course.toJson())}");
+      if (mounted) {
+        setState(() {
+          courses = loadedCourses; // Update the courses list after loading
+          _lastDocument = result.lastDocument;
+          _hasMore = loadedCourses.length >= _pageSize;
+          _isLoading = false;
+        });
+      }
+      return loadedCourses;
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo(
-          "Exception when loading courses: ${exception.toString()}");
-      return [];
+          "Exception when loading courses from DB: ${exception.toString()}. Falling back to local cache.");
+      try {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final List<String>? coursesJson = prefs.getStringList('courses');
+        Utilities.debugPrintWithCallerInfo("Courses saved locally: $coursesJson");
+        List<Course> loadedCourses = [];
+
+        if (coursesJson != null) {
+          Utilities.debugPrintWithCallerInfo("Loading courses from sharedprefs");
+          loadedCourses = coursesJson
+              .map((String courseJson) => Course.fromJson(jsonDecode(courseJson)))
+              .toList();
+        }
+        if (mounted) {
+          setState(() {
+            courses = loadedCourses;
+            _hasMore = false; // Disable pagination on local cache fallback
+            _isLoading = false;
+          });
+        }
+        return loadedCourses;
+      } catch (innerException) {
+        Utilities.debugPrintWithCallerInfo(
+            "Exception when loading courses from local cache: ${innerException.toString()}");
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return [];
+      }
+    }
+  }
+
+  Future<void> _loadMoreCourses() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      Utilities.debugPrintWithCallerInfo("Loading more courses from database");
+      final result = await Course.fetchCoursesPaginated(
+        startAfter: _lastDocument,
+        limit: _pageSize,
+      );
+
+      final newCourses = result.courses;
+      
+      if (mounted) {
+        setState(() {
+          courses.addAll(newCourses);
+          _lastDocument = result.lastDocument;
+          _hasMore = newCourses.length >= _pageSize;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (exception) {
+      Utilities.debugPrintWithCallerInfo("Exception when loading more courses: $exception");
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+          _hasMore = false; // Prevent endless retries on failure
+        });
+      }
     }
   }
 
@@ -89,19 +164,15 @@ class CoursesScreenState extends State<CoursesScreen> {
     await prefs.setStringList('courses', coursesString);
   }
 
-  Future<void> _saveCourse(Course course) async {
+  Future<bool> _saveCourse(Course course) async {
     try {
-      final Course updatedCourse = await course.saveCourseToDatabase();
-      final List<Course?> loadedCourses = await _initializeCourses();
-      loadedCourses.add(updatedCourse);
-
-      await _saveLocalCourses(loadedCourses.whereType<Course>().toList());
-      setState(() {
-        courses = loadedCourses.whereType<Course>().toList();
-      });
+      await course.saveCourseToDatabase();
+      await _initializeCourses();
+      return true;
     } catch (exception) {
-      if (!mounted) return;
+      if (!mounted) return false;
       _showDuplicateCourseDialog(context);
+      return false;
     }
   }
 
@@ -281,9 +352,11 @@ class CoursesScreenState extends State<CoursesScreen> {
                               holeNumber: parStrokes[holeNumber - 1]
                           },
                         );
-                        await _saveCourse(newCourse);
-                        if (!context.mounted) return;
-                        Navigator.of(context).pop(newCourse);
+                        final success = await _saveCourse(newCourse);
+                        if (success) {
+                          if (!context.mounted) return;
+                          Navigator.of(context).pop(newCourse);
+                        }
                       }
                     },
                     child: const Text('Create'),
@@ -462,9 +535,11 @@ class CoursesScreenState extends State<CoursesScreen> {
                               holeNumber: parStrokes[holeNumber - 1]
                           },
                         );
-                        await _saveCourse(updatedCourse);
-                        if (!context.mounted) return;
-                        Navigator.of(context).pop(updatedCourse);
+                        final success = await _saveCourse(updatedCourse);
+                        if (success) {
+                          if (!context.mounted) return;
+                          Navigator.of(context).pop(updatedCourse);
+                        }
                       }
                     },
                     child: const Text('Save'),
@@ -478,17 +553,24 @@ class CoursesScreenState extends State<CoursesScreen> {
   }
 
   void _deleteCourse(Course course) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final List<Course?> loadedCourses = await _initializeCourses();
-    loadedCourses.removeWhere((c) => c?.id == course.id);
+    try {
+      await course.deleteCourseFromDatabase();
+      await _initializeCourses();
+    } catch (exception) {
+      Utilities.debugPrintWithCallerInfo(
+          "Exception when deleting course: ${exception.toString()}");
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final List<Course?> loadedCourses = await _initializeCourses();
+      loadedCourses.removeWhere((c) => c?.id == course.id);
 
-    final List<String> coursesJson =
-        loadedCourses.map((course) => jsonEncode(course?.toJson())).toList();
-    await prefs.setStringList('courses', coursesJson);
+      final List<String> coursesJson =
+          loadedCourses.map((course) => jsonEncode(course?.toJson())).toList();
+      await prefs.setStringList('courses', coursesJson);
 
-    setState(() {
-      courses = loadedCourses.whereType<Course>().toList();
-    });
+      setState(() {
+        courses = loadedCourses.whereType<Course>().toList();
+      });
+    }
 
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -506,45 +588,195 @@ class CoursesScreenState extends State<CoursesScreen> {
           : null,
       body: Stack(children: [
         Utilities.backdropImageContinerWidget(),
-        SingleChildScrollView(
-          controller: _scrollController,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: showCreateForm
-                ? FutureBuilder(
-                    future: _createNewCourse(context),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<void> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else {
-                        return const SizedBox();
-                      }
-                    },
-                  )
-                : Column(
-                    children: <Widget>[
-                      ListView.builder(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.all(0.8),
-                        itemCount: courses.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return _buildCourseListItem(index);
-                        },
-                      ),
-                    ],
+        if (_isLoading && courses.isEmpty)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+              margin: const EdgeInsets.symmetric(horizontal: 24.0),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(24.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20.0,
+                    offset: const Offset(0, 10),
                   ),
+                ],
+                border: Border.all(
+                  color: Colors.green.shade700.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: BouncyAnimation(
+                        duration: const Duration(seconds: 1),
+                        lift: 50,
+                        ratio: 0.25,
+                        child: CustomPaint(
+                          painter: GolfBallPainter(),
+                          child: const SizedBox(width: 60, height: 60),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20.0),
+                  Text(
+                    'Preparing the Greens...',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Text(
+                    'Fetching courses from the fairway...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14.0,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 24.0),
+                  SizedBox(
+                    width: 140,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.green.shade100,
+                      color: Colors.green.shade700,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (!_isLoading && courses.isEmpty)
+          _CoursesEmptyState(
+            onCreatePressed: () => _createNewCourse(context),
+          )
+        else
+          SafeArea(
+            child: ListView.builder(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              itemCount: courses.length + (_isLoadingMore ? 1 : 0),
+              itemBuilder: (BuildContext context, int index) {
+                if (index < courses.length) {
+                  return _buildCourseListItem(index);
+                } else {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
-        ),
       ]),
       floatingActionButton: FloatingActionButton(
-        onPressed: showCloseButton
-            ? closeCreateScreen
-            : () => _createNewCourse(context),
-        child:
-            showCloseButton ? const Icon(Icons.close) : const Icon(Icons.add),
+        onPressed: () => _createNewCourse(context),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _CoursesEmptyState extends StatelessWidget {
+  final VoidCallback onCreatePressed;
+
+  const _CoursesEmptyState({required this.onCreatePressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Container(
+          padding: const EdgeInsets.all(32.0),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 20.0,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.sports_golf,
+                  size: 64.0,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              const SizedBox(height: 24.0),
+              const Text(
+                'No Courses Yet',
+                style: TextStyle(
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+              const SizedBox(height: 12.0),
+              Text(
+                'Create a mini-golf course to start tracking scores and comparing stats with your friends.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15.0,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28.0),
+              ElevatedButton.icon(
+                onPressed: onCreatePressed,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Add New Course',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 14.0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  elevation: 2.0,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

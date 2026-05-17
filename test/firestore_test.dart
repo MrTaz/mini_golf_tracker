@@ -399,6 +399,80 @@ void main() {
     });
   });
 
+  group('Course.deleteCourseFromDatabase', () {
+    test('deletes course from database by ID', () async {
+      final docRef = await fakeFirestore.collection('courses').add({
+        'name': 'Course to Delete',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+      final course = Course(
+          id: docRef.id,
+          name: 'Course to Delete',
+          numberOfHoles: 9,
+          parStrokes: {1: 3});
+      
+      // Let's verify it exists
+      var courses = await Course.fetchCourses();
+      expect(courses.any((c) => c?.id == docRef.id), isTrue);
+
+      // Delete it
+      await course.deleteCourseFromDatabase();
+
+      // Verify it's gone
+      courses = await Course.fetchCourses();
+      expect(courses.any((c) => c?.id == docRef.id), isFalse);
+    });
+  });
+
+  group('Course.fetchCoursesPaginated', () {
+    test('fetches courses in alphabetical order with limit and startAfter', () async {
+      // Clear or ensure fresh start for pagination query tests
+      final existing = await fakeFirestore.collection('courses').get();
+      for (final doc in existing.docs) {
+        await doc.reference.delete();
+      }
+
+      // Add 4 courses in random alphabetical order
+      await fakeFirestore.collection('courses').add({
+        'name': 'Golf course C',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+      await fakeFirestore.collection('courses').add({
+        'name': 'Golf course A',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+      await fakeFirestore.collection('courses').add({
+        'name': 'Golf course D',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+      await fakeFirestore.collection('courses').add({
+        'name': 'Golf course B',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+
+      // Page 1: limit of 2. Should return Golf course A and Golf course B
+      final page1 = await Course.fetchCoursesPaginated(limit: 2);
+      expect(page1.courses.length, 2);
+      expect(page1.courses[0].name, 'Golf course A');
+      expect(page1.courses[1].name, 'Golf course B');
+      expect(page1.lastDocument, isNotNull);
+
+      // Page 2: limit of 2, startAfter last document of page 1. Should return Golf course C and Golf course D
+      final page2 = await Course.fetchCoursesPaginated(
+        limit: 2,
+        startAfter: page1.lastDocument,
+      );
+      expect(page2.courses.length, 2);
+      expect(page2.courses[0].name, 'Golf course C');
+      expect(page2.courses[1].name, 'Golf course D');
+    });
+  });
+
   // ════════════════════════════════════════════════════════════════════════════
   // Game — database methods
   // ════════════════════════════════════════════════════════════════════════════

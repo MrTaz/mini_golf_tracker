@@ -43,6 +43,26 @@ void main() {
       final course = Course.fromJson(json);
       expect(course.id, '');
     });
+
+    test('robustly parses non-standard and mixed types in json', () {
+      final json = {
+        'id': 'c_robust',
+        'name': 'Robust Course',
+        'number_of_holes': '18',
+        'par_strokes': {
+          '1': 3.0,
+          '2': '4',
+          '3': 5,
+          '4.0': '3.0',
+        },
+      };
+      final course = Course.fromJson(json);
+      expect(course.numberOfHoles, 18);
+      expect(course.parStrokes[1], 3);
+      expect(course.parStrokes[2], 4);
+      expect(course.parStrokes[3], 5);
+      expect(course.parStrokes[4], 3);
+    });
   });
 
   group('Course.fromMap', () {
@@ -58,6 +78,24 @@ void main() {
       expect(course.name, 'Map Course');
       expect(course.numberOfHoles, 18);
       expect(course.parStrokes[1], 3);
+    });
+
+    test('robustly parses from snake_case and non-standard types in map', () {
+      final map = {
+        'id': 'c3',
+        'name': 'Snake Course',
+        'number_of_holes': 9.0,
+        'par_strokes': {
+          '1': '3',
+          '2.0': 4.0,
+        },
+      };
+      final course = Course.fromMap(map);
+      expect(course.id, 'c3');
+      expect(course.name, 'Snake Course');
+      expect(course.numberOfHoles, 9);
+      expect(course.parStrokes[1], 3);
+      expect(course.parStrokes[2], 4);
     });
   });
 

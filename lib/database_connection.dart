@@ -9,8 +9,8 @@ class DatabaseConnection {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // Automatically point to the local emulator only during local debug runs!
-    if (kDebugMode) {
+    // Connect to the local emulator only if explicitly configured via dart-define!
+    if (const bool.fromEnvironment('USE_EMULATOR', defaultValue: false)) {
       try {
         // Android emulators require '10.0.2.2' to access the host machine's localhost.
         // iOS emulators and desktop runs can use standard 'localhost'.
