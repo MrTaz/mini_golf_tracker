@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 
 class DatabaseConnection {
@@ -7,6 +8,19 @@ class DatabaseConnection {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Automatically point to the local emulator only during local debug runs!
+    if (kDebugMode) {
+      try {
+        // Android emulators require '10.0.2.2' to access the host machine's localhost.
+        // iOS emulators and desktop runs can use standard 'localhost'.
+        final String host = defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost';
+        FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+        debugPrint('🔌 Connected to local Firestore Emulator at $host:8080');
+      } catch (e) {
+        debugPrint('⚠️ Failed to connect to Firestore Emulator: $e');
+      }
+    }
   }
 
   static FirebaseFirestore? _firestoreInstance;
