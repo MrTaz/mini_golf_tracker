@@ -21,23 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Duration get loginTime => const Duration(milliseconds: 50);
 
-  @override
-  void initState() {
-    super.initState();
-    UserProvider().addListener(_onUserChanged);
-  }
 
-  @override
-  void dispose() {
-    UserProvider().removeListener(_onUserChanged);
-    super.dispose();
-  }
-
-  void _onUserChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
 
   Future<String?> _authUser(LoginData data) async {
     Utilities.debugPrintWithCallerInfo(
@@ -121,20 +105,28 @@ class _LoginScreenState extends State<LoginScreen> {
       // so that the Auth State listener gets a valid authenticated session.
       final auth = UserProvider().auth;
       try {
-        await auth.signInWithEmailAndPassword(
+        // Attempt to create the user account first to ensure the mock framework
+        // (firebase_auth_mocks) and real Firebase (emulator) set up the correct
+        // email field. If it already exists, fall back to signing in.
+        await auth.createUserWithEmailAndPassword(
           email: email,
           password: 'mock_social_password_123',
         );
       } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'invalid-email') {
-          // Create the user if they don't exist yet
-          await auth.createUserWithEmailAndPassword(
+        if (e.code == 'email-already-in-use' || e.code == 'email-already-exists') {
+          await auth.signInWithEmailAndPassword(
             email: email,
             password: 'mock_social_password_123',
           );
         } else {
           rethrow;
         }
+      } catch (_) {
+        // Fallback for any other exceptions to ensure robustness
+        await auth.signInWithEmailAndPassword(
+          email: email,
+          password: 'mock_social_password_123',
+        );
       }
 
       // Wait a brief moment for the auth state changes stream to process the login
@@ -202,6 +194,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       onPressed: () async {
                         await UserProvider().logout();
+                        if (mounted) {
+                          setState(() {});
+                        }
                       },
                       child: const Text("Logout", style: TextStyle(color: Colors.white)),
                     ),

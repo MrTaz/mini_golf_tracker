@@ -342,6 +342,152 @@ void main() {
       // createPlayer defaults ownerId to its docRef.id when no ownerId is provided
       expect(created.ownerId, isNotEmpty);
     });
+
+    test('creates new canonical profile alongside old duplicate email profile', () async {
+      await fakeFirestore.collection('players').doc('old-id').set({
+        'player_name': 'Old Name',
+        'nickname': 'OldNick',
+        'email': 'migrate@test.com',
+        'owner_id': 'old-id',
+        'total_score': 0,
+      });
+
+      final created = await Player.createPlayer(
+        'New Name',
+        'NewNick',
+        email: 'migrate@test.com',
+        id: 'new-id',
+        ownerId: 'new-id',
+      );
+
+      expect(created.id, 'new-id');
+      expect(created.playerName, 'New Name');
+
+      // Old profile is intentionally left in place — delete would be denied by
+      // Firestore rules because its owner_id doesn't match the current auth UID.
+      final oldDoc = await fakeFirestore.collection('players').doc('old-id').get();
+      expect(oldDoc.exists, isTrue);
+
+      // New canonical profile should exist
+      final newDoc = await fakeFirestore.collection('players').doc('new-id').get();
+      expect(newDoc.exists, isTrue);
+    });
+
+    test('retains old profile when email match has same id', () async {
+      await fakeFirestore.collection('players').doc('same-id').set({
+        'player_name': 'Existing Name',
+        'nickname': 'EN',
+        'email': 'same@test.com',
+        'owner_id': 'same-id',
+        'total_score': 0,
+      });
+
+      final returned = await Player.createPlayer(
+        'Different Name',
+        'DN',
+        email: 'same@test.com',
+        id: 'same-id',
+      );
+
+      expect(returned.id, 'same-id');
+      expect(returned.playerName, 'Existing Name');
+    });
+
+    test('creates new canonical profile even when old duplicate email profile exists', () async {
+      await fakeFirestore.collection('players').doc('delete-fail-id').set({
+        'player_name': 'Old Fail Name',
+        'nickname': 'OFN',
+        'email': 'deletefail@test.com',
+        'owner_id': 'delete-fail-id',
+        'total_score': 0,
+      });
+
+      final created = await Player.createPlayer(
+        'New Fail Name',
+        'NFN',
+        email: 'deletefail@test.com',
+        id: 'new-success-id',
+        ownerId: 'new-success-id',
+      );
+
+      expect(created.id, 'new-success-id');
+      // Old profile remains — no delete is attempted
+      final oldDoc = await fakeFirestore.collection('players').doc('delete-fail-id').get();
+      expect(oldDoc.exists, isTrue);
+    });
+
+    test('creates new canonical profile alongside old duplicate phone profile', () async {
+      await fakeFirestore.collection('players').doc('phone-old-id').set({
+        'player_name': 'Old Name',
+        'nickname': 'OldNick',
+        'phone_number': '555-1234',
+        'owner_id': 'phone-old-id',
+        'total_score': 0,
+      });
+
+      final created = await Player.createPlayer(
+        'New Name',
+        'NewNick',
+        phoneNumber: '555-1234',
+        id: 'phone-new-id',
+        ownerId: 'phone-new-id',
+      );
+
+      expect(created.id, 'phone-new-id');
+      expect(created.playerName, 'New Name');
+
+      // Old profile is intentionally left in place — delete would be denied by
+      // Firestore rules because its owner_id doesn't match the current auth UID.
+      final oldDoc = await fakeFirestore.collection('players').doc('phone-old-id').get();
+      expect(oldDoc.exists, isTrue);
+
+      // New canonical profile should exist
+      final newDoc = await fakeFirestore.collection('players').doc('phone-new-id').get();
+      expect(newDoc.exists, isTrue);
+    });
+
+    test('retains old profile when phone match has same id', () async {
+      await fakeFirestore.collection('players').doc('phone-same-id').set({
+        'player_name': 'Existing Name',
+        'nickname': 'EN',
+        'phone_number': '555-5678',
+        'owner_id': 'phone-same-id',
+        'total_score': 0,
+      });
+
+      final returned = await Player.createPlayer(
+        'Different Name',
+        'DN',
+        phoneNumber: '555-5678',
+        id: 'phone-same-id',
+      );
+
+      expect(returned.id, 'phone-same-id');
+      expect(returned.playerName, 'Existing Name');
+    });
+
+    test('creates new canonical profile even when old duplicate phone profile exists', () async {
+      await fakeFirestore.collection('players').doc('phone-delete-fail-id').set({
+        'player_name': 'Old Fail Name',
+        'nickname': 'OFN',
+        'phone_number': '555-9012',
+        'owner_id': 'phone-delete-fail-id',
+        'total_score': 0,
+      });
+
+      final created = await Player.createPlayer(
+        'New Fail Name',
+        'NFN',
+        phoneNumber: '555-9012',
+        id: 'phone-new-success-id',
+        ownerId: 'phone-new-success-id',
+      );
+
+      expect(created.id, 'phone-new-success-id');
+      // Old profile remains — no delete is attempted
+      final oldDoc = await fakeFirestore.collection('players').doc('phone-delete-fail-id').get();
+      expect(oldDoc.exists, isTrue);
+    });
   });
 
   // ════════════════════════════════════════════════════════════════════════════

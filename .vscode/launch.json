@@ -9,6 +9,16 @@
       "flutterMode": "debug"
     },
     {
+      "name": "Mini Golf Tracker (Debug + Emulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": [
+        "--dart-define=USE_EMULATOR=true"
+      ]
+    },
+    {
       "name": "Mini Golf Tracker (Profile)",
       "request": "launch",
       "type": "dart",

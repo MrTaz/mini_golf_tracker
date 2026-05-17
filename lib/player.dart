@@ -198,15 +198,14 @@ class Player {
         final existingPlayer = await getPlayerByEmailFromDB(email);
         if (existingPlayer != null) {
           if (id != null && existingPlayer.id != id) {
+            // The old profile has a different ID (e.g. a UUID from a pre-Firebase era).
+            // We cannot delete it because its owner_id doesn't match the current auth UID.
+            // Simply proceed to create the new canonical profile under the Firebase UID.
+            // getPlayerByEmailFromDB already prioritises the UID-matched doc, so the
+            // old record will be naturally superseded and is harmless.
             Utilities.debugPrintWithCallerInfo(
-                'Found duplicate player profile with different ID: ${existingPlayer.id}. Attempting to clean up old profile...');
-            try {
-              await DatabaseConnection.client.collection('players').doc(existingPlayer.id).delete();
-              Utilities.debugPrintWithCallerInfo('Successfully deleted old profile: ${existingPlayer.id}');
-            } catch (e) {
-              Utilities.debugPrintWithCallerInfo(
-                  'Could not delete old profile due to permissions (this is expected for offline guest profiles): $e');
-            }
+                'Found existing profile with different ID: ${existingPlayer.id}. '
+                'Proceeding to create canonical profile under Firebase UID: $id');
           } else if (id != null && existingPlayer.id == id) {
             return existingPlayer;
           } else {
@@ -226,15 +225,12 @@ class Player {
         if (snapshot.docs.isNotEmpty) {
           final existingId = snapshot.docs.first.id;
           if (id != null && existingId != id) {
+            // Same as the email case: the old profile has a UUID owner_id that
+            // doesn't match the Firebase UID, so delete will always be denied.
+            // Proceed to create the canonical profile under the Firebase UID.
             Utilities.debugPrintWithCallerInfo(
-                'Found duplicate player profile by phone number with different ID: $existingId. Attempting to clean up old profile...');
-            try {
-              await DatabaseConnection.client.collection('players').doc(existingId).delete();
-              Utilities.debugPrintWithCallerInfo('Successfully deleted old profile by phone number: $existingId');
-            } catch (e) {
-              Utilities.debugPrintWithCallerInfo(
-                  'Could not delete old profile by phone number due to permissions: $e');
-            }
+                'Found existing profile by phone with different ID: $existingId. '
+                'Proceeding to create canonical profile under Firebase UID: $id');
           } else if (id != null && existingId == id) {
             var data = snapshot.docs.first.data();
             data['id'] = existingId;

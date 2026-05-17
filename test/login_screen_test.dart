@@ -17,6 +17,7 @@ void main() {
 
   setUp(() async {
     mockAuth = MockFirebaseAuth();
+    await mockAuth.signOut(); // Ensure the mock auth starts signed out
     fakeFirestore = FakeFirebaseFirestore();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     UserProvider().setAuthInstanceForTesting(mockAuth);
@@ -90,5 +91,157 @@ void main() {
     expect(find.text('Name: Test User'), findsOneWidget);
     expect(find.text('Nickname: Tester'), findsOneWidget);
     expect(find.text('Logout'), findsOneWidget);
+  });
+
+  testWidgets('Social login simulation flows - Google Sign-In with new user', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    // Force the 1-second Future.delayed to fire and complete the intro animation
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Find the Google login button and tap it
+    final googleButton = find.byIcon(FontAwesomeIcons.google);
+    expect(googleButton, findsOneWidget);
+    await tester.ensureVisible(googleButton);
+    await tester.tap(googleButton);
+    
+    // Pump to allow the async _simulateSocialLogin and auth state changes stream to run
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // The user should now be logged in!
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'google_user@example.com');
+    
+    // Final pumps to clear any remaining timers
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('Social login simulation flows - Google Sign-In with pre-existing Auth user', (tester) async {
+    // Pre-create the user in MockFirebaseAuth
+    await mockAuth.createUserWithEmailAndPassword(
+      email: 'google_user@example.com',
+      password: 'mock_social_password_123',
+    );
+    await mockAuth.signOut(); // Ensure user starts logged out so the login screen is displayed
+
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    // Force the 1-second Future.delayed to fire and complete the intro animation
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Find the Google login button and tap it
+    final googleButton = find.byIcon(FontAwesomeIcons.google);
+    expect(googleButton, findsOneWidget);
+    await tester.ensureVisible(googleButton);
+    await tester.tap(googleButton);
+    
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // The user should now be logged in!
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'google_user@example.com');
+    
+    // Final pumps to clear any remaining timers
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('Social login simulation flows - Facebook Sign-In', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    // Force the 1-second Future.delayed to fire and complete the intro animation
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Find the Facebook login button and tap it
+    final facebookButton = find.byIcon(FontAwesomeIcons.facebookF);
+    expect(facebookButton, findsOneWidget);
+    await tester.ensureVisible(facebookButton);
+    await tester.tap(facebookButton);
+    
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'facebook_user@example.com');
+    
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('Social login simulation flows - Snapchat Sign-In', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    // Force the 1-second Future.delayed to fire and complete the intro animation
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Find the Snapchat login button and tap it
+    final snapchatButton = find.byIcon(FontAwesomeIcons.snapchat);
+    expect(snapchatButton, findsOneWidget);
+    await tester.ensureVisible(snapchatButton);
+    await tester.tap(snapchatButton);
+    
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'snapchat_user@example.com');
+    
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('Social login simulation flows - Instagram Sign-In', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    // Force the 1-second Future.delayed to fire and complete the intro animation
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Find the Instagram login button and tap it
+    final instagramButton = find.byIcon(FontAwesomeIcons.instagram);
+    expect(instagramButton, findsOneWidget);
+    await tester.ensureVisible(instagramButton);
+    await tester.tap(instagramButton);
+    
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'instagram_user@example.com');
+    
+    await tester.pump(const Duration(seconds: 2));
   });
 }
