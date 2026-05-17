@@ -117,12 +117,29 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<String?> _simulateSocialLogin(String name, String nickname, String email) async {
     Utilities.debugPrintWithCallerInfo('Starting Social Sign-In Simulation: $email');
     try {
-      var player = await Player.getPlayerByEmailFromDB(email);
-      player ??= await Player.createPlayer(
-          name, nickname, email: email, phoneNumber: "555-SOCIAL");
-      
-      await UserProvider().login(player);
-      Utilities.debugPrintWithCallerInfo('Social Sign-In Simulated Successfully: $email');
+      // Sign into Firebase Auth under the hood using email/password
+      // so that the Auth State listener gets a valid authenticated session.
+      final auth = UserProvider().auth;
+      try {
+        await auth.signInWithEmailAndPassword(
+          email: email,
+          password: 'mock_social_password_123',
+        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'invalid-email') {
+          // Create the user if they don't exist yet
+          await auth.createUserWithEmailAndPassword(
+            email: email,
+            password: 'mock_social_password_123',
+          );
+        } else {
+          rethrow;
+        }
+      }
+
+      // Wait a brief moment for the auth state changes stream to process the login
+      // and sync/create the Firestore profile.
+      await Future.delayed(const Duration(milliseconds: 150));
       return null;
     } catch (e) {
       return "Sign-In failed: $e";

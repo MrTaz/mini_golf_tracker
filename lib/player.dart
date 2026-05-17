@@ -171,9 +171,44 @@ class Player {
     String? ownerId,
   }) async {
     try {
-      if (await _isDuplicatePlayer(email, phoneNumber)) {
-        throw DatabaseConnectionError(
-            'Player with the same email or phone number already exists'); //TODO: fix error handling
+      if (email != null && email.isNotEmpty) {
+        final existingPlayer = await getPlayerByEmailFromDB(email);
+        if (existingPlayer != null) {
+          if (id != null && existingPlayer.id != id) {
+            Utilities.debugPrintWithCallerInfo(
+                'Found duplicate player profile with different ID: ${existingPlayer.id}. Migrating under new UID: $id');
+            await DatabaseConnection.client.collection('players').doc(existingPlayer.id).delete();
+          } else if (id != null && existingPlayer.id == id) {
+            return existingPlayer;
+          } else {
+            throw DatabaseConnectionError(
+                'Player with the same email already exists');
+          }
+        }
+      }
+
+      // Also check phone number duplicate just in case
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        final snapshot = await DatabaseConnection.client
+            .collection('players')
+            .where('phone_number', isEqualTo: phoneNumber)
+            .limit(1)
+            .get();
+        if (snapshot.docs.isNotEmpty) {
+          final existingId = snapshot.docs.first.id;
+          if (id != null && existingId != id) {
+            Utilities.debugPrintWithCallerInfo(
+                'Found duplicate player profile by phone number with different ID: $existingId. Migrating under new UID: $id');
+            await DatabaseConnection.client.collection('players').doc(existingId).delete();
+          } else if (id != null && existingId == id) {
+            var data = snapshot.docs.first.data();
+            data['id'] = existingId;
+            return Player.fromJson(data);
+          } else {
+            throw DatabaseConnectionError(
+                'Player with the same phone number already exists');
+          }
+        }
       }
 
       final docRef = id != null 

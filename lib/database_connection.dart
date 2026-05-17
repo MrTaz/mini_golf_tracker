@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 
@@ -17,8 +18,11 @@ class DatabaseConnection {
         final String host = defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost';
         FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
         debugPrint('🔌 Connected to local Firestore Emulator at $host:8080');
+
+        FirebaseAuth.instance.useAuthEmulator(host, 9099);
+        debugPrint('🔌 Connected to local Auth Emulator at $host:9099');
       } catch (e) {
-        debugPrint('⚠️ Failed to connect to Firestore Emulator: $e');
+        debugPrint('⚠️ Failed to connect to Emulators: $e');
       }
     }
   }
