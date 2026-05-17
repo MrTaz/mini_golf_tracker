@@ -1,1 +1,153 @@
-rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // Players Collection
+    match /players/{playerId} {
+      allow read: if isLoggedIn();
+      
+      allow create: if isLoggedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.id == playerId
+        && request.resource.data.total_score == 0
+        && request.resource.data.player_name is string
+        && request.resource.data.player_name.size() > 0
+        && request.resource.data.player_name.size() <= 100
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() <= 100
+        && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
+        && (!('phone_number' in request.resource.data) || request.resource.data.phone_number == null || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
+        && (!('status' in request.resource.data) || request.resource.data.status == null || (request.resource.data.status is string && request.resource.data.status.size() <= 200))
+        && (!('avatar_image_location' in request.resource.data) || request.resource.data.avatar_image_location == null || (request.resource.data.avatar_image_location is string && request.resource.data.avatar_image_location.size() <= 500));
+
+      allow update: if isLoggedIn() && (
+        // Case 1: Owner updates their profile fields. Must not change key identifier fields.
+        (
+          resource.data.owner_id == request.auth.uid
+          && request.resource.data.owner_id == resource.data.owner_id
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.player_name is string
+          && request.resource.data.player_name.size() > 0
+          && request.resource.data.player_name.size() <= 100
+          && request.resource.data.nickname is string
+          && request.resource.data.nickname.size() <= 100
+          && (request.resource.data.total_score is int || request.resource.data.total_score is float)
+          && request.resource.data.total_score >= 0
+          && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
+          && (!('phone_number' in request.resource.data) || request.resource.data.phone_number == null || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
+          && (!('status' in request.resource.data) || request.resource.data.status == null || (request.resource.data.status is string && request.resource.data.status.size() <= 200))
+          && (!('avatar_image_location' in request.resource.data) || request.resource.data.avatar_image_location == null || (request.resource.data.avatar_image_location is string && request.resource.data.avatar_image_location.size() <= 500))
+        )
+        // Case 2: Peer user or game host updates only the total_score field after a game.
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['total_score'])
+          && (request.resource.data.total_score is int || request.resource.data.total_score is float)
+          && request.resource.data.total_score >= 0
+        )
+      );
+
+      allow delete: if isLoggedIn() && resource.data.owner_id == request.auth.uid;
+    }
+
+    // Friends Collection
+    match /friends/{friendDocId} {
+      allow read: if isLoggedIn() && (resource.data.player_id == request.auth.uid || resource.data.friend_id == request.auth.uid);
+      
+      allow create, update: if isLoggedIn()
+        && (request.resource.data.player_id == request.auth.uid || request.resource.data.friend_id == request.auth.uid)
+        && request.resource.data.player_id is string
+        && request.resource.data.player_id.size() > 0
+        && request.resource.data.player_id.size() <= 100
+        && request.resource.data.friend_id is string
+        && request.resource.data.friend_id.size() > 0
+        && request.resource.data.friend_id.size() <= 100
+        && friendDocId == request.resource.data.player_id + '_' + request.resource.data.friend_id;
+
+      allow delete: if isLoggedIn() && (resource.data.player_id == request.auth.uid || resource.data.friend_id == request.auth.uid);
+    }
+
+    // Courses Collection
+    match /courses/{courseId} {
+      allow read: if isLoggedIn();
+      
+      allow create: if isLoggedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.number_of_holes is int
+        && request.resource.data.number_of_holes >= 1
+        && request.resource.data.number_of_holes <= 36
+        && request.resource.data.par_strokes is map;
+
+      allow update, delete: if false;
+    }
+
+    // Games Collection
+    match /games/{gameId} {
+      allow read: if isLoggedIn() && (
+        resource.data.creator_id == request.auth.uid
+        || exists(/databases/$(database)/documents/player_game_info/$(gameId + '_' + request.auth.uid))
+      );
+
+      allow create: if isLoggedIn()
+        && request.resource.data.creator_id == request.auth.uid
+        && request.resource.data.id == gameId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.status is string
+        && request.resource.data.status.size() <= 50
+        && request.resource.data.course is map
+        && request.resource.data.players is list
+        && request.resource.data.players.size() <= 6;
+
+      allow update: if isLoggedIn()
+        && (
+          resource.data.creator_id == request.auth.uid
+          || exists(/databases/$(database)/documents/player_game_info/$(gameId + '_' + request.auth.uid))
+        )
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.creator_id == resource.data.creator_id
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.status is string
+        && request.resource.data.status.size() <= 50
+        && request.resource.data.course is map
+        && request.resource.data.players is list
+        && request.resource.data.players.size() <= 6;
+
+      allow delete: if isLoggedIn() && resource.data.creator_id == request.auth.uid;
+    }
+
+    // Player Game Info Collection
+    match /player_game_info/{infoId} {
+      allow read: if isLoggedIn();
+
+      allow create, update: if isLoggedIn()
+        && (
+          request.resource.data.player_id == request.auth.uid
+          || get(/databases/$(database)/documents/games/$(request.resource.data.game_id)).data.creator_id == request.auth.uid
+        )
+        && request.resource.data.game_id is string
+        && request.resource.data.player_id is string
+        && request.resource.data.place is string
+        && request.resource.data.place.size() <= 50
+        && request.resource.data.play_order_position is int
+        && request.resource.data.scores is list
+        && request.resource.data.total_score is int
+        && infoId == request.resource.data.game_id + '_' + request.resource.data.player_id;
+
+      allow delete: if isLoggedIn()
+        && (
+          resource.data.player_id == request.auth.uid
+          || get(/databases/$(database)/documents/games/$(resource.data.game_id)).data.creator_id == request.auth.uid
+        );
+    }
+  }
+}
