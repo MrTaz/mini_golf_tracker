@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
@@ -131,14 +133,35 @@ class Player {
 
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
     final snapshot =
-        await DatabaseConnection.client.collection('players').where('email', isEqualTo: email).limit(1).get();
+        await DatabaseConnection.client.collection('players').where('email', isEqualTo: email).get();
 
     if (snapshot.docs.isEmpty) {
       return null;
     }
 
-    var data = snapshot.docs.first.data();
-    data['id'] = snapshot.docs.first.id;
+    // If there are multiple profiles with the same email, prioritize the one
+    // matching the current authenticated user's ID.
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final matchingDocs = snapshot.docs.where((doc) => doc.id == currentUser.uid);
+          final matchesUser = matchingDocs.isNotEmpty ? matchingDocs.first : snapshot.docs.first;
+          var data = matchesUser.data();
+          data['id'] = matchesUser.id;
+          return Player.fromJson(data);
+        }
+      } catch (e) {
+        Utilities.debugPrintWithCallerInfo('Error accessing FirebaseAuth in getPlayerByEmailFromDB: $e');
+      }
+    }
+
+    // Otherwise, prioritize the self-owned profile (id == owner_id)
+    // representing a real authenticated account rather than an offline guest profile.
+    final selfOwnedDocs = snapshot.docs.where((doc) => doc.id == doc.data()['owner_id']);
+    final matchesSelfOwned = selfOwnedDocs.isNotEmpty ? selfOwnedDocs.first : snapshot.docs.first;
+    var data = matchesSelfOwned.data();
+    data['id'] = matchesSelfOwned.id;
     return Player.fromJson(data);
   }
 
@@ -176,8 +199,14 @@ class Player {
         if (existingPlayer != null) {
           if (id != null && existingPlayer.id != id) {
             Utilities.debugPrintWithCallerInfo(
-                'Found duplicate player profile with different ID: ${existingPlayer.id}. Migrating under new UID: $id');
-            await DatabaseConnection.client.collection('players').doc(existingPlayer.id).delete();
+                'Found duplicate player profile with different ID: ${existingPlayer.id}. Attempting to clean up old profile...');
+            try {
+              await DatabaseConnection.client.collection('players').doc(existingPlayer.id).delete();
+              Utilities.debugPrintWithCallerInfo('Successfully deleted old profile: ${existingPlayer.id}');
+            } catch (e) {
+              Utilities.debugPrintWithCallerInfo(
+                  'Could not delete old profile due to permissions (this is expected for offline guest profiles): $e');
+            }
           } else if (id != null && existingPlayer.id == id) {
             return existingPlayer;
           } else {
@@ -198,8 +227,14 @@ class Player {
           final existingId = snapshot.docs.first.id;
           if (id != null && existingId != id) {
             Utilities.debugPrintWithCallerInfo(
-                'Found duplicate player profile by phone number with different ID: $existingId. Migrating under new UID: $id');
-            await DatabaseConnection.client.collection('players').doc(existingId).delete();
+                'Found duplicate player profile by phone number with different ID: $existingId. Attempting to clean up old profile...');
+            try {
+              await DatabaseConnection.client.collection('players').doc(existingId).delete();
+              Utilities.debugPrintWithCallerInfo('Successfully deleted old profile by phone number: $existingId');
+            } catch (e) {
+              Utilities.debugPrintWithCallerInfo(
+                  'Could not delete old profile by phone number due to permissions: $e');
+            }
           } else if (id != null && existingId == id) {
             var data = snapshot.docs.first.data();
             data['id'] = existingId;
