@@ -183,8 +183,10 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 LocationPermission permission = await Geolocator.requestPermission();
                                 if (permission == LocationPermission.whileInUse ||
                                     permission == LocationPermission.always) {
-                                  Navigator.of(context).pop();
-                                  await _openMapScreen();
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    await _openMapScreen();
+                                  }
                                 } else {
                                   setModalState(() {
                                     modalError = 'Location permission denied. Please use the form below.';
@@ -366,11 +368,13 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
                         try {
                           final locations = await geocoding.locationFromAddress(fullAddress);
-                          if (locations.isNotEmpty && mounted) {
-                            setState(() {
-                              _latitude = locations.first.latitude;
-                              _longitude = locations.first.longitude;
-                            });
+                          if (locations.isNotEmpty && context.mounted) {
+                            if (mounted) {
+                              setState(() {
+                                _latitude = locations.first.latitude;
+                                _longitude = locations.first.longitude;
+                              });
+                            }
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -386,7 +390,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                             "Geocoding of user-captured address failed: $e",
                           );
                           // We don't block the user, just let them know
-                          if (mounted) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

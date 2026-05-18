@@ -1,0 +1,26 @@
+# Dependencies & package managers
+node_modules/
+.pnpm-store/
+vendor/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Lock files (large, rarely useful for AI)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+**/*.min.js
+**/*.min.css
+**/*.map
+
+# Assets the AI doesn't need
+public/assets/
+**/*.png
+**/*.jpg
+**/*.mp4

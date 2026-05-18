@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mini_golf_tracker/add_edit_course_screen.dart';
@@ -131,19 +129,22 @@ void main() {
     );
   }
 
-  testWidgets('renders all course creation fields successfully', (tester) async {
+  testWidgets('renders all course creation fields successfully',
+      (tester) async {
     await tester.pumpWidget(createScreen());
 
     expect(find.text('Create New Course'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Course Name'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'Address (Optional)'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Address (Optional)'),
+        findsOneWidget);
     expect(find.text('Fairway Par Configuration'), findsOneWidget);
     expect(find.text('18 Holes'), findsOneWidget);
     expect(find.text('9 Holes'), findsOneWidget);
     expect(find.text('Create Course'), findsOneWidget);
   });
 
-  testWidgets('renders initial editing values when a course is supplied', (tester) async {
+  testWidgets('renders initial editing values when a course is supplied',
+      (tester) async {
     final course = Course(
       id: 'course-1',
       name: 'Chucksters Case Course',
@@ -160,13 +161,15 @@ void main() {
     expect(find.text('Chucksters Case Course'), findsOneWidget);
     expect(find.text('53 Carter Hill Rd, Hooksett, NH'), findsOneWidget);
     expect(find.text('Coordinates: 43.11100, -71.22200'), findsOneWidget);
-    
+
     // Default par configuration for hole 2 is 2
     expect(find.text('Hole 2'), findsOneWidget);
     expect(find.text('2'), findsOneWidget); // Par stroke text for hole 2
   });
 
-  testWidgets('fetches GPS location and automatically populates reverse geocoded address', (tester) async {
+  testWidgets(
+      'fetches GPS location and automatically populates reverse geocoded address',
+      (tester) async {
     await tester.pumpWidget(createScreen());
 
     // Clicks "Use Current Location" icon button
@@ -175,7 +178,8 @@ void main() {
 
     await tester.tap(locationBtn);
     await tester.pump(); // Starts locating loader
-    await tester.pump(const Duration(milliseconds: 500)); // Finish locate and geocoding Futures
+    await tester.pump(const Duration(
+        milliseconds: 500)); // Finish locate and geocoding Futures
 
     // Resolved address should be set automatically
     expect(find.text('53 Carter Hill Rd, Hooksett, NH, 03106'), findsOneWidget);
@@ -191,14 +195,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('GPS device timeout'), findsOneWidget);
-    
+
     // Closes error banner
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     expect(find.text('GPS device timeout'), findsNothing);
   });
 
-  testWidgets('select on map works immediately if permission is granted', (tester) async {
+  testWidgets('select on map works immediately if permission is granted',
+      (tester) async {
     await tester.pumpWidget(createScreen());
 
     final mapBtn = find.byIcon(Icons.map_outlined);
@@ -212,7 +217,9 @@ void main() {
     expect(find.byType(MapPickerScreen), findsOneWidget);
   });
 
-  testWidgets('falls back to Address Capture bottom sheet when location permission is denied, and handles enable maps', (tester) async {
+  testWidgets(
+      'falls back to Address Capture bottom sheet when location permission is denied, and handles enable maps',
+      (tester) async {
     mockGeolocator.checkPermissionResult = LocationPermission.denied;
 
     await tester.pumpWidget(createScreen());
@@ -228,12 +235,15 @@ void main() {
     mockGeolocator.requestPermissionResult = LocationPermission.whileInUse;
     await tester.tap(find.text('Use Map (Grant Permission)'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Pops sheet and navigates to MapPicker
+    await tester.pump(const Duration(
+        milliseconds: 500)); // Pops sheet and navigates to MapPicker
 
     expect(find.byType(MapPickerScreen), findsOneWidget);
   });
 
-  testWidgets('address capture sheet structured form input works and geocodes coordinates in background', (tester) async {
+  testWidgets(
+      'address capture sheet structured form input works and geocodes coordinates in background',
+      (tester) async {
     mockGeolocator.checkPermissionResult = LocationPermission.denied;
 
     await tester.pumpWidget(createScreen());
@@ -242,7 +252,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Type address details
-    await tester.enterText(find.widgetWithText(TextField, 'Street Address'), '100 Main St');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Street Address'), '100 Main St');
     await tester.enterText(find.widgetWithText(TextField, 'City'), 'Hooksett');
     await tester.enterText(find.widgetWithText(TextField, 'State'), 'NH');
     await tester.enterText(find.widgetWithText(TextField, 'ZIP Code'), '03106');
@@ -258,7 +269,9 @@ void main() {
     expect(find.text('Coordinates: 43.12345, -71.54321'), findsOneWidget);
   });
 
-  testWidgets('handles conflict warning choices correctly when duplicates exist', (tester) async {
+  testWidgets(
+      'handles conflict warning choices correctly when duplicates exist',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 2500);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -282,7 +295,8 @@ void main() {
     await tester.pump();
 
     // Enter details for duplicate
-    await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'Chucksters Case Course');
+    await tester.enterText(find.widgetWithText(TextField, 'Course Name'),
+        'Chucksters Case Course');
     // Fetch GPS to trigger duplicate coordinate matching
     await tester.tap(find.byIcon(Icons.my_location));
     await tester.pump();
@@ -291,7 +305,8 @@ void main() {
     // Save Course
     await tester.tap(find.text('Create Course'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // triggers conflict alert dialog
+    await tester.pump(
+        const Duration(milliseconds: 500)); // triggers conflict alert dialog
 
     // Dialog showing conflicting course
     expect(find.text('Nearby Courses Found'), findsOneWidget);
@@ -303,8 +318,9 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    
-    expect(find.text('Nearby Courses Found'), findsNothing); // Dialog dismissed, still on AddEditCourseScreen
+
+    expect(find.text('Nearby Courses Found'),
+        findsNothing); // Dialog dismissed, still on AddEditCourseScreen
 
     // Save again to trigger dialog
     await tester.tap(find.text('Create Course'));
@@ -354,7 +370,8 @@ void main() {
     expect(find.text('2'), findsOneWidget);
   });
 
-  testWidgets('fails to check permissions when Geolocator throws error', (tester) async {
+  testWidgets('fails to check permissions when Geolocator throws error',
+      (tester) async {
     mockGeolocator.exceptionToThrow = 'Simulated geolocator error';
     await tester.pumpWidget(createScreen());
     await tester.tap(find.byIcon(Icons.map_outlined));
@@ -368,14 +385,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.map_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    
+
     Navigator.of(tester.element(find.byType(MapPickerScreen))).pop({
-        'latitude': 42.123,
-        'longitude': -71.123,
-        'address': 'Test Address from Map',
+      'latitude': 42.123,
+      'longitude': -71.123,
+      'address': 'Test Address from Map',
     });
     await tester.pumpAndSettle();
-    
+
     expect(find.text('Test Address from Map'), findsOneWidget);
     expect(find.text('Coordinates: 42.12300, -71.12300'), findsOneWidget);
   });
@@ -390,8 +407,9 @@ void main() {
     await tester.tap(find.text('Use Map (Grant Permission)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    
-    expect(find.textContaining('Could not request permissions:'), findsOneWidget);
+
+    expect(
+        find.textContaining('Could not request permissions:'), findsOneWidget);
   });
 
   testWidgets('grant permission denied from bottom sheet', (tester) async {
@@ -403,8 +421,9 @@ void main() {
     mockGeolocator.requestPermissionResult = LocationPermission.denied;
     await tester.tap(find.text('Use Map (Grant Permission)'));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
-    
-    expect(find.text('Location permission denied. Please use the form below.'), findsOneWidget);
+
+    expect(find.text('Location permission denied. Please use the form below.'),
+        findsOneWidget);
   });
 
   testWidgets('Geocoding of user-captured address fails', (tester) async {
@@ -413,28 +432,33 @@ void main() {
     await tester.tap(find.byIcon(Icons.map_outlined));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Street Address'), '100 Main St');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Street Address'), '100 Main St');
     await tester.pump();
 
     mockGeocoding.exceptionToThrow = 'Geocoding network error';
     await tester.tap(find.text('Confirm Address'));
     await tester.pump(); // start async operation
     await tester.pumpAndSettle(); // render the error snackbar
-    
-    expect(find.textContaining('Map coordinates could not be resolved automatically'), findsOneWidget);
+
+    expect(
+        find.textContaining(
+            'Map coordinates could not be resolved automatically'),
+        findsOneWidget);
   });
 
   testWidgets('Save course without holes selected', (tester) async {
     await tester.pumpWidget(createScreen());
-    
-    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
     // Do not tap 9 or 18 holes
-    
+
     final createCourseBtn = find.text('Create Course');
     await tester.ensureVisible(createCourseBtn);
     await tester.tap(createCourseBtn);
     await tester.pumpAndSettle();
-    
+
     expect(find.text('Please select the number of holes.'), findsOneWidget);
   });
 
@@ -448,24 +472,27 @@ void main() {
       longitude: -71.222,
     );
     await tester.pumpWidget(createScreen(course: course));
-    
+
     await tester.tap(find.byIcon(Icons.cancel_rounded));
     await tester.pumpAndSettle();
-    
+
     expect(find.textContaining('Coordinates:'), findsNothing);
   });
 
   testWidgets('Empty address coordinates geocode on save', (tester) async {
     await tester.pumpWidget(createScreen());
-    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
     await tester.tap(find.text('18 Holes'));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Address (Optional)'), '53 Carter Hill Rd');
-    
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address (Optional)'),
+        '53 Carter Hill Rd');
+
     final createCourseBtn = find.text('Create Course');
     await tester.ensureVisible(createCourseBtn);
     await tester.tap(createCourseBtn);
     await tester.pumpAndSettle();
-    
+
     // It should have geocoded and saved. The screen closes on success.
     expect(find.byType(AddEditCourseScreen), findsNothing);
   });
@@ -479,10 +506,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
 
-    expect(find.text('The interactive map needs location permissions. You can grant permission to use the map, or fill out this quick address form instead.'), findsNothing);
+    expect(
+        find.text(
+            'The interactive map needs location permissions. You can grant permission to use the map, or fill out this quick address form instead.'),
+        findsNothing);
   });
 
-  testWidgets('Address capture sheet validation fails on empty street', (tester) async {
+  testWidgets('Address capture sheet validation fails on empty street',
+      (tester) async {
     mockGeolocator.checkPermissionResult = LocationPermission.denied;
     await tester.pumpWidget(createScreen());
     await tester.tap(find.byIcon(Icons.map_outlined));
@@ -491,7 +522,8 @@ void main() {
     await tester.tap(find.text('Confirm Address'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Street address is required to locate the course.'), findsOneWidget);
+    expect(find.text('Street address is required to locate the course.'),
+        findsOneWidget);
   });
 
   testWidgets('Grant permission after initial denial succeeds', (tester) async {
@@ -507,18 +539,20 @@ void main() {
     expect(find.byType(MapPickerScreen), findsOneWidget);
   });
 
-  testWidgets('Reverse geocoding fails after fetching GPS location via icon', (tester) async {
+  testWidgets('Reverse geocoding fails after fetching GPS location via icon',
+      (tester) async {
     await tester.pumpWidget(createScreen());
-    
+
     mockGeocoding.placemarksResult = [];
     mockGeocoding.exceptionToThrow = 'Simulated geocoding error';
-    
+
     await tester.tap(find.byIcon(Icons.my_location));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Could not get coordinates automatically'), findsNothing); // It just silently fails reverse geocoding but gets coordinates
+    expect(find.textContaining('Could not get coordinates automatically'),
+        findsNothing); // It just silently fails reverse geocoding but gets coordinates
   });
 
   testWidgets('Exact address match in conflict check', (tester) async {
@@ -530,15 +564,19 @@ void main() {
     });
 
     await tester.pumpWidget(createScreen());
-    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
     await tester.tap(find.text('18 Holes'));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Address (Optional)'), '123 Exact St');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address (Optional)'),
+        '123 Exact St');
 
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
     final createCourseBtn = find.text('Create Course');
-    await tester.scrollUntilVisible(createCourseBtn, 100.0, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(createCourseBtn, 100.0,
+        scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(createCourseBtn);
     await tester.pumpAndSettle();
@@ -559,15 +597,19 @@ void main() {
     });
 
     await tester.pumpWidget(createScreen());
-    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
     await tester.tap(find.text('18 Holes'));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Address (Optional)'), '123 Exact St');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address (Optional)'),
+        '123 Exact St');
 
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
     final createCourseBtn = find.text('Create Course');
-    await tester.scrollUntilVisible(createCourseBtn, 100.0, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(createCourseBtn, 100.0,
+        scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(createCourseBtn);
     await tester.pumpAndSettle();
@@ -582,9 +624,12 @@ void main() {
 
   testWidgets('Geocoding fails on final save', (tester) async {
     await tester.pumpWidget(createScreen());
-    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'), 'Geocode Fail Course');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'),
+        'Geocode Fail Course');
     await tester.tap(find.text('18 Holes'));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Address (Optional)'), 'Some Valid Address');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address (Optional)'),
+        'Some Valid Address');
 
     mockGeocoding.exceptionToThrow = 'Final Geocoding Error';
 
@@ -592,7 +637,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final createCourseBtn = find.text('Create Course');
-    await tester.scrollUntilVisible(createCourseBtn, 100.0, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(createCourseBtn, 100.0,
+        scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(createCourseBtn);
     await tester.pumpAndSettle();
@@ -604,12 +650,12 @@ void main() {
   testWidgets('GPS loading state indicator shows in suffix', (tester) async {
     mockGeolocator.delayToUse = const Duration(seconds: 1);
     await tester.pumpWidget(createScreen());
-    
+
     await tester.tap(find.byIcon(Icons.my_location));
     await tester.pump();
-    
+
     expect(find.byType(CircularProgressIndicator), findsWidgets);
-    
+
     await tester.pumpAndSettle();
   });
 }
