@@ -20,6 +20,9 @@ void main() {
         'name': 'Putter Park',
         'number_of_holes': 3,
         'par_strokes': {'1': 2, '2': 3, '3': 4},
+        'latitude': null,
+        'longitude': null,
+        'address': null,
       });
 
       final decoded = Course.fromJson(course.toJson());
@@ -28,6 +31,9 @@ void main() {
       expect(decoded.name, 'Putter Park');
       expect(decoded.numberOfHoles, 3);
       expect(decoded.parStrokes, {1: 2, 2: 3, 3: 4});
+      expect(decoded.latitude, null);
+      expect(decoded.longitude, null);
+      expect(decoded.address, null);
     });
 
     test('throws for invalid hole number', () {

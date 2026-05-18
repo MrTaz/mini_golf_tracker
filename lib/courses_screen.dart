@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/course.dart';
@@ -30,14 +32,112 @@ class CoursesScreenState extends State<CoursesScreen> {
   DocumentSnapshot? _lastDocument;
   final int _pageSize = 5;
 
+  Position? _currentPosition;
+  bool _isLocating = false;
+
   @override
   void initState() {
     super.initState();
-    _initializeCourses();
     _scrollController.addListener(_scrollListener);
     setState(() {
       selectedCourse = widget.selectedCourse;
     });
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    _getCurrentLocation().then((_) {
+      if (mounted) {
+        _sortCoursesByProximity();
+      }
+    });
+    await _initializeCourses();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    if (_isLocating) return;
+    setState(() {
+      _isLocating = true;
+    });
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _isLocating = false;
+        });
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _isLocating = false;
+          });
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _isLocating = false;
+          });
+        return;
+      }
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _isLocating = false;
+        });
+      }
+    } catch (e) {
+      Utilities.debugPrintWithCallerInfo("Failed to get location: $e");
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    }
+  }
+
+  void _sortCoursesByProximity() {
+    if (_currentPosition == null || courses.isEmpty) return;
+    setState(() {
+      courses.sort((a, b) {
+        final double? distA = _calculateDistance(a);
+        final double? distB = _calculateDistance(b);
+        if (distA != null && distB != null) {
+          return distA.compareTo(distB);
+        } else if (distA != null) {
+          return -1; // Location-aware course first
+        } else if (distB != null) {
+          return 1;
+        } else {
+          return a.name.compareTo(b.name);
+        }
+      });
+    });
+  }
+
+  double? _calculateDistance(Course course) {
+    if (_currentPosition == null || course.latitude == null || course.longitude == null) {
+      return null;
+    }
+    try {
+      return Geolocator.distanceBetween(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        course.latitude!,
+        course.longitude!,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -66,11 +166,19 @@ class CoursesScreenState extends State<CoursesScreen> {
     });
 
     try {
-      Utilities.debugPrintWithCallerInfo("Loading courses from database (first page)");
-      final result = await Course.fetchCoursesPaginated(
-        limit: _pageSize,
-      );
-      final List<Course> loadedCourses = result.courses;
+      final List<Course> loadedCourses;
+      if (_currentPosition != null) {
+        Utilities.debugPrintWithCallerInfo("Loading all courses from database for proximity sorting");
+        final allCoursesNullable = await Course.fetchCourses();
+        loadedCourses = allCoursesNullable.whereType<Course>().toList();
+      } else {
+        Utilities.debugPrintWithCallerInfo("Loading courses from database (first page)");
+        final result = await Course.fetchCoursesPaginated(
+          limit: _pageSize,
+        );
+        loadedCourses = result.courses;
+        _lastDocument = result.lastDocument;
+      }
 
       await _saveLocalCourses(loadedCourses); // Save courses locally to keep cache updated
 
@@ -79,10 +187,14 @@ class CoursesScreenState extends State<CoursesScreen> {
       if (mounted) {
         setState(() {
           courses = loadedCourses; // Update the courses list after loading
-          _lastDocument = result.lastDocument;
-          _hasMore = loadedCourses.length >= _pageSize;
+          if (_currentPosition != null) {
+            _hasMore = false;
+          } else {
+            _hasMore = loadedCourses.length >= _pageSize;
+          }
           _isLoading = false;
         });
+        _sortCoursesByProximity();
       }
       return loadedCourses;
     } catch (exception) {
@@ -106,6 +218,7 @@ class CoursesScreenState extends State<CoursesScreen> {
             _hasMore = false; // Disable pagination on local cache fallback
             _isLoading = false;
           });
+          _sortCoursesByProximity();
         }
         return loadedCourses;
       } catch (innerException) {
@@ -144,6 +257,7 @@ class CoursesScreenState extends State<CoursesScreen> {
           _hasMore = newCourses.length >= _pageSize;
           _isLoadingMore = false;
         });
+        _sortCoursesByProximity();
       }
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo("Exception when loading more courses: $exception");
@@ -201,13 +315,24 @@ class CoursesScreenState extends State<CoursesScreen> {
     final Course course = courses[index];
     final bool isSelected =
         selectedCourse != null && course.id == selectedCourse!.id;
+    
+    final double? distanceMeters = _calculateDistance(course);
+    String? distanceStr;
+    if (distanceMeters != null) {
+      final double miles = distanceMeters * 0.000621371;
+      distanceStr = '${miles.toStringAsFixed(1)} miles away';
+    }
 
     return Card(
       child: Column(
         children: [
           ListTile(
             title: Text(course.name),
-            subtitle: Text("${course.numberOfHoles} holes"),
+            subtitle: Text(
+              "${course.numberOfHoles} holes"
+              "${distanceStr != null ? ' • $distanceStr' : ''}"
+              "${course.address != null && course.address!.isNotEmpty ? ' • ${course.address}' : ''}",
+            ),
             leading: const Icon(Icons.golf_course),
             selected: isSelected,
             iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
@@ -252,6 +377,11 @@ class CoursesScreenState extends State<CoursesScreen> {
     await showDialog<Course>(
       context: context,
       builder: (BuildContext context) {
+        double? dialogLatitude = _currentPosition?.latitude;
+        double? dialogLongitude = _currentPosition?.longitude;
+        String? dialogAddress;
+        bool dialogIsFetchingGPS = false;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
@@ -270,6 +400,110 @@ class CoursesScreenState extends State<CoursesScreen> {
                         courseName = value;
                       },
                     ),
+                    const SizedBox(height: 16.0),
+                    TextField(
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: 'Address (Optional)',
+                        helperText: (dialogLatitude != null && dialogLongitude != null)
+                            ? 'Using GPS location. Address is optional.'
+                            : 'Enter an address to geolocate this course',
+                      ),
+                      onChanged: (value) {
+                        dialogAddress = value;
+                      },
+                    ),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: dialogIsFetchingGPS
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      dialogIsFetchingGPS = true;
+                                    });
+                                    try {
+                                      bool serviceEnabled =
+                                          await Geolocator.isLocationServiceEnabled();
+                                      if (!serviceEnabled) {
+                                        throw 'Location services are disabled.';
+                                      }
+                                      LocationPermission permission =
+                                          await Geolocator.checkPermission();
+                                      if (permission == LocationPermission.denied) {
+                                        permission = await Geolocator.requestPermission();
+                                        if (permission == LocationPermission.denied) {
+                                          throw 'Location permission denied.';
+                                        }
+                                      }
+                                      if (permission == LocationPermission.deniedForever) {
+                                        throw 'Location permissions are permanently denied.';
+                                      }
+                                      Position position =
+                                          await Geolocator.getCurrentPosition(
+                                        locationSettings: const LocationSettings(
+                                          accuracy: LocationAccuracy.high,
+                                          timeLimit: Duration(seconds: 5),
+                                        ),
+                                      );
+                                      setState(() {
+                                        dialogLatitude = position.latitude;
+                                        dialogLongitude = position.longitude;
+                                        dialogIsFetchingGPS = false;
+                                      });
+                                    } catch (e) {
+                                      Utilities.debugPrintWithCallerInfo(
+                                          "Failed to get GPS inside dialog: $e");
+                                      setState(() {
+                                        dialogIsFetchingGPS = false;
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                              content:
+                                                  Text('Failed to get location: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                            icon: dialogIsFetchingGPS
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.green),
+                                    ),
+                                  )
+                                : const Icon(Icons.my_location),
+                            label: Text(dialogIsFetchingGPS
+                                ? 'Fetching GPS...'
+                                : 'Use Current Location'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    if (dialogLatitude != null && dialogLongitude != null)
+                      Text(
+                        'Coordinates: ${dialogLatitude!.toStringAsFixed(5)}, ${dialogLongitude!.toStringAsFixed(5)}',
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else
+                      Text(
+                        'No location coordinates attached',
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
                       initialValue: numberOfHoles,
@@ -342,6 +576,48 @@ class CoursesScreenState extends State<CoursesScreen> {
                   TextButton(
                     onPressed: () async {
                       if (courseName.isNotEmpty && parStrokes.isNotEmpty) {
+                        double? finalLat = dialogLatitude;
+                        double? finalLng = dialogLongitude;
+                        if (finalLat == null && finalLng == null && dialogAddress != null && dialogAddress!.trim().isNotEmpty) {
+                          try {
+                            final locations = await geocoding.locationFromAddress(dialogAddress!);
+                            if (locations.isNotEmpty) {
+                              finalLat = locations.first.latitude;
+                              finalLng = locations.first.longitude;
+                              dialogLatitude = finalLat;
+                              dialogLongitude = finalLng;
+                            }
+                          } catch (e) {
+                            Utilities.debugPrintWithCallerInfo("Geocoding failed for $dialogAddress: $e");
+                          }
+                        }
+
+                        final conflicts = await _findConflictingCourses(
+                          finalLat,
+                          finalLng,
+                          dialogAddress,
+                        );
+
+                        dynamic proceed = true;
+                        if (!context.mounted) return;
+                        if (conflicts.isNotEmpty) {
+                          proceed = await _showLocationConflictDialog(context, conflicts);
+                        }
+
+                        if (proceed == null) {
+                          // Cancelled
+                          return;
+                        }
+
+                        if (proceed is Course) {
+                          // Select the existing course
+                          if (context.mounted) {
+                            Navigator.of(context).pop(proceed);
+                          }
+                          return;
+                        }
+
+                        // Otherwise proceed was true, so we create it!
                         final Course newCourse = Course(
                           id: "",
                           name: courseName,
@@ -351,6 +627,9 @@ class CoursesScreenState extends State<CoursesScreen> {
                                 numberOfHoles!, (index) => index + 1))
                               holeNumber: parStrokes[holeNumber - 1]
                           },
+                          latitude: dialogLatitude,
+                          longitude: dialogLongitude,
+                          address: dialogAddress,
                         );
                         final success = await _saveCourse(newCourse);
                         if (success) {
@@ -377,8 +656,17 @@ class CoursesScreenState extends State<CoursesScreen> {
           title: Text(course.name),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Number of Holes: ${course.numberOfHoles}'),
+              if (course.address != null && course.address!.isNotEmpty) ...[
+                const SizedBox(height: 8.0),
+                Text('Address: ${course.address}'),
+              ],
+              if (course.latitude != null && course.longitude != null) ...[
+                const SizedBox(height: 8.0),
+                Text('Coordinates: ${course.latitude!.toStringAsFixed(5)}, ${course.longitude!.toStringAsFixed(5)}'),
+              ],
               const SizedBox(height: 16.0),
               ...List.generate(course.numberOfHoles, (index) {
                 return _buildHoleDetailsRow(course, index);
@@ -388,6 +676,7 @@ class CoursesScreenState extends State<CoursesScreen> {
           actions: [
             TextButton(
               onPressed: () {
+                Navigator.of(context).pop(); // Close details dialog first
                 _editCourse(course);
               },
               child: const Text('Edit'),
@@ -434,6 +723,11 @@ class CoursesScreenState extends State<CoursesScreen> {
     await showDialog<Course>(
       context: context,
       builder: (BuildContext context) {
+        double? dialogLatitude = course.latitude;
+        double? dialogLongitude = course.longitude;
+        String? dialogAddress = course.address;
+        bool dialogIsFetchingGPS = false;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
@@ -453,6 +747,111 @@ class CoursesScreenState extends State<CoursesScreen> {
                       },
                       controller: TextEditingController(text: course.name),
                     ),
+                    const SizedBox(height: 16.0),
+                    TextField(
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: 'Address (Optional)',
+                        helperText: (dialogLatitude != null && dialogLongitude != null)
+                            ? 'Using GPS location. Address is optional.'
+                            : 'Enter an address to geolocate this course',
+                      ),
+                      onChanged: (value) {
+                        dialogAddress = value;
+                      },
+                      controller: TextEditingController(text: course.address ?? ''),
+                    ),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: dialogIsFetchingGPS
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      dialogIsFetchingGPS = true;
+                                    });
+                                    try {
+                                      bool serviceEnabled =
+                                          await Geolocator.isLocationServiceEnabled();
+                                      if (!serviceEnabled) {
+                                        throw 'Location services are disabled.';
+                                      }
+                                      LocationPermission permission =
+                                          await Geolocator.checkPermission();
+                                      if (permission == LocationPermission.denied) {
+                                        permission = await Geolocator.requestPermission();
+                                        if (permission == LocationPermission.denied) {
+                                          throw 'Location permission denied.';
+                                        }
+                                      }
+                                      if (permission == LocationPermission.deniedForever) {
+                                        throw 'Location permissions are permanently denied.';
+                                      }
+                                      Position position =
+                                          await Geolocator.getCurrentPosition(
+                                        locationSettings: const LocationSettings(
+                                          accuracy: LocationAccuracy.high,
+                                          timeLimit: Duration(seconds: 5),
+                                        ),
+                                      );
+                                      setState(() {
+                                        dialogLatitude = position.latitude;
+                                        dialogLongitude = position.longitude;
+                                        dialogIsFetchingGPS = false;
+                                      });
+                                    } catch (e) {
+                                      Utilities.debugPrintWithCallerInfo(
+                                          "Failed to get GPS inside dialog: $e");
+                                      setState(() {
+                                        dialogIsFetchingGPS = false;
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                              content:
+                                                  Text('Failed to get location: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                            icon: dialogIsFetchingGPS
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.green),
+                                    ),
+                                  )
+                                : const Icon(Icons.my_location),
+                            label: Text(dialogIsFetchingGPS
+                                ? 'Fetching GPS...'
+                                : 'Use Current Location'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    if (dialogLatitude != null && dialogLongitude != null)
+                      Text(
+                        'Coordinates: ${dialogLatitude!.toStringAsFixed(5)}, ${dialogLongitude!.toStringAsFixed(5)}',
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else
+                      Text(
+                        'No location coordinates attached',
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<int>(
                       initialValue: numberOfHoles,
@@ -525,20 +924,68 @@ class CoursesScreenState extends State<CoursesScreen> {
                   TextButton(
                     onPressed: () async {
                       if (courseName.isNotEmpty && parStrokes.isNotEmpty) {
-                        final updatedCourse = Course(
-                          id: course.id,
-                          name: courseName,
-                          numberOfHoles: numberOfHoles!,
-                          parStrokes: {
-                            for (var holeNumber in List.generate(
-                                numberOfHoles!, (index) => index + 1))
-                              holeNumber: parStrokes[holeNumber - 1]
-                          },
+                        double? finalLat = dialogLatitude;
+                        double? finalLng = dialogLongitude;
+                        if (finalLat == null && finalLng == null && dialogAddress != null && dialogAddress!.trim().isNotEmpty) {
+                          try {
+                            final locations = await geocoding.locationFromAddress(dialogAddress!);
+                            if (locations.isNotEmpty) {
+                              finalLat = locations.first.latitude;
+                              finalLng = locations.first.longitude;
+                              dialogLatitude = finalLat;
+                              dialogLongitude = finalLng;
+                            }
+                          } catch (e) {
+                            Utilities.debugPrintWithCallerInfo("Geocoding failed for $dialogAddress: $e");
+                          }
+                        }
+
+                        final conflicts = await _findConflictingCourses(
+                          finalLat,
+                          finalLng,
+                          dialogAddress,
                         );
-                        final success = await _saveCourse(updatedCourse);
-                        if (success) {
-                          if (!context.mounted) return;
-                          Navigator.of(context).pop(updatedCourse);
+                        // Filter out the course currently being edited to avoid conflict with itself
+                        conflicts.removeWhere((c) => c.id == course.id);
+
+                        dynamic proceed = true;
+                        if (!context.mounted) return;
+                        if (conflicts.isNotEmpty) {
+                          proceed = await _showLocationConflictDialog(context, conflicts);
+                        }
+
+                        if (proceed == null) {
+                          // Cancelled
+                          return;
+                        }
+
+                        if (proceed is Course) {
+                          // Select the existing course
+                          if (context.mounted) {
+                            Navigator.of(context).pop(proceed);
+                          }
+                          return;
+                        }
+
+                        if (proceed == true) {
+                          final updatedCourse = Course(
+                            id: course.id,
+                            name: courseName,
+                            numberOfHoles: numberOfHoles!,
+                            parStrokes: {
+                              for (var holeNumber in List.generate(
+                                  numberOfHoles!, (index) => index + 1))
+                                holeNumber: parStrokes[holeNumber - 1]
+                            },
+                            latitude: dialogLatitude,
+                            longitude: dialogLongitude,
+                            address: dialogAddress,
+                          );
+                          final success = await _saveCourse(updatedCourse);
+                          if (success) {
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop(updatedCourse);
+                          }
                         }
                       }
                     },
@@ -547,6 +994,139 @@ class CoursesScreenState extends State<CoursesScreen> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<List<Course>> _findConflictingCourses(double? lat, double? lng, String? address) async {
+    final List<Course> conflicts = [];
+    if (lat == null && lng == null && (address == null || address.trim().isEmpty)) {
+      return conflicts;
+    }
+
+    List<Course> allCourses = courses;
+    if (_hasMore) {
+      try {
+        final allCoursesNullable = await Course.fetchCourses();
+        allCourses = allCoursesNullable.whereType<Course>().toList();
+      } catch (e) {
+        Utilities.debugPrintWithCallerInfo("Error fetching all courses for conflict check: $e");
+      }
+    }
+
+    for (final course in allCourses) {
+      bool isConflict = false;
+      if (lat != null && lng != null && course.latitude != null && course.longitude != null) {
+        try {
+          final distance = Geolocator.distanceBetween(
+            lat,
+            lng,
+            course.latitude!,
+            course.longitude!,
+          );
+          if (distance <= 200) {
+            isConflict = true;
+          }
+        } catch (e) {
+          // Ignore proximity errors
+        }
+      }
+      if (!isConflict &&
+          address != null &&
+          address.trim().isNotEmpty &&
+          course.address != null &&
+          course.address!.trim().isNotEmpty) {
+        if (course.address!.trim().toLowerCase() == address.trim().toLowerCase()) {
+          isConflict = true;
+        }
+      }
+      if (isConflict) {
+        conflicts.add(course);
+      }
+    }
+    return conflicts;
+  }
+
+  Future<dynamic> _showLocationConflictDialog(
+      BuildContext context, List<Course> conflicts) {
+    return showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+              const SizedBox(width: 8.0),
+              const Text('Nearby Courses Found'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'We found the following course(s) at or near this location. You can select one of these to play, or add your new course anyway:',
+                  style: TextStyle(fontSize: 14.0),
+                ),
+                const SizedBox(height: 16.0),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: conflicts.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final Course conflictCourse = conflicts[index];
+                      final double? distanceMeters = _calculateDistance(conflictCourse);
+                      String distanceStr = '';
+                      if (distanceMeters != null) {
+                        final double miles = distanceMeters * 0.000621371;
+                        distanceStr = ' • ${miles.toStringAsFixed(1)} miles away';
+                      }
+                      return Card(
+                        color: Colors.green.shade50,
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: ListTile(
+                          title: Text(
+                            conflictCourse.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${conflictCourse.numberOfHoles} holes$distanceStr'
+                            '${conflictCourse.address != null && conflictCourse.address!.isNotEmpty ? '\n${conflictCourse.address}' : ''}',
+                          ),
+                          leading: const Icon(Icons.golf_course, color: Colors.green),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.of(context).pop(conflictCourse);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(null); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Add anyway
+              },
+              child: const Text('Add Second Course Anyway'),
+            ),
+          ],
         );
       },
     );

@@ -10,10 +10,21 @@ class Course {
     required this.name,
     required this.numberOfHoles,
     required this.parStrokes,
+    this.latitude,
+    this.longitude,
+    this.address,
   });
 
   factory Course.empty() {
-    return Course(id: '', name: '', numberOfHoles: 0, parStrokes: {});
+    return Course(
+      id: '',
+      name: '',
+      numberOfHoles: 0,
+      parStrokes: {},
+      latitude: null,
+      longitude: null,
+      address: null,
+    );
   }
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -37,11 +48,18 @@ class Course {
       });
     }
 
+    final double? latitude = json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null;
+    final double? longitude = json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null;
+    final String? address = json['address'] as String?;
+
     return Course(
       id: id,
       name: name,
       numberOfHoles: numberOfHoles,
       parStrokes: parStrokes,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
     );
   }
 
@@ -66,11 +84,18 @@ class Course {
       });
     }
 
+    final double? latitude = map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null;
+    final double? longitude = map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null;
+    final String? address = map['address'] as String?;
+
     return Course(
       id: id,
       name: name,
       numberOfHoles: numberOfHoles,
       parStrokes: parStrokes,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
     );
   }
 
@@ -78,6 +103,9 @@ class Course {
   String name;
   final int numberOfHoles;
   final Map<int, int> parStrokes; // Map to store par strokes for each hole
+  final double? latitude;
+  final double? longitude;
+  final String? address;
 
   FirebaseFirestore get db => DatabaseConnection.client;
 
@@ -88,6 +116,9 @@ class Course {
       'number_of_holes': numberOfHoles,
       'par_strokes': Map<String, int>.from(
           parStrokes.map((key, value) => MapEntry(key.toString(), value))),
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
     };
   }
 
@@ -124,39 +155,48 @@ class Course {
 
   Future<Course> saveCourseToDatabase() async {
     try {
-      // Fetch existing courses with the same name from the database
-      final existingCoursesSnapshot = await db
-          .collection('courses')
-          .where('name', isEqualTo: name)
-          .where('number_of_holes', isEqualTo: numberOfHoles)
-          .limit(1)
-          .get();
-
-      // If there's an existing course with the same name and number of holes, do not save
-      if (existingCoursesSnapshot.docs.isNotEmpty) {
-        throw Exception(
-            'Course with the same name and number of holes already exists.');
-      }
-
       // Prepare the course data to be saved
       final courseData = {
         'name': name,
         'number_of_holes': numberOfHoles,
         'par_strokes': Map<String, int>.from(
             parStrokes.map((key, value) => MapEntry(key.toString(), value))),
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
       };
 
-      // Save the course data to the database
-      final docRef = await db.collection('courses').add(courseData);
-      var docSnapshot = await docRef.get();
-      var data = docSnapshot.data()!;
-      data['id'] = docRef.id;
+      if (id.isNotEmpty) {
+        // Edit/update existing course
+        await db.collection('courses').doc(id).set(courseData, SetOptions(merge: true));
+        return this;
+      } else {
+        // Fetch existing courses with the same name from the database
+        final existingCoursesSnapshot = await db
+            .collection('courses')
+            .where('name', isEqualTo: name)
+            .where('number_of_holes', isEqualTo: numberOfHoles)
+            .limit(1)
+            .get();
 
-      final updatedCourse = Course.fromJson(data);
-      Utilities.debugPrintWithCallerInfo(
-          "Updated course returned: ${updatedCourse.toJson()}");
+        // If there's an existing course with the same name and number of holes, do not save
+        if (existingCoursesSnapshot.docs.isNotEmpty) {
+          throw Exception(
+              'Course with the same name and number of holes already exists.');
+        }
 
-      return updatedCourse;
+        // Save the course data to the database
+        final docRef = await db.collection('courses').add(courseData);
+        var docSnapshot = await docRef.get();
+        var data = docSnapshot.data()!;
+        data['id'] = docRef.id;
+
+        final updatedCourse = Course.fromJson(data);
+        Utilities.debugPrintWithCallerInfo(
+            "Updated course returned: ${updatedCourse.toJson()}");
+
+        return updatedCourse;
+      }
     } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to save course: ${e.message}');
