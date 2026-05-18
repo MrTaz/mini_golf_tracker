@@ -215,7 +215,7 @@ class Player {
       return null;
     }
 
-    final doc = snapshot.docs.first;
+    final doc = snapshot.docs[0];
     final data = doc.data();
     data['id'] = doc.id;
     return Player.fromJson(data);
@@ -252,11 +252,14 @@ class Player {
       try {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
-          final matchingDocs =
-              snapshot.docs.where((doc) => doc.id == currentUser.uid);
-          final matchesUser = matchingDocs.isNotEmpty
-              ? matchingDocs.first
-              : snapshot.docs.first;
+          QueryDocumentSnapshot<Map<String, dynamic>>? matchesUser;
+          for (final doc in snapshot.docs) {
+            if (doc.id == currentUser.uid) {
+              matchesUser = doc;
+              break;
+            }
+          }
+          matchesUser ??= snapshot.docs[0];
           var data = matchesUser.data();
           data['id'] = matchesUser.id;
           return Player.fromJson(data);
@@ -269,10 +272,14 @@ class Player {
 
     // Otherwise, prioritize the self-owned profile (id == owner_id)
     // representing a real authenticated account rather than an offline guest profile.
-    final selfOwnedDocs =
-        snapshot.docs.where((doc) => doc.id == doc.data()['owner_id']);
-    final matchesSelfOwned =
-        selfOwnedDocs.isNotEmpty ? selfOwnedDocs.first : snapshot.docs.first;
+    QueryDocumentSnapshot<Map<String, dynamic>>? matchesSelfOwned;
+    for (final doc in snapshot.docs) {
+      if (doc.id == doc.data()['owner_id']) {
+        matchesSelfOwned = doc;
+        break;
+      }
+    }
+    matchesSelfOwned ??= snapshot.docs[0];
     var data = matchesSelfOwned.data();
     data['id'] = matchesSelfOwned.id;
     return Player.fromJson(data);
@@ -306,7 +313,7 @@ class Player {
       return null;
     }
 
-    final doc = snapshot.docs.first;
+    final doc = snapshot.docs[0];
     final data = doc.data();
     data['id'] = doc.id;
     return Player.fromJson(data);
