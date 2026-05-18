@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -126,12 +125,31 @@ void main() {
     });
   });
 
+  group('Player.fetchPlayerForAuthUid', () {
+    test('returns claimed player when document id differs from auth uid',
+        () async {
+      await fakeFirestore.collection('players').doc('player-1').set({
+        'player_name': 'Claimed Player',
+        'nickname': 'Claimed',
+        'owner_id': 'creator-1',
+        'claimed_by_uid': 'auth-uid',
+        'total_score': 0,
+      });
+
+      final player = await Player.fetchPlayerForAuthUid('auth-uid');
+
+      expect(player, isNotNull);
+      expect(player!.id, 'player-1');
+    });
+  });
+
   group('Player.createPlayer', () {
     test('creates new player in DB and returns it', () async {
-      final p = await Player.createPlayer('New Player', 'NewNick', email: 'new@test.com');
+      final p = await Player.createPlayer('New Player', 'NewNick',
+          email: 'new@test.com');
       expect(p.playerName, 'New Player');
       expect(p.email, 'new@test.com');
-      
+
       final doc = await fakeFirestore.collection('players').doc(p.id).get();
       expect(doc.exists, isTrue);
       expect(doc.data()!['player_name'], 'New Player');
@@ -143,59 +161,282 @@ void main() {
         'player_name': 'Existing',
         'nickname': 'Ex',
       });
-      
+
       expect(
         () => Player.createPlayer('Dup', 'D', email: 'dup@test.com'),
         throwsA(isA<DatabaseConnectionError>()),
       );
     });
+
+    test('normalizes contacts and reserves them atomically', () async {
+      final player = await Player.createPlayer(
+        'Reserved Player',
+        'Reserved',
+        email: ' Reserved@Example.COM ',
+        phoneNumber: ' +1 (555) 123-4567 ',
+      );
+
+      expect(player.email, 'reserved@example.com');
+      expect(player.normalizedEmail, 'reserved@example.com');
+      expect(player.phoneNumber, '+15551234567');
+      expect(player.normalizedPhoneNumber, '+15551234567');
+
+      final emailReservation = await fakeFirestore
+          .collection('player_contacts')
+          .doc('email_reserved@example.com')
+          .get();
+      final phoneReservation = await fakeFirestore
+          .collection('player_contacts')
+          .doc('phone_+15551234567')
+          .get();
+      expect(emailReservation.data()?['player_id'], player.id);
+      expect(phoneReservation.data()?['player_id'], player.id);
     });
+
+    test('rejects duplicate normalized contacts', () async {
+      await Player.createPlayer(
+        'First Player',
+        'First',
+        email: 'same@example.com',
+        phoneNumber: '+1 555 222 3333',
+      );
+
+      expect(
+        () => Player.createPlayer(
+          'Second Player',
+          'Second',
+          email: ' SAME@example.com ',
+        ),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+      expect(
+        () => Player.createPlayer(
+          'Third Player',
+          'Third',
+          phoneNumber: '+1 (555) 222-3333',
+        ),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+    });
+  });
+
+  group('Player verified claiming', () {
+    test('allows a verified matching email to claim a player', () async {
+      await fakeFirestore.collection('players').doc('claimable').set({
+        'player_name': 'Claimable',
+        'nickname': 'C',
+        'owner_id': 'creator-1',
+        'email': 'claim@example.com',
+        'normalized_email': 'claim@example.com',
+        'total_score': 0,
+      });
+
+      final claimed = await Player.claimPlayerForVerifiedAuthUser(
+        uid: 'auth-1',
+        email: 'claim@example.com',
+        emailVerified: true,
+        phoneNumber: null,
+      );
+
+      expect(claimed?.id, 'claimable');
+      expect(claimed?.claimedByUid, 'auth-1');
+    });
+
+    test('does not allow an unverified email to claim a player', () async {
+      await fakeFirestore.collection('players').doc('claimable').set({
+        'player_name': 'Claimable',
+        'nickname': 'C',
+        'owner_id': 'creator-1',
+        'email': 'claim@example.com',
+        'normalized_email': 'claim@example.com',
+        'total_score': 0,
+      });
+
+      final claimed = await Player.claimPlayerForVerifiedAuthUser(
+        uid: 'auth-1',
+        email: 'claim@example.com',
+        emailVerified: false,
+        phoneNumber: null,
+      );
+
+      expect(claimed, isNull);
+    });
+
+    test('allows a matching linked phone to claim a player', () async {
+      await fakeFirestore.collection('players').doc('phone-claimable').set({
+        'player_name': 'Claimable',
+        'nickname': 'C',
+        'owner_id': 'creator-1',
+        'phone_number': '+15551234567',
+        'normalized_phone_number': '+15551234567',
+        'total_score': 0,
+      });
+
+      final claimed = await Player.claimPlayerForVerifiedAuthUser(
+        uid: 'auth-1',
+        email: null,
+        emailVerified: false,
+        phoneNumber: '+1 (555) 123-4567',
+      );
+
+      expect(claimed?.id, 'phone-claimable');
+    });
+  });
+
+  group('Player.updateUnclaimedPlayer', () {
+    test('adds contact data and contact reservations later', () async {
+      final player = Player(
+        id: 'late-contact',
+        playerName: 'Late Contact',
+        nickname: 'Late',
+        ownerId: 'creator-1',
+        totalScore: 0,
+      );
+      await fakeFirestore
+          .collection('players')
+          .doc(player.id)
+          .set(player.toJson());
+      player.email = ' Late@Example.COM ';
+      player.phoneNumber = ' +1 (555) 111-2222 ';
+
+      await Player.updateUnclaimedPlayer(player);
+
+      final updated =
+          await fakeFirestore.collection('players').doc(player.id).get();
+      expect(updated.data()?['normalized_email'], 'late@example.com');
+      expect(updated.data()?['normalized_phone_number'], '+15551112222');
+      expect(
+        (await fakeFirestore
+                .collection('player_contacts')
+                .doc('email_late@example.com')
+                .get())
+            .data()?['player_id'],
+        player.id,
+      );
+    });
+  });
 
   group('Player.addPlayerFriend', () {
     test('adds existing player as friend', () async {
-      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
-      final friend = Player(id: 'f1', playerName: 'Friend', nickname: 'F', ownerId: 'f1', totalScore: 0, email: 'friend@test.com');
-      
+      final owner = Player(
+          id: 'o1',
+          playerName: 'Owner',
+          nickname: 'O',
+          ownerId: 'o1',
+          totalScore: 0);
+      final friend = Player(
+          id: 'f1',
+          playerName: 'Friend',
+          nickname: 'F',
+          ownerId: 'f1',
+          totalScore: 0,
+          email: 'friend@test.com');
+
       // Setup existing friend in DB
       await fakeFirestore.collection('players').doc('f1').set(friend.toJson());
-      
+
       owner.addPlayerFriend(friend);
-      
+
       // Wait for microtask
       await Future.delayed(Duration(milliseconds: 100));
-      
+
       expect(Player.players.any((p) => p.id == 'f1'), isTrue);
-      
-      final friendDoc = await fakeFirestore.collection('friends').doc('o1_f1').get();
+
+      final friendDoc =
+          await fakeFirestore.collection('friends').doc('o1_f1').get();
       expect(friendDoc.exists, isTrue);
       expect(friendDoc.data()!['friend_id'], 'f1');
     });
 
     test('creates new player in DB and adds as friend if not exists', () async {
-      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
-      final newFriend = Player(id: 'temp', playerName: 'Newbie', nickname: 'N', ownerId: 'o1', totalScore: 0, email: 'newbie@test.com', phoneNumber: '123');
-      
+      final owner = Player(
+          id: 'o1',
+          playerName: 'Owner',
+          nickname: 'O',
+          ownerId: 'o1',
+          totalScore: 0);
+      final newFriend = Player(
+          id: 'temp',
+          playerName: 'Newbie',
+          nickname: 'N',
+          ownerId: 'o1',
+          totalScore: 0,
+          email: 'newbie@test.com',
+          phoneNumber: '123');
+
       owner.addPlayerFriend(newFriend);
-      
+
       // Wait for microtask
       await Future.delayed(Duration(milliseconds: 100));
-      
-      final playersInDb = await fakeFirestore.collection('players').where('email', isEqualTo: 'newbie@test.com').get();
+
+      final playersInDb = await fakeFirestore
+          .collection('players')
+          .where('email', isEqualTo: 'newbie@test.com')
+          .get();
       expect(playersInDb.docs.isNotEmpty, isTrue);
-      
+
       final createdFriendId = playersInDb.docs.first.id;
       expect(Player.players.any((p) => p.id == createdFriendId), isTrue);
-      
-      final friendDoc = await fakeFirestore.collection('friends').doc('o1_$createdFriendId').get();
+
+      final friendDoc = await fakeFirestore
+          .collection('friends')
+          .doc('o1_$createdFriendId')
+          .get();
       expect(friendDoc.exists, isTrue);
+    });
+
+    test('refreshes an existing friend entry with canonical player details',
+        () async {
+      final owner = Player(
+        id: 'o1',
+        playerName: 'Owner',
+        nickname: 'O',
+        ownerId: 'o1',
+        totalScore: 0,
+      );
+      Player.players = [
+        Player(
+          id: 'f1',
+          playerName: 'Old Friend',
+          nickname: 'Old',
+          ownerId: 'o1',
+          totalScore: 0,
+          email: 'friend@test.com',
+        ),
+      ];
+      await fakeFirestore.collection('players').doc('f1').set({
+        'player_name': 'Canonical Friend',
+        'nickname': 'Canonical',
+        'owner_id': 'creator-2',
+        'email': 'friend@test.com',
+        'total_score': 0,
+      });
+
+      await owner.addPlayerFriend(
+        Player(
+          id: '',
+          playerName: 'Entered Friend',
+          nickname: 'Entered',
+          ownerId: '',
+          totalScore: 0,
+          email: 'friend@test.com',
+        ),
+      );
+
+      expect(Player.players.single.nickname, 'Canonical');
     });
   });
 
   group('Player.loadUserPlayers', () {
-    test('loads players from DB by ownerId', () async {
+    test('loads players from DB through friend links', () async {
       Player.players = [];
-      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
-      
+      final owner = Player(
+          id: 'o1',
+          playerName: 'Owner',
+          nickname: 'O',
+          ownerId: 'o1',
+          totalScore: 0);
+
       await fakeFirestore.collection('players').doc('f1').set({
         'player_name': 'Friend 1',
         'nickname': 'F1',
@@ -208,9 +449,17 @@ void main() {
         'owner_id': 'o1',
         'total_score': 20,
       });
-      
+      await fakeFirestore.collection('friends').doc('o1_f1').set({
+        'player_id': 'o1',
+        'friend_id': 'f1',
+      });
+      await fakeFirestore.collection('friends').doc('o1_f2').set({
+        'player_id': 'o1',
+        'friend_id': 'f2',
+      });
+
       await owner.loadUserPlayers();
-      
+
       expect(Player.players.length, 2);
       expect(Player.players.any((p) => p.playerName == 'Friend 1'), isTrue);
       expect(Player.players.any((p) => p.playerName == 'Friend 2'), isTrue);
@@ -218,11 +467,17 @@ void main() {
 
     test('does not reload if players already populated', () async {
       Player.players = [Player.empty()];
-      final owner = Player(id: 'o1', playerName: 'Owner', nickname: 'O', ownerId: 'o1', totalScore: 0);
-      
+      final owner = Player(
+          id: 'o1',
+          playerName: 'Owner',
+          nickname: 'O',
+          ownerId: 'o1',
+          totalScore: 0);
+
       await owner.loadUserPlayers();
-      
-      expect(Player.players.length, 1); // Should still be 1, didn't fetch from DB
+
+      expect(
+          Player.players.length, 1); // Should still be 1, didn't fetch from DB
     });
   });
 
@@ -242,14 +497,13 @@ void main() {
           ownerId: 'o1',
           totalScore: 99);
       await Player.updatePlayerScoreInDatabase(player);
-      final doc =
-          await fakeFirestore.collection('players').doc('p1').get();
+      final doc = await fakeFirestore.collection('players').doc('p1').get();
       expect(doc.data()!['total_score'], 99);
     });
   });
 
   group('Player.loadUserPlayers', () {
-    test('loads players from Firestore into static list', () async {
+    test('loads players from Firestore through friend links', () async {
       await fakeFirestore.collection('players').doc('fp1').set({
         'player_name': 'Carol',
         'email': 'carol@test.com',
@@ -263,6 +517,10 @@ void main() {
           nickname: 'O',
           ownerId: 'owner-x',
           totalScore: 0);
+      await fakeFirestore.collection('friends').doc('owner-x_fp1').set({
+        'player_id': 'owner-x',
+        'friend_id': 'fp1',
+      });
       Player.players = [];
       await owner.loadUserPlayers();
       expect(Player.players.length, 1);
@@ -302,7 +560,11 @@ void main() {
         'total_score': 0,
       });
       final owner = Player(
-          id: '', playerName: 'Empty', nickname: 'E', ownerId: '', totalScore: 0);
+          id: '',
+          playerName: 'Empty',
+          nickname: 'E',
+          ownerId: '',
+          totalScore: 0);
       await owner.loadUserPlayers();
       expect(Player.players, isEmpty);
     });
@@ -310,14 +572,12 @@ void main() {
 
   group('Player.createPlayer', () {
     test('creates and returns a new player', () async {
-      final created = await Player.createPlayer(
-          'NewPerson', 'NP', email: 'new@test.com', phoneNumber: '555-0001');
+      final created = await Player.createPlayer('NewPerson', 'NP',
+          email: 'new@test.com', phoneNumber: '555-0001');
       expect(created.playerName, 'NewPerson');
       expect(created.id, isNotEmpty);
-      final doc = await fakeFirestore
-          .collection('players')
-          .doc(created.id)
-          .get();
+      final doc =
+          await fakeFirestore.collection('players').doc(created.id).get();
       expect(doc.exists, isTrue);
     });
 
@@ -331,19 +591,20 @@ void main() {
         'total_score': 0,
       });
       expect(
-          () => Player.createPlayer('Dup', 'D', email: 'dup@test.com', phoneNumber: '555-0000'),
+          () => Player.createPlayer('Dup', 'D',
+              email: 'dup@test.com', phoneNumber: '555-0000'),
           throwsA(anything));
     });
 
     test('sets ownerId to player id when ownerId is empty', () async {
       // Create with no explicit ownerId (uses instance's empty logic internally)
-      final created = await Player.createPlayer(
-          'SelfOwned', 'SO', email: 'selfowned@test.com', phoneNumber: '555-0002');
+      final created = await Player.createPlayer('SelfOwned', 'SO',
+          email: 'selfowned@test.com', phoneNumber: '555-0002');
       // createPlayer defaults ownerId to its docRef.id when no ownerId is provided
       expect(created.ownerId, isNotEmpty);
     });
 
-    test('creates new canonical profile alongside old duplicate email profile', () async {
+    test('rejects duplicate email when a different id is requested', () async {
       await fakeFirestore.collection('players').doc('old-id').set({
         'player_name': 'Old Name',
         'nickname': 'OldNick',
@@ -352,25 +613,16 @@ void main() {
         'total_score': 0,
       });
 
-      final created = await Player.createPlayer(
-        'New Name',
-        'NewNick',
-        email: 'migrate@test.com',
-        id: 'new-id',
-        ownerId: 'new-id',
+      expect(
+        () => Player.createPlayer(
+          'New Name',
+          'NewNick',
+          email: 'migrate@test.com',
+          id: 'new-id',
+          ownerId: 'new-id',
+        ),
+        throwsA(isA<DatabaseConnectionError>()),
       );
-
-      expect(created.id, 'new-id');
-      expect(created.playerName, 'New Name');
-
-      // Old profile is intentionally left in place — delete would be denied by
-      // Firestore rules because its owner_id doesn't match the current auth UID.
-      final oldDoc = await fakeFirestore.collection('players').doc('old-id').get();
-      expect(oldDoc.exists, isTrue);
-
-      // New canonical profile should exist
-      final newDoc = await fakeFirestore.collection('players').doc('new-id').get();
-      expect(newDoc.exists, isTrue);
     });
 
     test('retains old profile when email match has same id', () async {
@@ -393,7 +645,7 @@ void main() {
       expect(returned.playerName, 'Existing Name');
     });
 
-    test('creates new canonical profile even when old duplicate email profile exists', () async {
+    test('claims existing email profile for auth user', () async {
       await fakeFirestore.collection('players').doc('delete-fail-id').set({
         'player_name': 'Old Fail Name',
         'nickname': 'OFN',
@@ -402,21 +654,21 @@ void main() {
         'total_score': 0,
       });
 
-      final created = await Player.createPlayer(
-        'New Fail Name',
-        'NFN',
+      final claimed = await Player.claimPlayerForAuthUser(
+        uid: 'new-success-id',
         email: 'deletefail@test.com',
-        id: 'new-success-id',
-        ownerId: 'new-success-id',
+        playerName: 'New Fail Name',
+        nickname: 'NFN',
       );
 
-      expect(created.id, 'new-success-id');
-      // Old profile remains — no delete is attempted
-      final oldDoc = await fakeFirestore.collection('players').doc('delete-fail-id').get();
-      expect(oldDoc.exists, isTrue);
+      expect(claimed.id, 'delete-fail-id');
+      expect(claimed.claimedByUid, 'new-success-id');
+      final oldDoc =
+          await fakeFirestore.collection('players').doc('delete-fail-id').get();
+      expect(oldDoc.data()?['claimed_by_uid'], 'new-success-id');
     });
 
-    test('creates new canonical profile alongside old duplicate phone profile', () async {
+    test('rejects duplicate phone when a different id is requested', () async {
       await fakeFirestore.collection('players').doc('phone-old-id').set({
         'player_name': 'Old Name',
         'nickname': 'OldNick',
@@ -425,25 +677,16 @@ void main() {
         'total_score': 0,
       });
 
-      final created = await Player.createPlayer(
-        'New Name',
-        'NewNick',
-        phoneNumber: '555-1234',
-        id: 'phone-new-id',
-        ownerId: 'phone-new-id',
+      expect(
+        () => Player.createPlayer(
+          'New Name',
+          'NewNick',
+          phoneNumber: '555-1234',
+          id: 'phone-new-id',
+          ownerId: 'phone-new-id',
+        ),
+        throwsA(isA<DatabaseConnectionError>()),
       );
-
-      expect(created.id, 'phone-new-id');
-      expect(created.playerName, 'New Name');
-
-      // Old profile is intentionally left in place — delete would be denied by
-      // Firestore rules because its owner_id doesn't match the current auth UID.
-      final oldDoc = await fakeFirestore.collection('players').doc('phone-old-id').get();
-      expect(oldDoc.exists, isTrue);
-
-      // New canonical profile should exist
-      final newDoc = await fakeFirestore.collection('players').doc('phone-new-id').get();
-      expect(newDoc.exists, isTrue);
     });
 
     test('retains old profile when phone match has same id', () async {
@@ -466,8 +709,11 @@ void main() {
       expect(returned.playerName, 'Existing Name');
     });
 
-    test('creates new canonical profile even when old duplicate phone profile exists', () async {
-      await fakeFirestore.collection('players').doc('phone-delete-fail-id').set({
+    test('claims existing phone profile for auth user', () async {
+      await fakeFirestore
+          .collection('players')
+          .doc('phone-delete-fail-id')
+          .set({
         'player_name': 'Old Fail Name',
         'nickname': 'OFN',
         'phone_number': '555-9012',
@@ -475,18 +721,21 @@ void main() {
         'total_score': 0,
       });
 
-      final created = await Player.createPlayer(
-        'New Fail Name',
-        'NFN',
+      final claimed = await Player.claimPlayerForAuthUser(
+        uid: 'phone-new-success-id',
+        email: '',
         phoneNumber: '555-9012',
-        id: 'phone-new-success-id',
-        ownerId: 'phone-new-success-id',
+        playerName: 'New Fail Name',
+        nickname: 'NFN',
       );
 
-      expect(created.id, 'phone-new-success-id');
-      // Old profile remains — no delete is attempted
-      final oldDoc = await fakeFirestore.collection('players').doc('phone-delete-fail-id').get();
-      expect(oldDoc.exists, isTrue);
+      expect(claimed.id, 'phone-delete-fail-id');
+      expect(claimed.claimedByUid, 'phone-new-success-id');
+      final oldDoc = await fakeFirestore
+          .collection('players')
+          .doc('phone-delete-fail-id')
+          .get();
+      expect(oldDoc.data()?['claimed_by_uid'], 'phone-new-success-id');
     });
   });
 
@@ -508,7 +757,8 @@ void main() {
       });
       final courses = await Course.fetchCourses();
       expect(courses.length, 2);
-      expect(courses.map((c) => c?.name), containsAll(['Course A', 'Course B']));
+      expect(
+          courses.map((c) => c?.name), containsAll(['Course A', 'Course B']));
     });
 
     test('returns empty list when none exist', () async {
@@ -524,8 +774,7 @@ void main() {
       final saved = await course.saveCourseToDatabase();
       expect(saved.id, isNotEmpty);
       expect(saved.name, 'New Course');
-      final doc =
-          await fakeFirestore.collection('courses').doc(saved.id).get();
+      final doc = await fakeFirestore.collection('courses').doc(saved.id).get();
       expect(doc.exists, isTrue);
       expect(doc.data()!['number_of_holes'], 9);
     });
@@ -536,11 +785,10 @@ void main() {
       await c.saveCourseToDatabase();
       expect(
           () => Course(
-                  id: '',
-                  name: 'Dup Course',
-                  numberOfHoles: 9,
-                  parStrokes: {1: 3})
-              .saveCourseToDatabase(),
+              id: '',
+              name: 'Dup Course',
+              numberOfHoles: 9,
+              parStrokes: {1: 3}).saveCourseToDatabase(),
           throwsException);
     });
   });
@@ -557,7 +805,7 @@ void main() {
           name: 'Course to Delete',
           numberOfHoles: 9,
           parStrokes: {1: 3});
-      
+
       // Let's verify it exists
       var courses = await Course.fetchCourses();
       expect(courses.any((c) => c?.id == docRef.id), isTrue);
@@ -572,7 +820,8 @@ void main() {
   });
 
   group('Course.fetchCoursesPaginated', () {
-    test('fetches courses in alphabetical order with limit and startAfter', () async {
+    test('fetches courses in alphabetical order with limit and startAfter',
+        () async {
       // Clear or ensure fresh start for pagination query tests
       final existing = await fakeFirestore.collection('courses').get();
       for (final doc in existing.docs) {
@@ -684,6 +933,19 @@ void main() {
   });
 
   group('Game.initializeLocalGames', () {
+    test('adopts locally saved games before loading remote games', () async {
+      final user = _makeCreator();
+      final localGame = _makeGame(id: 'local-adopt');
+      await Game.saveLocalGame(localGame);
+
+      await Game.initializeLocalGames(user);
+
+      final adoptedGame =
+          await fakeFirestore.collection('games').doc('local-adopt').get();
+      expect(adoptedGame.exists, isTrue);
+      expect(adoptedGame.data()?['creator_id'], user.id);
+    });
+
     test('fetches games from Firestore and saves locally', () async {
       await fakeFirestore
           .collection('games')
@@ -702,6 +964,77 @@ void main() {
       expect(prefs.getString('db-g1'), isNotNull);
     });
 
+    test('keeps adopted local games and downloaded remote games locally',
+        () async {
+      final user = _makeCreator();
+      await Game.saveLocalGame(_makeGame(id: 'local-merge'));
+      await fakeFirestore
+          .collection('games')
+          .doc('remote-merge')
+          .set(_firestoreGameDoc('remote-merge', user.id));
+
+      await Game.initializeLocalGames(user);
+
+      final localGames = await Game.getLocallySavedGames();
+      expect(
+        localGames.whereType<Game>().map((game) => game.id),
+        containsAll(['local-merge', 'remote-merge']),
+      );
+    });
+
+    test('adopts local guest players and rewrites local game player ids',
+        () async {
+      final user = _makeCreator();
+      Player.players = [
+        Player(
+          id: 'guest-player',
+          playerName: 'Guest Player',
+          nickname: 'Guest',
+          ownerId: 'guest',
+          totalScore: 0,
+          email: 'known@example.com',
+        ),
+      ];
+      await Player.saveLocalGuestPlayers();
+      await fakeFirestore.collection('players').doc('canonical-player').set({
+        'player_name': 'Canonical Player',
+        'nickname': 'Canonical',
+        'owner_id': 'creator-2',
+        'email': 'known@example.com',
+        'total_score': 0,
+      });
+      await Game.saveLocalGame(
+        _makeGame(
+          id: 'local-player-remap',
+          players: [
+            PlayerGameInfo(
+              playerId: 'guest-player',
+              gameId: 'local-player-remap',
+              scores: [],
+            ),
+          ],
+        ),
+      );
+
+      await Game.initializeLocalGames(user);
+
+      final adoptedGame = await fakeFirestore
+          .collection('games')
+          .doc('local-player-remap')
+          .get();
+      expect(
+        adoptedGame.data()?['players'][0]['player_id'],
+        'canonical-player',
+      );
+      final friendLink = await fakeFirestore
+          .collection('friends')
+          .doc('${user.id}_canonical-player')
+          .get();
+      expect(friendLink.exists, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('guest_players'), isNull);
+    });
+
     test('does not throw when Firestore returns no games', () async {
       final user = Player(
           id: 'nobody',
@@ -710,6 +1043,24 @@ void main() {
           ownerId: 'nobody',
           totalScore: 0);
       expect(() => Game.initializeLocalGames(user), returnsNormally);
+    });
+  });
+
+  group('Game.clearLocallySavedGames', () {
+    test('removes only stored games', () async {
+      await Game.saveLocalGame(_makeGame(id: 'clear-local'));
+      SharedPreferences.setMockInitialValues({
+        'clear-local': jsonEncode(_makeGame(id: 'clear-local').toJson()),
+        'email': 'user@example.com',
+        'courses': 'course-cache',
+      });
+
+      await Game.clearLocallySavedGames();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('clear-local'), isNull);
+      expect(prefs.getString('email'), 'user@example.com');
+      expect(prefs.getString('courses'), 'course-cache');
     });
   });
 
@@ -746,8 +1097,7 @@ void main() {
 
       await Game.saveGameToDatabase(game, creator);
 
-      final gameDoc =
-          await fakeFirestore.collection('games').doc('sg1').get();
+      final gameDoc = await fakeFirestore.collection('games').doc('sg1').get();
       expect(gameDoc.exists, isTrue);
       expect(gameDoc.data()!['name'], 'Test Game');
       expect(gameDoc.data()!['creator_id'], 'creator-1');
@@ -764,20 +1114,17 @@ void main() {
       final game = _makeGame(id: 'sg2');
       final creator = _makeCreator();
       await Game.saveGameToDatabase(game, creator);
-      final gameDoc =
-          await fakeFirestore.collection('games').doc('sg2').get();
+      final gameDoc = await fakeFirestore.collection('games').doc('sg2').get();
       expect(gameDoc.exists, isTrue);
       // No PGI doc should exist
-      final pgiDocs =
-          await fakeFirestore.collection('player_game_info').get();
+      final pgiDocs = await fakeFirestore.collection('player_game_info').get();
       expect(pgiDocs.docs, isEmpty);
     });
 
     test('saves start_time as null when not set', () async {
       final game = _makeGame(id: 'sg3');
       await Game.saveGameToDatabase(game, _makeCreator());
-      final doc =
-          await fakeFirestore.collection('games').doc('sg3').get();
+      final doc = await fakeFirestore.collection('games').doc('sg3').get();
       expect(doc.data()!['start_time'], isNull);
       expect(doc.data()!['completed_time'], isNull);
     });
@@ -922,9 +1269,10 @@ void main() {
   group('Player.createPlayer edge cases', () {
     test('updates owner_id to doc ID when ownerId is empty', () async {
       // Indirectly test via createPlayer with no ownerId
-      final p = await Player.createPlayer('EmptyOwner', 'EO', email: 'empty@test.com', phoneNumber: '000');
+      final p = await Player.createPlayer('EmptyOwner', 'EO',
+          email: 'empty@test.com', phoneNumber: '000');
       expect(p.ownerId, p.id);
-      
+
       final doc = await fakeFirestore.collection('players').doc(p.id).get();
       expect(doc.data()?['owner_id'], p.id);
     });
@@ -933,7 +1281,9 @@ void main() {
   group('Course model edge cases', () {
     test('Course.fromJson handles null parStrokes', () {
       final json = {
-        'id': 'c1', 'name': 'C', 'number_of_holes': 9,
+        'id': 'c1',
+        'name': 'C',
+        'number_of_holes': 9,
         'par_strokes': null
       };
       final c = Course.fromJson(json);
@@ -950,7 +1300,8 @@ void main() {
     });
 
     test('Course.toJson handles parStrokes serialization', () {
-      final c = Course(id: 'c1', name: 'C', numberOfHoles: 1, parStrokes: {1: 3});
+      final c =
+          Course(id: 'c1', name: 'C', numberOfHoles: 1, parStrokes: {1: 3});
       final json = c.toJson();
       expect(json['par_strokes'], {'1': 3});
     });
@@ -994,8 +1345,13 @@ void main() {
       });
 
       final playerA = Player(
-          id: 'p-a', playerName: 'A', email: 'a@test.com',
-          phoneNumber: '111', nickname: 'A', ownerId: 'p-a', totalScore: 0);
+          id: 'p-a',
+          playerName: 'A',
+          email: 'a@test.com',
+          phoneNumber: '111',
+          nickname: 'A',
+          ownerId: 'p-a',
+          totalScore: 0);
       final friendB = Player(
           id: '',
           playerName: 'B',
@@ -1008,14 +1364,10 @@ void main() {
       playerA.addPlayerFriend(friendB);
       await Future.delayed(Duration.zero);
 
-      final forward = await fakeFirestore
-          .collection('friends')
-          .doc('p-a_p-b')
-          .get();
-      final reverse = await fakeFirestore
-          .collection('friends')
-          .doc('p-b_p-a')
-          .get();
+      final forward =
+          await fakeFirestore.collection('friends').doc('p-a_p-b').get();
+      final reverse =
+          await fakeFirestore.collection('friends').doc('p-b_p-a').get();
       expect(forward.exists, isTrue);
       expect(reverse.exists, isTrue);
     });
@@ -1034,31 +1386,39 @@ void main() {
       expect(result?.id, '');
     });
 
-    test('addPlayerFriend throws when existing user found but retrieval fails', () async {
-      // Seed a player with a phone number but different email
+    test('addPlayerFriend reuses an existing phone-only match', () async {
       await fakeFirestore.collection('players').doc('real-p').set({
-        'player_name': 'Real', 'email': 'real@test.com', 'phone_number': '12345',
-        'nickname': 'R', 'owner_id': 'o1', 'total_score': 0
+        'player_name': 'Real',
+        'email': 'real@test.com',
+        'phone_number': '12345',
+        'nickname': 'R',
+        'owner_id': 'o1',
+        'total_score': 0
       });
 
-      final owner = Player(id: 'o1', playerName: 'O', nickname: 'O', ownerId: 'o1', totalScore: 0);
+      final owner = Player(
+          id: 'o1',
+          playerName: 'O',
+          nickname: 'O',
+          ownerId: 'o1',
+          totalScore: 0);
       final friendToAdd = Player(
-          id: '', playerName: 'Fake', email: 'mismatch@test.com',
-          phoneNumber: '12345', nickname: 'F', ownerId: '', totalScore: 0);
+          id: '',
+          playerName: 'Fake',
+          email: 'mismatch@test.com',
+          phoneNumber: '12345',
+          nickname: 'F',
+          ownerId: '',
+          totalScore: 0);
 
-      String? caughtError;
-      runZonedGuarded(() {
-        owner.addPlayerFriend(friendToAdd);
-      }, (error, stack) {
-        caughtError = error.toString();
-      });
+      owner.addPlayerFriend(friendToAdd);
 
       await Future.delayed(Duration.zero);
 
-      expect(caughtError, contains('Existing user, but unable to retrieve from database'));
-      expect(Player.players, isEmpty);
-      final friendDocs = await fakeFirestore.collection('friends').get();
-      expect(friendDocs.docs, isEmpty);
+      expect(Player.players.single.id, 'real-p');
+      final friendDoc =
+          await fakeFirestore.collection('friends').doc('o1_real-p').get();
+      expect(friendDoc.exists, isTrue);
     });
 
     test('getAllPlayerFriends returns the list', () {
@@ -1082,20 +1442,25 @@ void main() {
       expect(DatabaseConnection.client, same(fake2));
     });
 
-    test('client returns FirebaseFirestore.instance when _firestoreInstance is null', () {
+    test(
+        'client returns FirebaseFirestore.instance when _firestoreInstance is null',
+        () {
       // Reset instance to null
       DatabaseConnection.setFirestoreInstanceForTesting(null);
       // This will call the real FirebaseFirestore.instance, which throws [core/no-app]
       // in the test environment. We expect this throw as proof the branch is reached.
-      expect(() => DatabaseConnection.client, throwsA(isA<FirebaseException>().having((e) => e.code, 'code', 'no-app')));
-      
+      expect(
+          () => DatabaseConnection.client,
+          throwsA(isA<FirebaseException>()
+              .having((e) => e.code, 'code', 'no-app')));
+
       // Restore for other tests
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
 
     test('getFirestore returns same instance as client', () {
-      expect(DatabaseConnection.getFirestore(),
-          same(DatabaseConnection.client));
+      expect(
+          DatabaseConnection.getFirestore(), same(DatabaseConnection.client));
     });
   });
 
@@ -1111,9 +1476,15 @@ void main() {
 
     test('Player.toJson contains all fields', () {
       final p = Player(
-        id: '1', playerName: 'N', nickname: 'K', ownerId: 'O', totalScore: 5,
-        email: 'e', phoneNumber: 'p', status: 's', avatarImageLocation: 'a'
-      );
+          id: '1',
+          playerName: 'N',
+          nickname: 'K',
+          ownerId: 'O',
+          totalScore: 5,
+          email: 'e',
+          phoneNumber: 'p',
+          status: 's',
+          avatarImageLocation: 'a');
       final json = p.toJson();
       expect(json['id'], '1');
       expect(json['player_name'], 'N');
@@ -1256,7 +1627,8 @@ void main() {
   // FirebaseException catch blocks — using fake_cloud_firestore's whenCalling
   // ════════════════════════════════════════════════════════════════════════════
 
-  final firestoreError = FirebaseException(plugin: 'cloud_firestore', message: 'simulated error');
+  final firestoreError =
+      FirebaseException(plugin: 'cloud_firestore', message: 'simulated error');
 
   group('Player.updatePlayerScoreInDatabase — FirebaseException catch', () {
     test('rethrows as DatabaseConnectionError on Firestore failure', () async {
@@ -1268,23 +1640,31 @@ void main() {
         'total_score': 0,
       });
       final doc = fakeFirestore.collection('players').doc('p-err');
-      whenCalling(Invocation.method(#update, null)).on(doc).thenThrow(firestoreError);
+      whenCalling(Invocation.method(#update, null))
+          .on(doc)
+          .thenThrow(firestoreError);
 
       final player = Player(
-          id: 'p-err', playerName: 'Err', nickname: 'E', ownerId: 'o', totalScore: 99);
-      expect(
-          () => Player.updatePlayerScoreInDatabase(player),
+          id: 'p-err',
+          playerName: 'Err',
+          nickname: 'E',
+          ownerId: 'o',
+          totalScore: 99);
+      expect(() => Player.updatePlayerScoreInDatabase(player),
           throwsA(isA<DatabaseConnectionError>()));
     });
   });
 
   group('Player.createPlayer - FirebaseException catch', () {
-    test('rethrows as DatabaseConnectionError on Firestore set failure', () async {
+    test('rethrows as DatabaseConnectionError on Firestore set failure',
+        () async {
       final failFirestore = FakeFirebaseFirestore();
       DatabaseConnection.setFirestoreInstanceForTesting(failFirestore);
 
       final doc = failFirestore.collection('players').doc('fail-doc');
-      whenCalling(Invocation.method(#set, null)).on(doc).thenThrow(firestoreError);
+      whenCalling(Invocation.method(#set, null))
+          .on(doc)
+          .thenThrow(firestoreError);
 
       await expectLater(
         Player.createPlayer('Fail', 'F', id: 'fail-doc'),
@@ -1302,13 +1682,19 @@ void main() {
   // The FirebaseException catch structure is verified via the Player.updatePlayerScoreInDatabase
   // test above which uses the supported DocumentReference.update() interception.
 
-  group('Course.fetchCourses - FirebaseException catch (DocumentReference)', () {
-    test('mock_exceptions can throw FirebaseException on DocumentReference.get()', () async {
+  group('Course.fetchCourses - FirebaseException catch (DocumentReference)',
+      () {
+    test(
+        'mock_exceptions can throw FirebaseException on DocumentReference.get()',
+        () async {
       // Confirms whenCalling works on DocumentReference.get(), validating that
       // the mock infrastructure is correct. The CollectionReference.get() interception
       // (needed for fetchCourses) is a known limitation of fake_cloud_firestore.
       final testFirestore = FakeFirebaseFirestore();
-      await testFirestore.collection('courses').doc('c-verify').set({'name': 'V'});
+      await testFirestore
+          .collection('courses')
+          .doc('c-verify')
+          .set({'name': 'V'});
       final docRef = testFirestore.collection('courses').doc('c-verify');
       whenCalling(Invocation.method(#get, null)).on(docRef).thenThrow(
           FirebaseException(plugin: 'cloud_firestore', message: 'simulated'));
@@ -1322,11 +1708,13 @@ void main() {
       DatabaseConnection.setFirestoreInstanceForTesting(dupFirestore);
 
       await dupFirestore.collection('courses').add({
-        'name': 'Dup Course', 'number_of_holes': 9,
+        'name': 'Dup Course',
+        'number_of_holes': 9,
         'par_strokes': <String, int>{}
       });
 
-      final course = Course(id: '', name: 'Dup Course', numberOfHoles: 9, parStrokes: {});
+      final course =
+          Course(id: '', name: 'Dup Course', numberOfHoles: 9, parStrokes: {});
       await expectLater(
           course.saveCourseToDatabase(),
           throwsA(predicate<Object>(
@@ -1341,18 +1729,19 @@ void main() {
   // are supported by whenCalling). The try/catch boundary is verified by the
   // duplicate branch test above exercising the same try block.
 
-
   group('Game.saveGameToDatabase - FirebaseException catch', () {
-    test('rethrows as DatabaseConnectionError on Firestore write failure', () async {
+    test('rethrows as DatabaseConnectionError on Firestore write failure',
+        () async {
       final failFirestore = FakeFirebaseFirestore();
       DatabaseConnection.setFirestoreInstanceForTesting(failFirestore);
 
       final doc = failFirestore.collection('games').doc('fail-game');
-      whenCalling(Invocation.method(#set, null)).on(doc).thenThrow(firestoreError);
+      whenCalling(Invocation.method(#set, null))
+          .on(doc)
+          .thenThrow(firestoreError);
 
       final game = _makeGame(id: 'fail-game');
-      await expectLater(
-          Game.saveGameToDatabase(game, _makeCreator()),
+      await expectLater(Game.saveGameToDatabase(game, _makeCreator()),
           throwsA(isA<DatabaseConnectionError>()));
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
@@ -1360,7 +1749,8 @@ void main() {
   });
 
   group('Game.fetchGamesForCurrentUser - exception coverage', () {
-    test('general catch branch: surfaces exception from malformed game data', () async {
+    test('general catch branch: surfaces exception from malformed game data',
+        () async {
       // Seeds a game with missing 'course' field so Game.fromJson throws,
       // exercising the general catch (lines 395-399) in fetchGamesForCurrentUser.
       final badFirestore = FakeFirebaseFirestore();
@@ -1375,8 +1765,7 @@ void main() {
       });
 
       await expectLater(
-          Game.fetchGamesForCurrentUser('user-xyz'),
-          throwsException);
+          Game.fetchGamesForCurrentUser('user-xyz'), throwsException);
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
@@ -1390,19 +1779,48 @@ void main() {
       // Use the same shape that saveGameToDatabase writes:
       // includes nested 'course' object, 'players' as list
       await testFirestore.collection('games').doc('gq-hp-1').set({
-        'id': 'gq-hp-1', 'name': 'Fetched Game', 'creator_id': 'user-abc',
+        'id': 'gq-hp-1',
+        'name': 'Fetched Game',
+        'creator_id': 'user-abc',
         'course_id': 'c1',
         'course': {
-          'id': 'c1', 'name': 'Test Course',
-          'number_of_holes': 2, 'par_strokes': {'1': 3, '2': 4}
+          'id': 'c1',
+          'name': 'Test Course',
+          'number_of_holes': 2,
+          'par_strokes': {'1': 3, '2': 4}
         },
         'scheduled_time': now.toIso8601String(),
-        'status': 'pending', 'players': [],
+        'status': 'pending',
+        'players': [],
       });
 
       final games = await Game.fetchGamesForCurrentUser('user-abc');
       expect(games, isNotEmpty);
       expect(games.first.name, 'Fetched Game');
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test('returns games where user is a participant but not creator', () async {
+      final testFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+      await testFirestore
+          .collection('games')
+          .doc('participant-game')
+          .set(_firestoreGameDoc('participant-game', 'other-creator'));
+      await testFirestore
+          .collection('player_game_info')
+          .doc('participant-game_player-1')
+          .set({
+        'game_id': 'participant-game',
+        'player_id': 'player-1',
+      });
+
+      final games = await Game.fetchGamesForCurrentUser('player-1');
+
+      expect(games, hasLength(1));
+      expect(games.single.id, 'participant-game');
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });

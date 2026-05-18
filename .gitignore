@@ -58,3 +58,6 @@ coverage/
 # Developer Agents & Tools
 .agents/
 skills-lock.json
+
+# Node modules for cloud functions
+/functions/node_modules

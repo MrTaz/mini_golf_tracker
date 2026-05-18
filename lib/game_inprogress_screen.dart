@@ -62,9 +62,11 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String currentGameJson = jsonEncode(widget.currentGame);
     await prefs.setString(widget.currentGame.id, currentGameJson);
-    await Game.saveGameToDatabase(widget.currentGame, loggedInUser!);
+    if (loggedInUser != null) {
+      await Game.saveGameToDatabase(widget.currentGame, loggedInUser!);
+    }
 
-    if (gameCompleted) {
+    if (gameCompleted && loggedInUser != null) {
       // Update each players total score when the game is complete.
       for (PlayerGameInfo player in widget.currentGame.players) {
         Player currentPlayer =

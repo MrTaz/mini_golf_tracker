@@ -277,8 +277,8 @@ class Game {
 
       int numOfPlayers = 2 + rnd.nextInt((5 + 1 - 2));
       for (int l = 0; l < numOfPlayers; l++) {
-        PlayerGameInfo player =
-            PlayerGameInfo(playerId: (l + 1).toString(), gameId: game.id, scores: []);
+        PlayerGameInfo player = PlayerGameInfo(
+            playerId: (l + 1).toString(), gameId: game.id, scores: []);
         game.addPlayer(player);
       }
 
@@ -306,6 +306,7 @@ class Game {
 
   static Future<void> initializeLocalGames(Player loggedInUser) async {
     try {
+      await Game.adoptLocalGames(loggedInUser);
       Utilities.debugPrintWithCallerInfo("Loading games from database");
       final List<Game?> dbGames =
           await Game.fetchGamesForCurrentUser(loggedInUser.id);
@@ -324,6 +325,38 @@ class Game {
     }
   }
 
+  static Future<void> adoptLocalGames(Player loggedInUser) async {
+    final localGames = await getLocallySavedGames();
+    final adoptedPlayers = await Player.adoptLocalGuestPlayers(loggedInUser);
+    for (final localGame in localGames.whereType<Game>()) {
+      for (var index = 0; index < localGame.players.length; index++) {
+        final playerInfo = localGame.players[index];
+        final canonicalPlayer = adoptedPlayers[playerInfo.playerId];
+        if (canonicalPlayer != null) {
+          localGame.players[index] = PlayerGameInfo(
+            playerId: canonicalPlayer.id,
+            gameId: playerInfo.gameId,
+            scores: playerInfo.scores,
+            playOrderPosition: playerInfo.playOrderPosition,
+            place: playerInfo.place,
+            totalScore: playerInfo.totalScore,
+            strokes: playerInfo.strokes,
+          );
+        }
+      }
+      await saveLocalGame(localGame);
+      await saveGameToDatabase(localGame, loggedInUser);
+    }
+  }
+
+  static Future<void> clearLocallySavedGames() async {
+    final prefs = await SharedPreferences.getInstance();
+    final games = await getLocallySavedGames();
+    for (final game in games.whereType<Game>()) {
+      await prefs.remove(game.id);
+    }
+  }
+
   static Future<List<Game?>> getLocallySavedGames(
       {List<String>? gameStatusTypes}) async {
     List<Game?> games = [];
@@ -332,7 +365,10 @@ class Game {
     final Set<String> keys = prefs.getKeys().cast<String>();
     // Iterate over the keys and check if the value is a JSON
     for (String key in keys) {
-      if (key != "email" && key != "loggedInUser" && key != "courses") {
+      if (key != "email" &&
+          key != "loggedInUser" &&
+          key != "courses" &&
+          key != "guest_players") {
         dynamic value = prefs.get(key);
         Utilities.debugPrintWithCallerInfo(
             "Found shared preference: $key $value");
@@ -371,25 +407,49 @@ class Game {
     return games;
   }
 
-  static Future<List<Game>> fetchGamesForCurrentUser(String currentUserId) async {
+  static Future<List<Game>> fetchGamesForCurrentUser(
+      String currentUserId) async {
     try {
-      // Fetch the games from the database where the current user is a player
-      // Firestore does not easily support deep relational joins like Supabase, 
-      // but if we store game info redundantly or query games where the creator_id is the user
-      final snapshot = await DatabaseConnection.client
+      final creatorSnapshot = await DatabaseConnection.client
           .collection('games')
           .where('creator_id', isEqualTo: currentUserId)
           .orderBy('scheduled_time', descending: false)
           .get();
 
-      Utilities.debugPrintWithCallerInfo("Fetching games: ${snapshot.docs.length}");
+      final participantSnapshot = await DatabaseConnection.client
+          .collection('player_game_info')
+          .where('player_id', isEqualTo: currentUserId)
+          .get();
+
+      final Map<String, DocumentSnapshot<Map<String, dynamic>>> gameDocsById = {
+        for (final doc in creatorSnapshot.docs) doc.id: doc,
+      };
+      for (final participantDoc in participantSnapshot.docs) {
+        final gameId = participantDoc.data()['game_id'];
+        if (gameId is! String || gameDocsById.containsKey(gameId)) {
+          continue;
+        }
+        final gameDoc = await DatabaseConnection.client
+            .collection('games')
+            .doc(gameId)
+            .get();
+        if (gameDoc.exists) {
+          gameDocsById[gameDoc.id] = gameDoc;
+        }
+      }
+
+      final gameDocs = gameDocsById.values.toList()
+        ..sort((a, b) => (a.data()!['scheduled_time'] as String)
+            .compareTo(b.data()!['scheduled_time'] as String));
+
+      Utilities.debugPrintWithCallerInfo("Fetching games: ${gameDocs.length}");
 
       // Convert the response data into a list of Game objects
       final List<Game> games = [];
-      for (final doc in snapshot.docs) {
-        var gameData = doc.data();
+      for (final doc in gameDocs) {
+        var gameData = doc.data()!;
         gameData['id'] = doc.id;
-        
+
         // Fetch players and courses if stored separately, or if they're embedded
         // Assuming we embed them for now or they are nested in Firestore
         final game = Game.fromJson(jsonEncode(gameData));
@@ -430,7 +490,10 @@ class Game {
       };
 
       // 2. Save the game data to the games table
-      await DatabaseConnection.client.collection('games').doc(game.id).set(gameData);
+      await DatabaseConnection.client
+          .collection('games')
+          .doc(game.id)
+          .set(gameData);
       Utilities.debugPrintWithCallerInfo("Saved game to database");
 
       // 3. Save player game info to the player_game_info subcollection
@@ -445,12 +508,14 @@ class Game {
           'scores': player.scores,
           'total_score': player.totalScore,
         };
-        var pgiRef = DatabaseConnection.client.collection('player_game_info').doc('${game.id}_${player.playerId}');
+        var pgiRef = DatabaseConnection.client
+            .collection('player_game_info')
+            .doc('${game.id}_${player.playerId}');
         batch.set(pgiRef, playerGameInfoData);
         playerUpdated = true;
       }
       await batch.commit();
-      
+
       if (playerUpdated) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString(game.id, jsonEncode(game.toJson()));
@@ -458,8 +523,7 @@ class Game {
     } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'DB Failed to update game: ${e.message}');
-      throw DatabaseConnectionError(
-          'Failed to update game: ${e.message}');
+      throw DatabaseConnectionError('Failed to update game: ${e.message}');
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo(
           'General failure to update game: $exception');

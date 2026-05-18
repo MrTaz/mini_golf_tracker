@@ -17,6 +17,7 @@ flutter test
 
 - Rotate the Firebase/Google client JSON credentials that were previously added
   to the repo, then remove any local credential files from source control.
+- Continue the player identity work tracked in `docs/identity-roadmap.md`.
 
 ## Getting Started
 

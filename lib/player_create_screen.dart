@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import 'player.dart';
 import 'player_form_widget.dart';
 
 class PlayerCreateScreen extends StatefulWidget {
-  const PlayerCreateScreen({super.key, required this.players, required this.onSavePlayer});
+  const PlayerCreateScreen(
+      {super.key, required this.players, required this.onSavePlayer});
 
   final VoidCallback onSavePlayer;
   final List<Player> players;
@@ -19,11 +21,18 @@ class PlayerCreateScreenState extends State<PlayerCreateScreen> {
   @override
   void initState() {
     super.initState();
-    newPlayer = Player(id: "", playerName: '', nickname: '', ownerId: "", totalScore: 0);
+    newPlayer = Player(
+      id: const Uuid().v4(),
+      playerName: '',
+      nickname: '',
+      ownerId: '',
+      totalScore: 0,
+    );
   }
 
   void savePlayer() {
-    widget.onSavePlayer(); // Notify the parent widget that a player has been saved
+    widget
+        .onSavePlayer(); // Notify the parent widget that a player has been saved
     // Player.empty().addPlayerFriend(newPlayer);
   }
 

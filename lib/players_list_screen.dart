@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'gravatar_image_view.dart';
 import 'player.dart';
@@ -45,9 +44,13 @@ class PlayerListItemState extends State<PlayerListItem> {
   }
 
   Future<void> loadCurrentUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _allowEditing = widget.player.ownerId == loggedInUser!.getPlayerFriendByEmail(prefs.getString("email") ?? "")?.id;
+      if (loggedInUser == null) {
+        _allowEditing = widget.player.ownerId == 'guest';
+      } else {
+        _allowEditing = widget.player.ownerId == loggedInUser!.id &&
+            widget.player.claimedByUid == null;
+      }
     });
   }
 
@@ -80,8 +83,11 @@ class PlayerListItemState extends State<PlayerListItem> {
               leading: _buildLeadingWidget(),
               enabled: _enabled,
               selected: widget.isSelected,
-              iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
-                return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
+              iconColor:
+                  WidgetStateColor.resolveWith((Set<WidgetState> states) {
+                return states.contains(WidgetState.selected)
+                    ? Colors.green
+                    : Colors.teal;
               }),
               onTap: () {
                 setState(() {
@@ -102,7 +108,8 @@ class PlayerListItemState extends State<PlayerListItem> {
       leadingWidget = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.listOrderNumber.toString() + getPlayerPositionSuffix(widget.listOrderNumber!)),
+          Text(widget.listOrderNumber.toString() +
+              getPlayerPositionSuffix(widget.listOrderNumber!)),
           const SizedBox(width: 8.0),
           _buildPlayerProfileCircleIcon(),
         ],
@@ -116,7 +123,13 @@ class PlayerListItemState extends State<PlayerListItem> {
   Widget _buildPlayerProfileCircleIcon() {
     return FittedBox(
         child: CircleAvatar(
-            backgroundColor: Colors.teal, child: ClipOval(child: GravatarImageView(email: widget.player.email!))));
+            backgroundColor: Colors.teal,
+            child: widget.player.email == null || widget.player.email!.isEmpty
+                ? Text(widget.player.nickname.isEmpty
+                    ? '?'
+                    : widget.player.nickname[0].toUpperCase())
+                : ClipOval(
+                    child: GravatarImageView(email: widget.player.email!))));
   }
 
   Widget _buildTrailingIcons() {

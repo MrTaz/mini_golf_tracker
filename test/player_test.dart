@@ -31,12 +31,18 @@ void main() {
         totalScore: 100,
         email: 'bob@example.com',
         phoneNumber: '555-1234',
+        normalizedEmail: 'bob@example.com',
+        normalizedPhoneNumber: '5551234',
         status: 'active',
+        claimedByUid: 'uid-2',
         avatarImageLocation: 'https://example.com/avatar.png',
       );
       expect(player.email, 'bob@example.com');
       expect(player.phoneNumber, '555-1234');
+      expect(player.normalizedEmail, 'bob@example.com');
+      expect(player.normalizedPhoneNumber, '5551234');
       expect(player.status, 'active');
+      expect(player.claimedByUid, 'uid-2');
       expect(player.avatarImageLocation, 'https://example.com/avatar.png');
     });
   });
@@ -61,7 +67,10 @@ void main() {
         'owner_id': 'o1',
         'email': 'carol@example.com',
         'phone_number': '555-5678',
+        'normalized_email': 'carol@example.com',
+        'normalized_phone_number': '5555678',
         'status': 'active',
+        'claimed_by_uid': 'uid-1',
         'total_score': 75,
         'avatar_image_location': 'https://example.com/carol.png',
       };
@@ -72,7 +81,10 @@ void main() {
       expect(player.ownerId, 'o1');
       expect(player.email, 'carol@example.com');
       expect(player.phoneNumber, '555-5678');
+      expect(player.normalizedEmail, 'carol@example.com');
+      expect(player.normalizedPhoneNumber, '5555678');
       expect(player.status, 'active');
+      expect(player.claimedByUid, 'uid-1');
       expect(player.totalScore, 75);
       expect(player.avatarImageLocation, 'https://example.com/carol.png');
     });
@@ -103,7 +115,10 @@ void main() {
         totalScore: 50,
         email: 'eve@example.com',
         phoneNumber: '555-9999',
+        normalizedEmail: 'eve@example.com',
+        normalizedPhoneNumber: '5559999',
         status: 'active',
+        claimedByUid: 'uid-1',
         avatarImageLocation: 'https://example.com/eve.png',
       );
       final json = player.toJson();
@@ -114,7 +129,10 @@ void main() {
       expect(json['total_score'], 50);
       expect(json['email'], 'eve@example.com');
       expect(json['phone_number'], '555-9999');
+      expect(json['normalized_email'], 'eve@example.com');
+      expect(json['normalized_phone_number'], '5559999');
       expect(json['status'], 'active');
+      expect(json['claimed_by_uid'], 'uid-1');
       expect(json['avatar_image_location'], 'https://example.com/eve.png');
     });
 
@@ -201,8 +219,18 @@ void main() {
 
     test('getAllPlayerFriends returns all players in static list', () {
       Player.players.addAll([
-        Player(id: 'a', playerName: 'A', nickname: 'a', ownerId: 'o', totalScore: 0),
-        Player(id: 'b', playerName: 'B', nickname: 'b', ownerId: 'o', totalScore: 0),
+        Player(
+            id: 'a',
+            playerName: 'A',
+            nickname: 'a',
+            ownerId: 'o',
+            totalScore: 0),
+        Player(
+            id: 'b',
+            playerName: 'B',
+            nickname: 'b',
+            ownerId: 'o',
+            totalScore: 0),
       ]);
       expect(owner.getAllPlayerFriends().length, 2);
     });

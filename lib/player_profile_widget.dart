@@ -5,7 +5,8 @@ import 'gravatar_image_view.dart';
 import 'player.dart';
 
 class PlayerProfileWidget extends StatefulWidget {
-  const PlayerProfileWidget({super.key, required this.player, this.rank, required this.isSelected});
+  const PlayerProfileWidget(
+      {super.key, required this.player, this.rank, required this.isSelected});
 
   final bool isSelected;
   final Player player;
@@ -53,7 +54,10 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
         border: Border.all(color: getRankBorderColor(widget.rank), width: 2.0),
         color: Colors.white38,
         image: DecorationImage(
-            alignment: const Alignment(0.8, 0.8), fit: BoxFit.none, scale: 3, image: getRankBackImg(widget.rank)),
+            alignment: const Alignment(0.8, 0.8),
+            fit: BoxFit.none,
+            scale: 3,
+            image: getRankBackImg(widget.rank)),
         borderRadius: const BorderRadius.all(Radius.circular(8.0)),
         boxShadow: const [
           BoxShadow(
@@ -74,7 +78,14 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
           FittedBox(
               child: CircleAvatar(
                   backgroundColor: Colors.teal,
-                  child: ClipOval(child: GravatarImageView(email: widget.player.email!)))),
+                  child: widget.player.email == null ||
+                          widget.player.email!.isEmpty
+                      ? Text(widget.player.nickname.isEmpty
+                          ? '?'
+                          : widget.player.nickname[0].toUpperCase())
+                      : ClipOval(
+                          child:
+                              GravatarImageView(email: widget.player.email!)))),
           const SizedBox(
             height: 10.0,
           ),

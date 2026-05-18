@@ -42,7 +42,8 @@ class GameStartScreenState extends State<GameStartScreen> {
   @override
   void initState() {
     super.initState();
-    Utilities.debugPrintWithCallerInfo("unstartedGame: ${widget.unstartedGame?.toJson()}");
+    Utilities.debugPrintWithCallerInfo(
+        "unstartedGame: ${widget.unstartedGame?.toJson()}");
     _initializePlayersInfo();
 
     if (widget.unstartedGame == null) {
@@ -83,7 +84,11 @@ class GameStartScreenState extends State<GameStartScreen> {
                     final newGame = Game(
                         name: _nameController.text,
                         players: [],
-                        course: Course(id: "", name: "Please select course", numberOfHoles: 0, parStrokes: {}),
+                        course: Course(
+                            id: "",
+                            name: "Please select course",
+                            numberOfHoles: 0,
+                            parStrokes: {}),
                         scheduledTime: DateTime.now());
                     Navigator.pop(context, true);
                     Navigator.pushReplacement(
@@ -91,7 +96,11 @@ class GameStartScreenState extends State<GameStartScreen> {
                       MaterialPageRoute(
                           builder: (_) => GameStartScreen(
                                 unstartedGame: newGame,
-                                callback: () => {(widget.callback != null) ? widget.callback!() : null},
+                                callback: () => {
+                                  (widget.callback != null)
+                                      ? widget.callback!()
+                                      : null
+                                },
                               )),
                     );
                   }
@@ -111,12 +120,14 @@ class GameStartScreenState extends State<GameStartScreen> {
           .map((player) => PlayerGameInfo(
               playerId: player.playerId,
               gameId: widget.unstartedGame!.id,
-              playOrderPosition: player.playOrderPosition ?? 0, // Default value is 0 for null
+              playOrderPosition:
+                  player.playOrderPosition ?? 0, // Default value is 0 for null
               scores: player.scores,
               totalScore: player.totalScore,
               place: player.place))
           .toList();
-      _playersInfo.sort((a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
+      _playersInfo.sort(
+          (a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
     } else {
       _playersInfo = [];
     }
@@ -129,7 +140,9 @@ class GameStartScreenState extends State<GameStartScreen> {
       context,
       MaterialPageRoute(
           builder: (context) => CoursesScreen(
-                selectedCourse: (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course,
+                selectedCourse: (_isCreatingGame)
+                    ? _newGameCourse
+                    : widget.unstartedGame?.course,
                 creatingGame: true,
               )),
     );
@@ -137,7 +150,8 @@ class GameStartScreenState extends State<GameStartScreen> {
     if (!mounted) return;
     if (selectedCourse != null) {
       setState(() {
-        Utilities.debugPrintWithCallerInfo("Setting course to ${selectedCourse.toJson()}");
+        Utilities.debugPrintWithCallerInfo(
+            "Setting course to ${selectedCourse.toJson()}");
         if (_isCreatingGame) {
           _newGameCourse = selectedCourse;
         } else {
@@ -161,7 +175,8 @@ class GameStartScreenState extends State<GameStartScreen> {
     if (selectedTime != null) {
       final TimeOfDay? selectedTimeOfDay = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.fromDateTime(widget.unstartedGame!.scheduledTime),
+        initialTime:
+            TimeOfDay.fromDateTime(widget.unstartedGame!.scheduledTime),
       );
 
       if (selectedTimeOfDay != null) {
@@ -184,8 +199,9 @@ class GameStartScreenState extends State<GameStartScreen> {
     final List<Player>? selectedPlayers = await Navigator.push<List<Player>?>(
       context,
       MaterialPageRoute(
-          builder: (context) =>
-              PlayersScreen(creatingGame: true, currentlySelectedPlayers: widget.unstartedGame!.players)),
+          builder: (context) => PlayersScreen(
+              creatingGame: true,
+              currentlySelectedPlayers: widget.unstartedGame!.players)),
     );
 
     if (!mounted) return;
@@ -193,9 +209,13 @@ class GameStartScreenState extends State<GameStartScreen> {
       setState(() {
         _playersInfo.clear();
         for (Player selectedPlayer in selectedPlayers) {
-          _playersInfo.add(PlayerGameInfo(playerId: selectedPlayer.id, gameId: widget.unstartedGame!.id, scores: []));
+          _playersInfo.add(PlayerGameInfo(
+              playerId: selectedPlayer.id,
+              gameId: widget.unstartedGame!.id,
+              scores: []));
         }
-        widget.unstartedGame!.players.replaceRange(0, widget.unstartedGame!.players.length, _playersInfo);
+        widget.unstartedGame!.players.replaceRange(
+            0, widget.unstartedGame!.players.length, _playersInfo);
       });
     }
   }
@@ -216,15 +236,19 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
-    if (widget.unstartedGame!.players.length < 2 || widget.unstartedGame!.players.length > 6) {
+    if (widget.unstartedGame!.players.length < 2 ||
+        widget.unstartedGame!.players.length > 6) {
       return;
     }
 
-    widget.unstartedGame!.players.replaceRange(0, widget.unstartedGame!.players.length, _playersInfo);
+    widget.unstartedGame!.players
+        .replaceRange(0, widget.unstartedGame!.players.length, _playersInfo);
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String unstartedGameJson = jsonEncode(widget.unstartedGame!);
     await prefs.setString(widget.unstartedGame!.id, unstartedGameJson);
-    await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
+    if (loggedInUser != null) {
+      await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
+    }
     if (widget.callback != null) {
       widget.callback!();
     }
@@ -242,20 +266,23 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
-    if (widget.unstartedGame!.players.length < 2 || widget.unstartedGame!.players.length > 6) {
+    if (widget.unstartedGame!.players.length < 2 ||
+        widget.unstartedGame!.players.length > 6) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Please select between 2 and 6 players'),
       ));
       return;
     }
 
-    if (widget.unstartedGame?.scheduledTime == null || widget.unstartedGame!.scheduledTime == DateTime(0)) {
+    if (widget.unstartedGame?.scheduledTime == null ||
+        widget.unstartedGame!.scheduledTime == DateTime(0)) {
       Utilities.debugPrintWithCallerInfo(
           "** Unstarted game did not have a scheduled Time: ${widget.unstartedGame!.scheduledTime}");
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }
 
-    final String formattedTime = await Utilities.formatStartTime(widget.unstartedGame!.scheduledTime);
+    final String formattedTime =
+        await Utilities.formatStartTime(widget.unstartedGame!.scheduledTime);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Scheduling your game to start $formattedTime.'),
@@ -277,7 +304,8 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
-    if (widget.unstartedGame!.players.length < 2 || widget.unstartedGame!.players.length > 6) {
+    if (widget.unstartedGame!.players.length < 2 ||
+        widget.unstartedGame!.players.length > 6) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Please select between 2 and 6 players'),
       ));
@@ -288,8 +316,9 @@ class GameStartScreenState extends State<GameStartScreen> {
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }
 
-    Duration scheduledTimeDiff = widget.unstartedGame!.scheduledTime.difference(DateTime(
-        DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour, DateTime.now().minute));
+    Duration scheduledTimeDiff = widget.unstartedGame!.scheduledTime.difference(
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day,
+            DateTime.now().hour, DateTime.now().minute));
 
     if (scheduledTimeDiff > const Duration(minutes: 60)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -302,7 +331,6 @@ class GameStartScreenState extends State<GameStartScreen> {
     widget.unstartedGame!.startTime = DateTime.now();
 
     await _updateUnstartedGame();
-    await Game.saveGameToDatabase(widget.unstartedGame!, loggedInUser!);
 
     if (!mounted) return;
     await Navigator.of(context).pushReplacement(
@@ -338,7 +366,8 @@ class GameStartScreenState extends State<GameStartScreen> {
   // UI for the course card
   Widget _buildSelectCourseCard() {
     Utilities.debugPrintWithCallerInfo("Creating new game? $_isCreatingGame");
-    Course? course = (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course;
+    Course? course =
+        (_isCreatingGame) ? _newGameCourse : widget.unstartedGame?.course;
     Utilities.debugPrintWithCallerInfo("setting course: ${course?.toJson()}");
 
     return Center(
@@ -354,14 +383,16 @@ class GameStartScreenState extends State<GameStartScreen> {
                     padding: EdgeInsets.all(8.0),
                     child: Text(
                       'Course selected',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
               ListTile(
                 title: Text(course?.name ?? 'Select Course'),
-                subtitle: Text(course?.numberOfHoles.toString() ?? 'No course selected'),
+                subtitle: Text(
+                    course?.numberOfHoles.toString() ?? 'No course selected'),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: _selectCourse,
@@ -401,7 +432,8 @@ class GameStartScreenState extends State<GameStartScreen> {
                       children: _playersInfo.asMap().entries.map((entry) {
                         final playerInfo = entry.value;
                         final playerIndex = entry.key;
-                        final player = Player.empty().getPlayerFriendById(playerInfo.playerId);
+                        final player = Player.empty()
+                            .getPlayerFriendById(playerInfo.playerId);
                         return _buildPlayerListItem(player!, playerIndex);
                       }).toList(),
                       onReorder: (int oldIndex, int newIndex) {
@@ -409,7 +441,8 @@ class GameStartScreenState extends State<GameStartScreen> {
                           if (oldIndex < newIndex) {
                             newIndex -= 1;
                           }
-                          final PlayerGameInfo player = _playersInfo.removeAt(oldIndex);
+                          final PlayerGameInfo player =
+                              _playersInfo.removeAt(oldIndex);
                           player.playOrderPosition = newIndex;
                           _playersInfo.insert(newIndex, player);
                         });
@@ -450,15 +483,18 @@ class GameStartScreenState extends State<GameStartScreen> {
                     padding: EdgeInsets.all(8.0),
                     child: Text(
                       'Schedule start time',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
               ListTile(
                 title: FutureBuilder<String>(
-                  future: Utilities.formatStartTime(widget.unstartedGame!.scheduledTime),
-                  builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                  future: Utilities.formatStartTime(
+                      widget.unstartedGame!.scheduledTime),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<String> snapshot) {
                     if (snapshot.hasData) {
                       return Text(snapshot.data!);
                     } else {
@@ -493,7 +529,8 @@ class GameStartScreenState extends State<GameStartScreen> {
         backgroundColor: Colors.white,
         extendBodyBehindAppBar: false,
         appBar: AppBar(
-          title: Text('Start Game - ${widget.unstartedGame?.name ?? 'New Game'}'),
+          title:
+              Text('Start Game - ${widget.unstartedGame?.name ?? 'New Game'}'),
         ),
         body: Stack(children: [
           Utilities.backdropImageContinerWidget(),
@@ -534,7 +571,10 @@ class GameStartScreenState extends State<GameStartScreen> {
                 heroTag: "btnStartGame",
                 onPressed: _startGame,
                 label: const Row(
-                  children: [Icon(Icons.sports_golf_rounded), Text("Start the game!")],
+                  children: [
+                    Icon(Icons.sports_golf_rounded),
+                    Text("Start the game!")
+                  ],
                 ),
               ),
             ],

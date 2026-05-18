@@ -21,23 +21,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Duration get loginTime => const Duration(milliseconds: 50);
 
-
-
   Future<String?> _authUser(LoginData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Email: ${data.name}, Password: ${data.password}');
     try {
-      final userCredential = await UserProvider().auth.signInWithEmailAndPassword(
-            email: data.name,
-            password: data.password,
-          );
-      
+      final userCredential =
+          await UserProvider().auth.signInWithEmailAndPassword(
+                email: data.name,
+                password: data.password,
+              );
+
       if (userCredential.user != null) {
-        final loggedInPlayer = await Player.getPlayerByEmailFromDB(data.name);
+        final authUser = userCredential.user!;
+        final loggedInPlayer =
+            await Player.fetchPlayerForAuthUid(authUser.uid) ??
+                await Player.claimPlayerForVerifiedAuthUser(
+                  uid: authUser.uid,
+                  email: authUser.email,
+                  emailVerified: authUser.emailVerified,
+                  phoneNumber: authUser.phoneNumber,
+                );
         if (loggedInPlayer != null) {
           await UserProvider().login(loggedInPlayer);
         } else {
-          return 'User profile not found in database.';
+          return 'Verify an email or phone number to claim your player history.';
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -53,37 +60,51 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<String?> _signupUser(SignupData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Signup Name: ${data.name}, Password: ${data.password}, ${data.additionalSignupData.toString()}');
-    
+
     final additionalData = data.additionalSignupData!;
     final playerName = additionalData['playerName']!;
     final nickname = additionalData['nickname']!;
     final phoneNumber = additionalData['phoneNumber'] ?? "";
 
     try {
-      Utilities.debugPrintWithCallerInfo('Starting Firebase Auth Registration for ${data.name}');
-      final userCredential = await UserProvider().auth.createUserWithEmailAndPassword(
-        email: data.name!,
-        password: data.password!,
-      );
+      Utilities.debugPrintWithCallerInfo(
+          'Starting Firebase Auth Registration for ${data.name}');
+      final userCredential =
+          await UserProvider().auth.createUserWithEmailAndPassword(
+                email: data.name!,
+                password: data.password!,
+              );
 
       if (userCredential.user != null) {
-        Utilities.debugPrintWithCallerInfo('Firebase Auth User Created: ${userCredential.user!.uid}');
-        
+        Utilities.debugPrintWithCallerInfo(
+            'Firebase Auth User Created: ${userCredential.user!.uid}');
+
+        await userCredential.user!.sendEmailVerification();
+
+        final existingPlayer =
+            await Player.getPlayerByContactFromDB(data.name, phoneNumber);
+        if (existingPlayer != null) {
+          UserProvider().beginPendingClaim(existingPlayer);
+          return 'Account created. Verify your email or phone to claim existing history.';
+        }
+
         Player loggedInPlayer = await Player.createPlayer(
           playerName,
           nickname,
-          email: data.name,
+          email: data.name!,
           phoneNumber: phoneNumber,
-          id: userCredential.user!.uid, // Use Firebase UID
+          id: userCredential.user!.uid,
         );
-        
-        Utilities.debugPrintWithCallerInfo('Firestore Player Profile Created: ${loggedInPlayer.id}');
+
+        Utilities.debugPrintWithCallerInfo(
+            'Firestore Player Profile Created: ${loggedInPlayer.id}');
         await UserProvider().login(loggedInPlayer);
         return null;
       }
       return 'Failed to create user account.';
     } on FirebaseAuthException catch (e) {
-      Utilities.debugPrintWithCallerInfo('FirebaseAuthException: ${e.code} - ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'FirebaseAuthException: ${e.code} - ${e.message}');
       return e.message ?? 'An error occurred during registration.';
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo('Registration Error: $exception');
@@ -98,8 +119,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<String?> _simulateSocialLogin(String name, String nickname, String email) async {
-    Utilities.debugPrintWithCallerInfo('Starting Social Sign-In Simulation: $email');
+  Future<String?> _simulateSocialLogin(
+      String name, String nickname, String email) async {
+    Utilities.debugPrintWithCallerInfo(
+        'Starting Social Sign-In Simulation: $email');
     try {
       // Sign into Firebase Auth under the hood using email/password
       // so that the Auth State listener gets a valid authenticated session.
@@ -113,7 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
           password: 'mock_social_password_123',
         );
       } on FirebaseAuthException catch (e) {
-        if (e.code == 'email-already-in-use' || e.code == 'email-already-exists') {
+        if (e.code == 'email-already-in-use' ||
+            e.code == 'email-already-exists') {
           await auth.signInWithEmailAndPassword(
             email: email,
             password: 'mock_social_password_123',
@@ -139,19 +163,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<String?> _handleGoogleLogin() async {
-    return _simulateSocialLogin("Google User", "Googler", "google_user@example.com");
+    return _simulateSocialLogin(
+        "Google User", "Googler", "google_user@example.com");
   }
 
   Future<String?> _handleFacebookLogin() async {
-    return _simulateSocialLogin("Facebook User", "FB-Player", "facebook_user@example.com");
+    return _simulateSocialLogin(
+        "Facebook User", "FB-Player", "facebook_user@example.com");
   }
 
   Future<String?> _handleSnapchatLogin() async {
-    return _simulateSocialLogin("Snapchat User", "Snap-Player", "snapchat_user@example.com");
+    return _simulateSocialLogin(
+        "Snapchat User", "Snap-Player", "snapchat_user@example.com");
   }
 
   Future<String?> _handleInstagramLogin() async {
-    return _simulateSocialLogin("Instagram User", "Insta-Player", "instagram_user@example.com");
+    return _simulateSocialLogin(
+        "Instagram User", "Insta-Player", "instagram_user@example.com");
   }
 
   @override
@@ -183,7 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       "Already Logged In",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
                     Text("Name: ${user.playerName}"),
@@ -191,19 +220,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text("Email: ${user.email}"),
                     const SizedBox(height: 30),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       onPressed: () async {
                         await UserProvider().logout();
                         if (mounted) {
                           setState(() {});
                         }
                       },
-                      child: const Text("Logout", style: TextStyle(color: Colors.white)),
+                      child: const Text("Logout",
+                          style: TextStyle(color: Colors.white)),
                     ),
                     const SizedBox(height: 10),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pushNamedAndRemoveUntil("/", (_) => false);
+                        Navigator.of(context)
+                            .pushNamedAndRemoveUntil("/", (_) => false);
                       },
                       child: const Text("Back to Home"),
                     ),

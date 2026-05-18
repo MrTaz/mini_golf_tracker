@@ -7,6 +7,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function hasReservedEmail(playerId) {
+      return !('normalized_email' in request.resource.data)
+        || request.resource.data.normalized_email == null
+        || existsAfter(/databases/$(database)/documents/player_contacts/$(('email_' + request.resource.data.normalized_email)))
+          && getAfter(/databases/$(database)/documents/player_contacts/$(('email_' + request.resource.data.normalized_email))).data.player_id == playerId;
+    }
+
+    function hasReservedPhone(playerId) {
+      return !('normalized_phone_number' in request.resource.data)
+        || request.resource.data.normalized_phone_number == null
+        || existsAfter(/databases/$(database)/documents/player_contacts/$(('phone_' + request.resource.data.normalized_phone_number)))
+          && getAfter(/databases/$(database)/documents/player_contacts/$(('phone_' + request.resource.data.normalized_phone_number))).data.player_id == playerId;
+    }
+
     // Players Collection
     match /players/{playerId} {
       allow read: if isLoggedIn();
@@ -22,8 +36,12 @@ service cloud.firestore {
         && request.resource.data.nickname.size() <= 100
         && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
         && (!('phone_number' in request.resource.data) || request.resource.data.phone_number == null || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
+        && (!('normalized_email' in request.resource.data) || request.resource.data.normalized_email == null || (request.resource.data.normalized_email is string && request.resource.data.normalized_email.size() <= 100))
+        && (!('normalized_phone_number' in request.resource.data) || request.resource.data.normalized_phone_number == null || (request.resource.data.normalized_phone_number is string && request.resource.data.normalized_phone_number.size() <= 30))
         && (!('status' in request.resource.data) || request.resource.data.status == null || (request.resource.data.status is string && request.resource.data.status.size() <= 200))
-        && (!('avatar_image_location' in request.resource.data) || request.resource.data.avatar_image_location == null || (request.resource.data.avatar_image_location is string && request.resource.data.avatar_image_location.size() <= 500));
+        && (!('avatar_image_location' in request.resource.data) || request.resource.data.avatar_image_location == null || (request.resource.data.avatar_image_location is string && request.resource.data.avatar_image_location.size() <= 500))
+        && hasReservedEmail(playerId)
+        && hasReservedPhone(playerId);
 
       allow update: if isLoggedIn() && (
         // Case 1: Owner updates their profile fields. Must not change key identifier fields.
@@ -40,6 +58,8 @@ service cloud.firestore {
           && request.resource.data.total_score >= 0
           && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
           && (!('phone_number' in request.resource.data) || request.resource.data.phone_number == null || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
+          && (!('normalized_email' in request.resource.data) || request.resource.data.normalized_email == null || (request.resource.data.normalized_email is string && request.resource.data.normalized_email.size() <= 100))
+          && (!('normalized_phone_number' in request.resource.data) || request.resource.data.normalized_phone_number == null || (request.resource.data.normalized_phone_number is string && request.resource.data.normalized_phone_number.size() <= 30))
           && (!('status' in request.resource.data) || request.resource.data.status == null || (request.resource.data.status is string && request.resource.data.status.size() <= 200))
           && (!('avatar_image_location' in request.resource.data) || request.resource.data.avatar_image_location == null || (request.resource.data.avatar_image_location is string && request.resource.data.avatar_image_location.size() <= 500))
         )
@@ -49,9 +69,55 @@ service cloud.firestore {
           && (request.resource.data.total_score is int || request.resource.data.total_score is float)
           && request.resource.data.total_score >= 0
         )
+        // Case 3: A verified Firebase Auth contact claims an unclaimed player.
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed_by_uid'])
+          && resource.data.claimed_by_uid == null
+          && request.resource.data.claimed_by_uid == request.auth.uid
+          && (
+            (
+              request.auth.token.email_verified == true
+              && resource.data.normalized_email == request.auth.token.email
+            )
+            || (
+              request.auth.token.phone_number != null
+              && resource.data.normalized_phone_number == request.auth.token.phone_number
+            )
+          )
+        )
       );
 
       allow delete: if isLoggedIn() && resource.data.owner_id == request.auth.uid;
+    }
+
+    // Canonical contact reservations. The deterministic document ID is the
+    // uniqueness boundary for normalized emails and phone numbers.
+    match /player_contacts/{contactId} {
+      allow read: if isLoggedIn();
+
+      allow create: if isLoggedIn()
+        && request.resource.data.player_id is string
+        && request.resource.data.created_by_uid == request.auth.uid
+        && (
+          (
+            request.resource.data.kind == 'email'
+            && request.resource.data.normalized_value is string
+            && contactId == 'email_' + request.resource.data.normalized_value
+          )
+          || (
+            request.resource.data.kind == 'phone'
+            && request.resource.data.normalized_value is string
+            && contactId == 'phone_' + request.resource.data.normalized_value
+          )
+        );
+
+      allow update, delete: if false;
+    }
+
+    // Claim requests are owned by the trusted backend only. Cloud Functions
+    // uses the Admin SDK and bypasses client rules.
+    match /claim_requests/{claimRequestId} {
+      allow read, write: if false;
     }
 
     // Friends Collection

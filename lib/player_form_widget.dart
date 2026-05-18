@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/contact_identity.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,7 +7,11 @@ import 'player.dart';
 
 class PlayerForm extends StatefulWidget {
   const PlayerForm(
-      {super.key, this.player, required this.allowEditing, required this.onSaveChanges, required this.editingOrAdding});
+      {super.key,
+      this.player,
+      required this.allowEditing,
+      required this.onSaveChanges,
+      required this.editingOrAdding});
 
   final bool allowEditing;
   final String editingOrAdding;
@@ -18,8 +23,7 @@ class PlayerForm extends StatefulWidget {
 }
 
 class PlayerFormState extends State<PlayerForm> {
-  // late Player currentUser;
-  Player? currentUser = UserProvider().loggedInUser;
+  Player? get currentUser => UserProvider().loggedInUser;
 
   bool isDuplicate = false;
 
@@ -43,11 +47,15 @@ class PlayerFormState extends State<PlayerForm> {
   void initState() {
     super.initState();
     loadCurrentUser();
-    _playerNameController = TextEditingController(text: widget.player?.playerName ?? '');
-    _nicknameController = TextEditingController(text: widget.player?.nickname ?? '');
+    _playerNameController =
+        TextEditingController(text: widget.player?.playerName ?? '');
+    _nicknameController =
+        TextEditingController(text: widget.player?.nickname ?? '');
     _emailController = TextEditingController(text: widget.player?.email ?? '');
-    _phoneNumberController = TextEditingController(text: widget.player?.phoneNumber ?? '');
-    _statusController = TextEditingController(text: widget.player?.status ?? '');
+    _phoneNumberController =
+        TextEditingController(text: widget.player?.phoneNumber ?? '');
+    _statusController =
+        TextEditingController(text: widget.player?.status ?? '');
   }
 
   bool get isEditing => widget.player != null;
@@ -60,7 +68,8 @@ class PlayerFormState extends State<PlayerForm> {
   }
 
   bool validateRequiredFields() {
-    if (_playerNameController.text.isEmpty || _nicknameController.text.isEmpty) {
+    if (_playerNameController.text.isEmpty ||
+        _nicknameController.text.isEmpty) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -87,10 +96,12 @@ class PlayerFormState extends State<PlayerForm> {
 
   void checkDuplicate() {
     // Check for duplicates before saving
-    List<Player> allPlayers = currentUser!.getAllPlayerFriends();
+    final List<Player> allPlayers =
+        currentUser?.getAllPlayerFriends() ?? Player.players;
     isDuplicate = allPlayers.any((player) =>
         player != widget.player &&
-        (player.playerName == _playerNameController.text && player.nickname == _nicknameController.text));
+        (player.playerName == _playerNameController.text &&
+            player.nickname == _nicknameController.text));
 
     if (isDuplicate) {
       showDialog(
@@ -98,7 +109,8 @@ class PlayerFormState extends State<PlayerForm> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Duplicate Player'),
-            content: const Text('A player with the same playerName or nickname already exists.'),
+            content: const Text(
+                'A player with the same playerName or nickname already exists.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -116,17 +128,45 @@ class PlayerFormState extends State<PlayerForm> {
     }
   }
 
-  void saveChanges() {
+  Future<void> saveChanges() async {
     if (validateRequiredFields()) {
-      // Create or update the player
-      if (isEditing) {
+      if (widget.player != null) {
         widget.player!.playerName = _playerNameController.text;
         widget.player!.nickname = _nicknameController.text;
-        widget.player!.email = _emailController.text;
-        widget.player!.phoneNumber = _phoneNumberController.text;
+        widget.player!.email =
+            ContactIdentity.normalizeEmail(_emailController.text);
+        widget.player!.phoneNumber =
+            ContactIdentity.normalizePhoneNumber(_phoneNumberController.text);
+        widget.player!.normalizedEmail = widget.player!.email;
+        widget.player!.normalizedPhoneNumber = widget.player!.phoneNumber;
         widget.player!.status = _statusController.text;
-        widget.player!.ownerId = currentUser!.id;
-        currentUser!.addPlayerFriend(widget.player!);
+        widget.player!.ownerId = currentUser?.id ?? 'guest';
+
+        if (widget.editingOrAdding == 'Add') {
+          if (currentUser != null) {
+            final canonicalPlayer =
+                await currentUser!.addPlayerFriend(widget.player!);
+            widget.player!.playerName = canonicalPlayer.playerName;
+            widget.player!.nickname = canonicalPlayer.nickname;
+            widget.player!.email = canonicalPlayer.email;
+            widget.player!.phoneNumber = canonicalPlayer.phoneNumber;
+          } else {
+            final canonicalPlayer =
+                await Player.resolveGuestPlayer(widget.player!);
+            final existingIndex = Player.players
+                .indexWhere((player) => player.id == canonicalPlayer.id);
+            if (existingIndex == -1) {
+              Player.players.add(canonicalPlayer);
+            } else {
+              Player.players[existingIndex] = canonicalPlayer;
+            }
+            await Player.saveLocalGuestPlayers();
+          }
+        } else if (currentUser != null) {
+          await Player.updateUnclaimedPlayer(widget.player!);
+        } else {
+          await Player.saveLocalGuestPlayers();
+        }
       }
       widget.onSaveChanges();
     }
@@ -175,7 +215,9 @@ class PlayerFormState extends State<PlayerForm> {
           onPressed: () {
             checkDuplicate();
           },
-          child: (widget.editingOrAdding == 'Edit') ? const Text("Save Changes") : const Text("Add Player"),
+          child: (widget.editingOrAdding == 'Edit')
+              ? const Text("Save Changes")
+              : const Text("Add Player"),
         ),
       ],
     );

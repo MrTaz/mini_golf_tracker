@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/assets.dart';
+import 'package:mini_golf_tracker/claim_account_screen.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
@@ -93,6 +93,8 @@ class MainScaffold extends State<HomePage> {
     if (user != null) {
       body = const DashboardScreen();
       changeProfileImage();
+    } else if (UserProvider().pendingClaimPlayer != null) {
+      body = const ClaimAccountScreen();
     } else {
       body = const HomeScreen();
     }
@@ -112,15 +114,16 @@ class MainScaffold extends State<HomePage> {
       return;
     }
     setState(() {
-      if (loggedInUser.avatarImageLocation != null && loggedInUser.avatarImageLocation!.isNotEmpty) {
+      if (loggedInUser.avatarImageLocation != null &&
+          loggedInUser.avatarImageLocation!.isNotEmpty) {
         profileImage = Image.network(loggedInUser.avatarImageLocation!);
       } else {
-        final gravatarImgUrl = Gravatar(loggedInUser.email ?? "").imageUrl(size: 120);
+        final gravatarImgUrl =
+            Gravatar(loggedInUser.email ?? "").imageUrl(size: 120);
         profileImage = Image.network(gravatarImgUrl);
       }
     });
   }
-
 
   List<Widget> _buildDrawerList(BuildContext context) {
     List<Widget> children = [];

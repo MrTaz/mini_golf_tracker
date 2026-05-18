@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mini_golf_tracker/contact_identity.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Player {
   Player(
@@ -14,7 +18,10 @@ class Player {
       required this.totalScore,
       this.email,
       this.phoneNumber,
+      this.normalizedEmail,
+      this.normalizedPhoneNumber,
       this.status,
+      this.claimedByUid,
       this.avatarImageLocation});
 
   // Factory method to create a Player object without populating fields
@@ -36,16 +43,25 @@ class Player {
         ownerId: json['owner_id'] ?? '',
         email: json['email'],
         phoneNumber: json['phone_number'],
+        normalizedEmail: json['normalized_email'] ??
+            ContactIdentity.normalizeEmail(json['email']),
+        normalizedPhoneNumber: json['normalized_phone_number'] ??
+            ContactIdentity.normalizePhoneNumber(json['phone_number']),
         status: json['status'],
+        claimedByUid: json['claimed_by_uid'],
         totalScore: json['total_score'] ?? 0,
         avatarImageLocation: json['avatar_image_location']);
   }
 
   static List<Player> players = [];
+  static const String _localGuestPlayersKey = 'guest_players';
   String? avatarImageLocation;
   String? email;
   final String id;
+  String? claimedByUid;
   String nickname;
+  String? normalizedEmail;
+  String? normalizedPhoneNumber;
   String ownerId;
   String? phoneNumber;
   String playerName;
@@ -60,15 +76,18 @@ class Player {
       'owner_id': ownerId,
       'email': email,
       'phone_number': phoneNumber,
+      'normalized_email': normalizedEmail,
+      'normalized_phone_number': normalizedPhoneNumber,
       'status': status,
+      'claimed_by_uid': claimedByUid,
       'total_score': totalScore,
       'avatar_image_location': avatarImageLocation
     };
   }
 
   Future<void> loadUserPlayers() async {
-    if (players.isEmpty && ownerId != '') {
-      final loadedPlayers = await _getAllPlayersFromDBByOwnerId(ownerId);
+    if (players.isEmpty && id != '') {
+      final loadedPlayers = await _getAllPlayersFromFriends(id);
       players.addAll(loadedPlayers);
     }
   }
@@ -77,63 +96,151 @@ class Player {
     return players;
   }
 
+  static Future<void> loadLocalGuestPlayers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final guestPlayersJson = prefs.getString(_localGuestPlayersKey);
+    if (guestPlayersJson == null || guestPlayersJson.isEmpty) {
+      return;
+    }
+    final decoded = jsonDecode(guestPlayersJson) as List<dynamic>;
+    players = decoded
+        .map(
+            (playerJson) => Player.fromJson(playerJson as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> saveLocalGuestPlayers() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _localGuestPlayersKey,
+      jsonEncode(players.map((player) => player.toJson()).toList()),
+    );
+  }
+
+  static Future<void> clearLocalGuestPlayers() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_localGuestPlayersKey);
+    players = [];
+  }
+
   Player? getPlayerFriendById(String playerId) {
-    return players.firstWhere((player) => player.id == playerId, orElse: () => Player.empty());
+    return players.firstWhere((player) => player.id == playerId,
+        orElse: () => Player.empty());
   }
 
   Player? getPlayerFriendByEmail(String email) {
-    return players.firstWhere((player) => player.email == email, orElse: () => Player.empty());
+    return players.firstWhere((player) => player.email == email,
+        orElse: () => Player.empty());
   }
 
-  void addPlayerFriend(Player player) {
-    Future.microtask(() async {
-      Utilities.debugPrintWithCallerInfo(
-          'Checking if user is already in database');
-      final isExistingUser =
-          await _isDuplicatePlayer(player.email, player.phoneNumber);
-      if (isExistingUser) {
-        Utilities.debugPrintWithCallerInfo('Getting player details');
-        final updatedPlayer =
-            await Player.getPlayerByEmailFromDB(player.email!);
-        if (updatedPlayer != null) {
-          Utilities.debugPrintWithCallerInfo(
-              'Adding ${updatedPlayer.playerName} as friend for $playerName');
-          await _addFriend(id, updatedPlayer.id);
-          players.add(updatedPlayer);
-        } else {
-          throw "Existing user, but unable to retrieve from database";
-        }
-      } else {
-        final newPlayer = await Player.createPlayer(
-          player.playerName,
-          player.nickname,
-          email: player.email,
-          phoneNumber: player.phoneNumber,
-          ownerId: ownerId,
-        );
-        Utilities.debugPrintWithCallerInfo(
-            'New player friend created: ${newPlayer.toJson()}');
-        Utilities.debugPrintWithCallerInfo(
-            'Adding ${newPlayer.playerName} as friend for $playerName');
-        await _addFriend(id, newPlayer.id);
-        players.add(newPlayer);
-      }
-    });
-    //TODO: Notify player that they have been added to a game
+  Future<Player> addPlayerFriend(Player player) async {
+    Utilities.debugPrintWithCallerInfo(
+        'Checking if user is already in database');
+    final canonicalPlayer = await resolveCanonicalPlayer(
+      player,
+      ownerIdForNewPlayer: id,
+    );
+    Utilities.debugPrintWithCallerInfo(
+        'Adding ${canonicalPlayer.playerName} as friend for $playerName');
+    await _addFriend(id, canonicalPlayer.id);
+    final existingIndex =
+        players.indexWhere((friend) => friend.id == canonicalPlayer.id);
+    if (existingIndex == -1) {
+      players.add(canonicalPlayer);
+    } else {
+      players[existingIndex] = canonicalPlayer;
+    }
+    return canonicalPlayer;
+  }
+
+  static Future<Player> resolveCanonicalPlayer(
+    Player player, {
+    required String ownerIdForNewPlayer,
+  }) async {
+    final existingPlayer =
+        await Player.getPlayerByContactFromDB(player.email, player.phoneNumber);
+    if (existingPlayer != null) {
+      return existingPlayer;
+    }
+
+    return Player.createPlayer(
+      player.playerName,
+      player.nickname,
+      email: player.email,
+      phoneNumber: player.phoneNumber,
+      ownerId: ownerIdForNewPlayer,
+    );
+  }
+
+  static Future<Player> resolveGuestPlayer(Player player) async {
+    final canonicalPlayer =
+        await Player.getPlayerByContactFromDB(player.email, player.phoneNumber);
+    return canonicalPlayer ?? player;
+  }
+
+  static Future<Map<String, Player>> adoptLocalGuestPlayers(
+      Player loggedInUser) async {
+    await loadLocalGuestPlayers();
+    final adoptedPlayers = <String, Player>{};
+    for (final guestPlayer in List<Player>.from(players)) {
+      final canonicalPlayer = await loggedInUser.addPlayerFriend(guestPlayer);
+      adoptedPlayers[guestPlayer.id] = canonicalPlayer;
+    }
+    await clearLocalGuestPlayers();
+    return adoptedPlayers;
   }
 
   static Future<Player?> fetchPlayerFromDatabase(String id) async {
-    final doc = await DatabaseConnection.client.collection('players').doc(id).get();
+    final doc =
+        await DatabaseConnection.client.collection('players').doc(id).get();
     if (!doc.exists) return null;
-    
+
     var data = doc.data()!;
     data['id'] = doc.id;
     return Player.fromJson(data);
   }
 
+  static Future<Player?> fetchPlayerForAuthUid(String uid) async {
+    final directMatch = await fetchPlayerFromDatabase(uid);
+    if (directMatch != null) {
+      return directMatch;
+    }
+
+    final snapshot = await DatabaseConnection.client
+        .collection('players')
+        .where('claimed_by_uid', isEqualTo: uid)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final doc = snapshot.docs.first;
+    final data = doc.data();
+    data['id'] = doc.id;
+    return Player.fromJson(data);
+  }
+
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
-    final snapshot =
-        await DatabaseConnection.client.collection('players').where('email', isEqualTo: email).get();
+    final normalizedEmail = ContactIdentity.normalizeEmail(email);
+    if (normalizedEmail == null) {
+      return null;
+    }
+    final reservedPlayer = await _getReservedPlayer('email', normalizedEmail);
+    if (reservedPlayer != null) {
+      return reservedPlayer;
+    }
+
+    var snapshot = await DatabaseConnection.client
+        .collection('players')
+        .where('normalized_email', isEqualTo: normalizedEmail)
+        .get();
+    if (snapshot.docs.isEmpty) {
+      snapshot = await DatabaseConnection.client
+          .collection('players')
+          .where('email', isEqualTo: email)
+          .get();
+    }
 
     if (snapshot.docs.isEmpty) {
       return null;
@@ -145,24 +252,164 @@ class Player {
       try {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
-          final matchingDocs = snapshot.docs.where((doc) => doc.id == currentUser.uid);
-          final matchesUser = matchingDocs.isNotEmpty ? matchingDocs.first : snapshot.docs.first;
+          final matchingDocs =
+              snapshot.docs.where((doc) => doc.id == currentUser.uid);
+          final matchesUser = matchingDocs.isNotEmpty
+              ? matchingDocs.first
+              : snapshot.docs.first;
           var data = matchesUser.data();
           data['id'] = matchesUser.id;
           return Player.fromJson(data);
         }
       } catch (e) {
-        Utilities.debugPrintWithCallerInfo('Error accessing FirebaseAuth in getPlayerByEmailFromDB: $e');
+        Utilities.debugPrintWithCallerInfo(
+            'Error accessing FirebaseAuth in getPlayerByEmailFromDB: $e');
       }
     }
 
     // Otherwise, prioritize the self-owned profile (id == owner_id)
     // representing a real authenticated account rather than an offline guest profile.
-    final selfOwnedDocs = snapshot.docs.where((doc) => doc.id == doc.data()['owner_id']);
-    final matchesSelfOwned = selfOwnedDocs.isNotEmpty ? selfOwnedDocs.first : snapshot.docs.first;
+    final selfOwnedDocs =
+        snapshot.docs.where((doc) => doc.id == doc.data()['owner_id']);
+    final matchesSelfOwned =
+        selfOwnedDocs.isNotEmpty ? selfOwnedDocs.first : snapshot.docs.first;
     var data = matchesSelfOwned.data();
     data['id'] = matchesSelfOwned.id;
     return Player.fromJson(data);
+  }
+
+  static Future<Player?> getPlayerByPhoneFromDB(String phoneNumber) async {
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(phoneNumber);
+    if (normalizedPhoneNumber == null) {
+      return null;
+    }
+    final reservedPlayer =
+        await _getReservedPlayer('phone', normalizedPhoneNumber);
+    if (reservedPlayer != null) {
+      return reservedPlayer;
+    }
+
+    var snapshot = await DatabaseConnection.client
+        .collection('players')
+        .where('normalized_phone_number', isEqualTo: normalizedPhoneNumber)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isEmpty) {
+      snapshot = await DatabaseConnection.client
+          .collection('players')
+          .where('phone_number', isEqualTo: phoneNumber)
+          .limit(1)
+          .get();
+    }
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final doc = snapshot.docs.first;
+    final data = doc.data();
+    data['id'] = doc.id;
+    return Player.fromJson(data);
+  }
+
+  static Future<Player?> getPlayerByContactFromDB(
+      String? email, String? phoneNumber) async {
+    final normalizedEmail = ContactIdentity.normalizeEmail(email);
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(phoneNumber);
+    if (normalizedEmail != null) {
+      final player = await getPlayerByEmailFromDB(email!);
+      if (player != null) {
+        return player;
+      }
+    }
+    if (normalizedPhoneNumber != null) {
+      return getPlayerByPhoneFromDB(phoneNumber!);
+    }
+    return null;
+  }
+
+  static Future<Player> claimPlayerForAuthUser({
+    required String uid,
+    required String email,
+    String? phoneNumber,
+    required String playerName,
+    required String nickname,
+  }) async {
+    final existingPlayer = await getPlayerByContactFromDB(email, phoneNumber);
+    if (existingPlayer != null) {
+      existingPlayer.claimedByUid = uid;
+      await DatabaseConnection.client
+          .collection('players')
+          .doc(existingPlayer.id)
+          .update({'claimed_by_uid': uid});
+      return existingPlayer;
+    }
+
+    return createPlayer(
+      playerName,
+      nickname,
+      email: email,
+      phoneNumber: phoneNumber,
+      id: uid,
+    );
+  }
+
+  static bool canVerifiedAuthUserClaimPlayer({
+    required Player player,
+    required String uid,
+    required String? email,
+    required bool emailVerified,
+    required String? phoneNumber,
+  }) {
+    if (player.claimedByUid != null && player.claimedByUid != uid) {
+      return false;
+    }
+
+    final normalizedEmail = ContactIdentity.normalizeEmail(email);
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(phoneNumber);
+    final emailMatches = emailVerified &&
+        normalizedEmail != null &&
+        normalizedEmail == player.normalizedEmail;
+    final phoneMatches = normalizedPhoneNumber != null &&
+        normalizedPhoneNumber == player.normalizedPhoneNumber;
+    return emailMatches || phoneMatches;
+  }
+
+  static Future<Player?> claimPlayerForVerifiedAuthUser({
+    required String uid,
+    required String? email,
+    required bool emailVerified,
+    required String? phoneNumber,
+  }) async {
+    final normalizedEmail = ContactIdentity.normalizeEmail(email);
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(phoneNumber);
+    Player? candidate;
+    if (emailVerified && normalizedEmail != null) {
+      candidate = await getPlayerByEmailFromDB(normalizedEmail);
+    }
+    candidate ??= normalizedPhoneNumber != null
+        ? await getPlayerByPhoneFromDB(normalizedPhoneNumber)
+        : null;
+    if (candidate == null ||
+        !canVerifiedAuthUserClaimPlayer(
+          player: candidate,
+          uid: uid,
+          email: email,
+          emailVerified: emailVerified,
+          phoneNumber: phoneNumber,
+        )) {
+      return null;
+    }
+
+    candidate.claimedByUid = uid;
+    await DatabaseConnection.client
+        .collection('players')
+        .doc(candidate.id)
+        .update({'claimed_by_uid': uid});
+    return candidate;
   }
 
   static Future<void> updatePlayerScoreInDatabase(Player playerToUpdate) async {
@@ -194,69 +441,54 @@ class Player {
     String? ownerId,
   }) async {
     try {
-      if (email != null && email.isNotEmpty) {
-        final existingPlayer = await getPlayerByEmailFromDB(email);
-        if (existingPlayer != null) {
-          if (id != null && existingPlayer.id != id) {
-            // The old profile has a different ID (e.g. a UUID from a pre-Firebase era).
-            // We cannot delete it because its owner_id doesn't match the current auth UID.
-            // Simply proceed to create the new canonical profile under the Firebase UID.
-            // getPlayerByEmailFromDB already prioritises the UID-matched doc, so the
-            // old record will be naturally superseded and is harmless.
-            Utilities.debugPrintWithCallerInfo(
-                'Found existing profile with different ID: ${existingPlayer.id}. '
-                'Proceeding to create canonical profile under Firebase UID: $id');
-          } else if (id != null && existingPlayer.id == id) {
-            return existingPlayer;
-          } else {
-            throw DatabaseConnectionError(
-                'Player with the same email already exists');
-          }
+      final normalizedEmail = ContactIdentity.normalizeEmail(email);
+      final normalizedPhoneNumber =
+          ContactIdentity.normalizePhoneNumber(phoneNumber);
+      final existingPlayer = await getPlayerByContactFromDB(email, phoneNumber);
+      if (existingPlayer != null) {
+        if (id != null && existingPlayer.id == id) {
+          return existingPlayer;
         }
+        throw DatabaseConnectionError(
+            'Player with the same email or phone number already exists');
       }
 
-      // Also check phone number duplicate just in case
-      if (phoneNumber != null && phoneNumber.isNotEmpty) {
-        final snapshot = await DatabaseConnection.client
-            .collection('players')
-            .where('phone_number', isEqualTo: phoneNumber)
-            .limit(1)
-            .get();
-        if (snapshot.docs.isNotEmpty) {
-          final existingId = snapshot.docs.first.id;
-          if (id != null && existingId != id) {
-            // Same as the email case: the old profile has a UUID owner_id that
-            // doesn't match the Firebase UID, so delete will always be denied.
-            // Proceed to create the canonical profile under the Firebase UID.
-            Utilities.debugPrintWithCallerInfo(
-                'Found existing profile by phone with different ID: $existingId. '
-                'Proceeding to create canonical profile under Firebase UID: $id');
-          } else if (id != null && existingId == id) {
-            var data = snapshot.docs.first.data();
-            data['id'] = existingId;
-            return Player.fromJson(data);
-          } else {
-            throw DatabaseConnectionError(
-                'Player with the same phone number already exists');
-          }
-        }
-      }
-
-      final docRef = id != null 
+      final docRef = id != null
           ? DatabaseConnection.client.collection('players').doc(id)
           : DatabaseConnection.client.collection('players').doc();
-          
+
       final player = Player(
         id: docRef.id,
         playerName: playerName,
         nickname: nickname,
         ownerId: ownerId ?? docRef.id,
         totalScore: 0,
-        email: email,
-        phoneNumber: phoneNumber,
+        email: normalizedEmail,
+        phoneNumber: normalizedPhoneNumber,
+        normalizedEmail: normalizedEmail,
+        normalizedPhoneNumber: normalizedPhoneNumber,
+        claimedByUid: id,
       );
 
-      await docRef.set(player.toJson());
+      final reservations = _contactReservationsForPlayer(player);
+      if (reservations.isEmpty) {
+        await docRef.set(player.toJson());
+      } else {
+        await DatabaseConnection.client.runTransaction((transaction) async {
+          for (final reservation in reservations) {
+            final existingReservation = await transaction.get(reservation.ref);
+            if (existingReservation.exists) {
+              throw DatabaseConnectionError(
+                  'Player with the same email or phone number already exists');
+            }
+          }
+
+          transaction.set(docRef, player.toJson());
+          for (final reservation in reservations) {
+            transaction.set(reservation.ref, reservation.data);
+          }
+        });
+      }
 
       Utilities.debugPrintWithCallerInfo(
           "Player saved to db, returning: ${player.toJson()}");
@@ -265,51 +497,138 @@ class Player {
     } on FirebaseException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Failed to create player: ${e.message}');
-      throw DatabaseConnectionError(
-          'Failed to create player: ${e.message}');
+      throw DatabaseConnectionError('Failed to create player: ${e.message}');
     }
+  }
+
+  static Future<void> updateUnclaimedPlayer(Player player) async {
+    if (player.claimedByUid != null) {
+      throw DatabaseConnectionError('Claimed players cannot be edited here');
+    }
+
+    player.email = ContactIdentity.normalizeEmail(player.email);
+    player.phoneNumber =
+        ContactIdentity.normalizePhoneNumber(player.phoneNumber);
+    player.normalizedEmail = player.email;
+    player.normalizedPhoneNumber = player.phoneNumber;
+
+    final reservations = _contactReservationsForPlayer(player);
+    await DatabaseConnection.client.runTransaction((transaction) async {
+      for (final reservation in reservations) {
+        final existingReservation = await transaction.get(reservation.ref);
+        if (existingReservation.exists &&
+            existingReservation.data()?['player_id'] != player.id) {
+          throw DatabaseConnectionError(
+              'Player with the same email or phone number already exists');
+        }
+      }
+
+      final playerRef =
+          DatabaseConnection.client.collection('players').doc(player.id);
+      transaction.update(playerRef, player.toJson());
+      for (final reservation in reservations) {
+        transaction.set(reservation.ref, reservation.data);
+      }
+    });
   }
 
   // Private method to add friend relationship
   Future<void> _addFriend(String playerId, String friendId) async {
-    await DatabaseConnection.client.collection('friends').doc('${playerId}_$friendId').set({
+    await DatabaseConnection.client
+        .collection('friends')
+        .doc('${playerId}_$friendId')
+        .set({
       'player_id': playerId,
       'friend_id': friendId,
     });
-    await DatabaseConnection.client.collection('friends').doc('${friendId}_$playerId').set({
+    await DatabaseConnection.client
+        .collection('friends')
+        .doc('${friendId}_$playerId')
+        .set({
       'player_id': friendId,
       'friend_id': playerId,
     });
   }
 
-  static Future<List<Player>> _getAllPlayersFromDBByOwnerId(String ownerId) async {
-    final snapshot = await DatabaseConnection.client.collection('players').where('owner_id', isEqualTo: ownerId).get();
-    
-    return snapshot.docs.map((doc) {
-      var data = doc.data();
-      data['id'] = doc.id;
-      return Player.fromJson(data);
-    }).toList();
-  }
-
-  static Future<bool> _isDuplicatePlayer(String? email, String? phoneNumber) async {
-    List<Filter> filters = [];
-    if (email != null && email.isNotEmpty) {
-      filters.add(Filter('email', isEqualTo: email));
-    }
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      filters.add(Filter('phone_number', isEqualTo: phoneNumber));
-    }
-
-    if (filters.isEmpty) return false;
-
-    final snapshot = await DatabaseConnection.client
-        .collection('players')
-        .where(Filter.or(filters[0], filters.length > 1 ? filters[1] : filters[0]))
-        .limit(1)
+  static Future<List<Player>> _getAllPlayersFromFriends(String playerId) async {
+    final friendLinks = await DatabaseConnection.client
+        .collection('friends')
+        .where('player_id', isEqualTo: playerId)
         .get();
 
-    return snapshot.docs.isNotEmpty;
+    final loadedPlayers = <Player>[];
+    for (final friendLink in friendLinks.docs) {
+      final friendId = friendLink.data()['friend_id'];
+      if (friendId is! String) {
+        continue;
+      }
+      final friend = await fetchPlayerFromDatabase(friendId);
+      if (friend != null) {
+        loadedPlayers.add(friend);
+      }
+    }
+    return loadedPlayers;
   }
 
+  static Future<Player?> _getReservedPlayer(
+      String kind, String normalizedValue) async {
+    final reservationId = kind == 'email'
+        ? ContactIdentity.reservationIdForEmail(normalizedValue)
+        : ContactIdentity.reservationIdForPhoneNumber(normalizedValue);
+    final reservation = await DatabaseConnection.client
+        .collection('player_contacts')
+        .doc(reservationId)
+        .get();
+    if (!reservation.exists) {
+      return null;
+    }
+
+    final playerId = reservation.data()?['player_id'];
+    if (playerId is! String) {
+      return null;
+    }
+    return fetchPlayerFromDatabase(playerId);
+  }
+
+  static List<_PlayerContactReservation> _contactReservationsForPlayer(
+      Player player) {
+    final reservations = <_PlayerContactReservation>[];
+    if (player.normalizedEmail != null) {
+      reservations.add(
+        _PlayerContactReservation(
+          ref: DatabaseConnection.client.collection('player_contacts').doc(
+              ContactIdentity.reservationIdForEmail(player.normalizedEmail!)),
+          data: {
+            'kind': 'email',
+            'normalized_value': player.normalizedEmail,
+            'player_id': player.id,
+            'created_by_uid': player.ownerId,
+          },
+        ),
+      );
+    }
+    if (player.normalizedPhoneNumber != null) {
+      reservations.add(
+        _PlayerContactReservation(
+          ref: DatabaseConnection.client.collection('player_contacts').doc(
+              ContactIdentity.reservationIdForPhoneNumber(
+                  player.normalizedPhoneNumber!)),
+          data: {
+            'kind': 'phone',
+            'normalized_value': player.normalizedPhoneNumber,
+            'player_id': player.id,
+            'created_by_uid': player.ownerId,
+          },
+        ),
+      );
+    }
+    return reservations;
+  }
+}
+
+class _PlayerContactReservation {
+  _PlayerContactReservation({required this.ref, required this.data});
+
+  final DocumentReference<Map<String, dynamic>> ref;
+  final Map<String, dynamic> data;
 }

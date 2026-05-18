@@ -8,7 +8,8 @@ import 'players_list_screen.dart';
 import 'utilities.dart';
 
 class PlayersScreen extends StatefulWidget {
-  const PlayersScreen({super.key, this.creatingGame = false, this.currentlySelectedPlayers});
+  const PlayersScreen(
+      {super.key, this.creatingGame = false, this.currentlySelectedPlayers});
 
   final bool? creatingGame;
   final List<PlayerGameInfo?>? currentlySelectedPlayers;
@@ -27,7 +28,15 @@ class PlayersScreenState extends State<PlayersScreen> {
   @override
   void initState() {
     super.initState();
-    _initializePlayers();
+    _loadPlayers();
+  }
+
+  Future<void> _loadPlayers() async {
+    if (loggedInUser == null) {
+      await Player.loadLocalGuestPlayers();
+    }
+    if (!mounted) return;
+    setState(_initializePlayers);
   }
 
   void fabPressed() {
@@ -46,6 +55,9 @@ class PlayersScreenState extends State<PlayersScreen> {
 
   void savePlayer() {
     setState(() {
+      players
+        ..clear()
+        ..addAll(loggedInUser?.getAllPlayerFriends() ?? Player.players);
       showNewPlayerForm = false;
       showCloseButton = false;
     });
@@ -66,19 +78,32 @@ class PlayersScreenState extends State<PlayersScreen> {
   }
 
   void _initializePlayers() {
-    if (widget.currentlySelectedPlayers != null && widget.currentlySelectedPlayers!.isNotEmpty) {
-      Iterable<PlayerGameInfo> passedInSelectedPlayers =
-          widget.currentlySelectedPlayers!.where((player) => player != null).cast<PlayerGameInfo>();
+    final availablePlayers =
+        loggedInUser?.getAllPlayerFriends() ?? Player.players;
 
+    if (widget.currentlySelectedPlayers != null &&
+        widget.currentlySelectedPlayers!.isNotEmpty) {
+      Iterable<PlayerGameInfo> passedInSelectedPlayers = widget
+          .currentlySelectedPlayers!
+          .where((player) => player != null)
+          .cast<PlayerGameInfo>();
+
+      players.addAll(availablePlayers);
       for (PlayerGameInfo passedInSelectedPlayer in passedInSelectedPlayers) {
-        players.addAll(loggedInUser!.getAllPlayerFriends());
-        Player? lookedUpPlayer = loggedInUser!.getPlayerFriendById(passedInSelectedPlayer.playerId);
-        if (lookedUpPlayer != null) {
+        Player? lookedUpPlayer;
+        for (final player in availablePlayers) {
+          if (player.id == passedInSelectedPlayer.playerId) {
+            lookedUpPlayer = player;
+            break;
+          }
+        }
+        if (lookedUpPlayer != null &&
+            !selectedPlayers.contains(lookedUpPlayer)) {
           selectedPlayers.add(lookedUpPlayer);
         }
       }
     } else {
-      players.addAll(loggedInUser!.getAllPlayerFriends());
+      players.addAll(availablePlayers);
     }
   }
 
@@ -109,7 +134,8 @@ class PlayersScreenState extends State<PlayersScreen> {
             child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: showNewPlayerForm
-                    ? PlayerCreateScreen(players: players, onSavePlayer: savePlayer)
+                    ? PlayerCreateScreen(
+                        players: players, onSavePlayer: savePlayer)
                     : Column(
                         children: <Widget>[
                           ListView.builder(
@@ -117,14 +143,16 @@ class PlayersScreenState extends State<PlayersScreen> {
                             padding: const EdgeInsets.all(0.8),
                             itemCount: players.length,
                             itemBuilder: (BuildContext context, int index) {
-                              bool isSelected = selectedPlayers.contains(players[index]);
+                              bool isSelected =
+                                  selectedPlayers.contains(players[index]);
                               return _buildPlayerListItem(index, isSelected);
                             },
                           ),
                           (widget.creatingGame!)
                               ? ElevatedButton(
                                   onPressed: _addPlayers,
-                                  child: const Text('Add selected players to game.'),
+                                  child: const Text(
+                                      'Add selected players to game.'),
                                 )
                               : const SizedBox(height: 16.0),
                         ],
@@ -134,7 +162,9 @@ class PlayersScreenState extends State<PlayersScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: showCloseButton ? closePlayerCreateScreen : fabPressed,
-        child: showCloseButton ? const Icon(Icons.close) : const Icon(Icons.person_add),
+        child: showCloseButton
+            ? const Icon(Icons.close)
+            : const Icon(Icons.person_add),
       ),
     );
   }
