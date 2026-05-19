@@ -14,7 +14,7 @@ import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseConnection.initialize();
@@ -126,7 +126,11 @@ class MainScaffold extends State<HomePage> {
   }
 
   void changeBodyCallback(Widget nextPage) {
-    body = nextPage;
+    if (mounted) {
+      setState(() {
+        body = nextPage;
+      });
+    }
   }
 
   void logout() async {

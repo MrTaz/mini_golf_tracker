@@ -75,12 +75,18 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [ ] **Dynamic Header:** 
     *  Auth: Show `UserAccountsDrawerHeader` with name, email, and "Edit Profile" action (pointing to `PlayerDetailsScreen`).
     *  Guest: Show "Guest Profile" placeholder with a "Sign In / Sign Up" call to action.
+*  [ ] **Dynamic 'Current Game' Item:**
+    *  If an active game exists: Show "Resume Active Game" and navigate to `GameInprogressScreen`.
+    *  If no active game exists: Show "No current game" (with a subtitle like "Tap to start playing") and navigate to `GameCreateScreen`.
 *  [ ] **Universal Navigation Items:** 
-    *  Add menu items for: Home, Current Game, Friends, Past Games, and Courses.
-*  [ ] **Context-Aware Routing:**
-    *  If Auth: Tapping "Friends," "History," or "Courses" navigates directly to those screens.
-    *  If Guest: Tapping these items redirects the user to the `LoginScreen` with a prompt highlighting the benefits of cloud sync.
-*  [ ] **Active Game Visibility:** Dynamically show a "Resume Active Game" link in the drawer if a local game has a `started` status.
+    *  Add menu items for: "Friends", "Scheduled Games", and "Past Games".
+    *  *Remove* "Courses" from the main drawer to reduce clutter.
+*  [ ] **Open Routing for Guests (Local Data):**
+    *  Guests must be allowed to navigate to `Friends` and `Past Games` to view their locally saved data [1].
+    *  Instead of blocking navigation via the drawer, conversion prompts (e.g., "Sign in to backup your history") should be placed as banners or cards *inside* those specific screens later.
+*  [ ] **Gated Feature (Scheduled Games):**
+    *  If Auth: Navigate to the `ScheduledGamesScreen`.
+    *  If Guest: Tapping "Scheduled Games" redirects to the `LoginScreen` with a prompt: "Sign up to schedule future rounds and sync with friends."
 
 ### 1.6 Course Location Awareness & Duplicate Prevention
 
@@ -121,6 +127,9 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [ ] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the `body` to `GameInprogressScreen` to ensure the round persists across app restarts.
 *  [ ] **Dynamic Bottom Navigation:** Modify `DashboardScreen` to hide the `BottomNavigationBar` if `UserProvider().loggedInUser` is null.
 *  [ ] **Game Creation Redirect:** Refactor `GameCreateScreen` and `GameStartScreen` so that upon clicking "Start," the app pushes `GameInprogressScreen` immediately instead of popping to the home screen.
+*  [ ] **Gated Scheduling:** In `GameStartScreen` and `GameCreateScreen`, check if `UserProvider().loggedInUser` is null.
+*  [ ] If a Guest: Intercept the "Schedule Game" action (`btnScheduleGame`) and redirect to the `LoginScreen` [1].
+*  [ ] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
 
 ##### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
 
@@ -447,6 +456,14 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Wrap expensive `StackTrace` logic in `Utilities.debugPrintWithCallerInfo` with `if (kDebugMode)`.
 - [ ] Use a `const bool` to ensure this logic is completely removed from production builds.
 - [ ] Optimize production performance.
+
+---
+
+#### Phase 8 — Premium Features & Monetization (Future)
+
+*  [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
+*  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
+*  [ ] **Subscription Logic:** Plan a `UserProvider` attribute for `isPremium` to manage feature access.
 
 ---
 

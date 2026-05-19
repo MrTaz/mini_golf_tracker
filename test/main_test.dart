@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/main.dart';
+import 'package:mini_golf_tracker/main.dart' as app;
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/course.dart';
@@ -17,6 +18,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_core_platform_interface/test.dart';
+import 'package:mini_golf_tracker/claim_account_screen.dart';
+import 'package:mini_golf_tracker/players_screen.dart';
+import 'package:mini_golf_tracker/home_screen.dart';
+import 'package:mini_golf_tracker/dashboard_screen.dart';
 
 class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
@@ -105,10 +111,10 @@ void main() {
     HttpOverrides.global = MockHttpOverrides();
     mockAuth = MockFirebaseAuth();
     fakeFirestore = FakeFirebaseFirestore();
+    UserProvider().resetForTesting();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     UserProvider().setAuthInstanceForTesting(mockAuth);
     GeolocatorPlatform.instance = SimpleMockGeolocator();
-    UserProvider().resetForTesting();
     MainScaffold.skipPrecacheForTesting = true;
   });
 
@@ -219,5 +225,202 @@ void main() {
     // Verify it automatically switched the body to GameInprogressScreen
     expect(find.byType(GameInprogressScreen), findsOneWidget);
     expect(find.textContaining('Startup Course'), findsOneWidget);
+  });
+
+  testWidgets('executes main method successfully', (tester) async {
+    setupFirebaseCoreMocks();
+    SharedPreferences.setMockInitialValues({});
+    await tester.runAsync(() async {
+      await app.main();
+      await Future.delayed(const Duration(milliseconds: 100));
+    });
+  });
+
+  testWidgets('MyApp routes and builds MaterialApp correctly', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MyApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Mini Golf Tracker'), findsOneWidget);
+
+    final context = tester.element(find.byType(HomePage));
+    Navigator.pushNamed(context, '/players');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(PlayersScreen), findsOneWidget);
+  });
+
+  testWidgets('precache is run when skipPrecacheForTesting is false', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    MainScaffold.skipPrecacheForTesting = false;
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DefaultAssetBundle(
+            bundle: FakeAssetBundle(),
+            child: const HomePage(),
+          ),
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump();
+
+    expect(find.text('Mini Golf Tracker'), findsOneWidget);
+
+    MainScaffold.skipPrecacheForTesting = true;
+  });
+
+  testWidgets('onUserChanged triggers setState when UserProvider updates', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MyApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    final player = Player(
+      id: 'p123',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p123',
+      totalScore: 0,
+      email: 'jane@example.com',
+      avatarImageLocation: 'http://example.com/avatar.png',
+    );
+    await UserProvider().login(player);
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(DashboardScreen), findsOneWidget);
+  });
+
+  testWidgets('renders ClaimAccountScreen when pendingClaimPlayer is set', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final player = Player(
+      id: 'p123',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p123',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    UserProvider().beginPendingClaim(player);
+
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MyApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(ClaimAccountScreen), findsOneWidget);
+  });
+
+  testWidgets('changeBodyCallback works and guest drawer items navigate to LoginScreen', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MyApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final scaffoldState = tester.state<MainScaffold>(find.byType(HomePage));
+    scaffoldState.changeBodyCallback(const Text('Custom Body Text'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Custom Body Text'), findsOneWidget);
+
+    scaffoldState.changeBodyCallback(const HomeScreen());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final ScaffoldState state = tester.firstState(find.byType(Scaffold));
+    state.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('Past Games'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LoginScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+
+    final loginState = tester.state<State<LoginScreen>>(find.byType(LoginScreen));
+    Navigator.of(loginState.context).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final ScaffoldState state2 = tester.firstState(find.byType(Scaffold));
+    state2.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('Courses'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LoginScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('logout onTap triggers logout and resets state', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final player = Player(
+      id: 'p123',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p123',
+      totalScore: 0,
+      email: 'jane@example.com',
+      avatarImageLocation: 'http://example.com/avatar.png',
+    );
+    await UserProvider().login(player);
+
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MyApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+    scaffoldState.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final gestureDetectors = tester.widgetList<GestureDetector>(
+      find.descendant(
+        of: find.byType(UserAccountsDrawerHeader),
+        matching: find.byType(GestureDetector),
+      ),
+    );
+    final logoutGestureDetector = gestureDetectors.firstWhere((gd) => gd.onTap != null);
+    logoutGestureDetector.onTap!();
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(UserProvider().loggedInUser, isNull);
+    expect(find.byType(HomeScreen), findsOneWidget);
   });
 }

@@ -6,9 +6,17 @@ import 'firebase_options.dart';
 
 class DatabaseConnection {
   static Future<void> initialize() async {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      } catch (e) {
+        if (!e.toString().contains('duplicate-app')) {
+          rethrow;
+        }
+      }
+    }
 
     // Connect to the local emulator only if explicitly configured via dart-define!
     if (const bool.fromEnvironment('USE_EMULATOR', defaultValue: false)) {
