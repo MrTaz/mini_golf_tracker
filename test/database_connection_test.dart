@@ -9,7 +9,7 @@ void main() {
       DatabaseConnection.setFirestoreInstanceForTesting(fake);
       expect(DatabaseConnection.client, fake);
       expect(DatabaseConnection.getFirestore(), fake);
-      
+
       // Reset back to null
       DatabaseConnection.setFirestoreInstanceForTesting(null);
     });

@@ -17,12 +17,14 @@ class PastGameDetailsScreen extends StatefulWidget {
   PastGameDetailsScreenState createState() => PastGameDetailsScreenState();
 }
 
-class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with SingleTickerProviderStateMixin {
+class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
+    with SingleTickerProviderStateMixin {
   static const routeName = '/gameDetails';
 
   List<Player> clickedPlayer = [];
   List<PlayerGameInfo> clickedPlayerScores = [];
-  ConfettiController confettiController = ConfettiController(duration: const Duration(seconds: 2));
+  ConfettiController confettiController =
+      ConfettiController(duration: const Duration(seconds: 2));
   List<PlayerGameInfo> sortedPlayerScores = [];
 
   final ScrollController _scrollController = ScrollController();
@@ -37,7 +39,8 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   void initState() {
     super.initState();
     sortedPlayerScores = widget.passedGame.getSortedPlayerScores();
-    Utilities.debugPrintWithCallerInfo("Passed in game: ${widget.passedGame.toJson()}");
+    Utilities.debugPrintWithCallerInfo(
+        "Passed in game: ${widget.passedGame.toJson()}");
     confettiController.addListener(() {
       setState(() {});
     });
@@ -78,8 +81,10 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
   // }
 
   PlayerGameInfo? _getPlayerGameInfo(String playerId) {
-    return sortedPlayerScores.firstWhere((gameInfo) => gameInfo.playerId == playerId,
-        orElse: () => throw Exception("No PlayerGameInfo found for playerId: $playerId"));
+    return sortedPlayerScores.firstWhere(
+        (gameInfo) => gameInfo.playerId == playerId,
+        orElse: () =>
+            throw Exception("No PlayerGameInfo found for playerId: $playerId"));
   }
 
   @override
@@ -88,10 +93,12 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
         backgroundColor: Colors.white,
         extendBodyBehindAppBar: false,
         appBar: AppBar(
-          title: Text("${widget.passedGame.course.name} on ${widget.passedGame.startTime!}"),
+          title: Text(
+              "${widget.passedGame.course.name} on ${widget.passedGame.startTime!}"),
         ),
         body: FutureBuilder<String>(
-          future: Future.value(Utilities.formatStartTime(widget.passedGame.startTime!)),
+          future: Future.value(
+              Utilities.formatStartTime(widget.passedGame.startTime!)),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return Stack(
@@ -105,15 +112,21 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                         ListTile(
                           title: Text(
                             'Game: ${widget.passedGame.name}',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
                             snapshot.data ?? "",
-                            style:
-                                const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w300,
+                                fontStyle: FontStyle.italic),
                           ),
                         ),
-                        CourseListItem(course: widget.passedGame.course, onDelete: () {}, onModify: () {}),
+                        CourseListItem(
+                            course: widget.passedGame.course,
+                            onDelete: () {},
+                            onModify: () {}),
                         Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: SingleChildScrollView(
@@ -122,8 +135,11 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                                     mainAxisSize: MainAxisSize.min,
                                     children: <Widget>[
                                   PlayersCard(
-                                      cardTitle: "Players: ${sortedPlayerScores.length} players",
-                                      sortedPlayerIds: sortedPlayerScores.map((gameInfo) => gameInfo.playerId).toList(),
+                                      cardTitle:
+                                          "Players: ${sortedPlayerScores.length} players",
+                                      sortedPlayerIds: sortedPlayerScores
+                                          .map((gameInfo) => gameInfo.playerId)
+                                          .toList(),
                                       onTap: handlePlayerClick),
                                 ]))),
                         Flexible(
@@ -131,7 +147,8 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                                 padding: const EdgeInsets.all(8.0),
                                 child: SingleChildScrollView(
                                     child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: <Widget>[
                                       const Text(
@@ -140,7 +157,8 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen> with Singl
                                       ),
                                       PlayerScoreDataTable(
                                           clickedPlayers: clickedPlayer,
-                                          clickedPlayerScores: clickedPlayerScores,
+                                          clickedPlayerScores:
+                                              clickedPlayerScores,
                                           game: widget.passedGame)
                                     ])))),
                       ],

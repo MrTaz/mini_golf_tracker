@@ -71,7 +71,8 @@ class PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
                 _player.status = value;
               });
             }),
-            _buildFormField('Total Score', _player.totalScore.toString(), (value) {
+            _buildFormField('Total Score', _player.totalScore.toString(),
+                (value) {
               setState(() {
                 _player.totalScore = num.parse(value!);
               });

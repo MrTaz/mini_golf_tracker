@@ -25,20 +25,24 @@ class PastGameCardWidgetState extends State<PastGameCardWidget> {
           const ListTile(title: Text('Past games')),
           FutureBuilder<List<Game?>>(
             future: Game.getLocallySavedGames(gameStatusTypes: ["completed"]),
-            builder: (BuildContext context, AsyncSnapshot<List<Game?>> gameSnapshot) {
+            builder: (BuildContext context,
+                AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               } else if (gameSnapshot.hasError) {
-                Utilities.debugPrintWithCallerInfo(gameSnapshot.error.toString());
+                Utilities.debugPrintWithCallerInfo(
+                    gameSnapshot.error.toString());
                 return const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text('Error: Unable to load local game data'),
                   ],
                 );
-              } else if (gameSnapshot.hasData && gameSnapshot.data != null && gameSnapshot.data!.isNotEmpty) {
+              } else if (gameSnapshot.hasData &&
+                  gameSnapshot.data != null &&
+                  gameSnapshot.data!.isNotEmpty) {
                 return Column(
                   children: <Widget>[
                     ListView.builder(
@@ -49,13 +53,16 @@ class PastGameCardWidgetState extends State<PastGameCardWidget> {
                           Game game = gameSnapshot.data![index]!;
                           return InkWell(
                               onTap: () => {
-                                    Utilities.debugPrintWithCallerInfo("game tapped: $index"),
+                                    Utilities.debugPrintWithCallerInfo(
+                                        "game tapped: $index"),
                                   },
                               child: PastGameListItem(
                                 pastGame: game,
                                 onPastGameCardTap: (value) => {
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                                    return PastGameDetailsScreen(passedGame: game);
+                                  Navigator.of(context).push(
+                                      MaterialPageRoute(builder: (context) {
+                                    return PastGameDetailsScreen(
+                                        passedGame: game);
                                   }))
                                 },
                               ));

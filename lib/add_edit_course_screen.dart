@@ -16,7 +16,7 @@ class AddEditCourseScreen extends StatefulWidget {
 
 class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late String _courseName;
   String? _address;
   double? _latitude;
@@ -67,14 +67,16 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
     try {
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         if (mounted) {
           _showAddressCaptureBottomSheet();
         }
         return;
       }
     } catch (e) {
-      Utilities.debugPrintWithCallerInfo("Failed to check location permissions: $e");
+      Utilities.debugPrintWithCallerInfo(
+          "Failed to check location permissions: $e");
       if (mounted) {
         _showAddressCaptureBottomSheet();
       }
@@ -169,7 +171,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                       ),
                     ),
                     const SizedBox(height: 16.0),
-                    
+
                     // Grant Permission button
                     ElevatedButton.icon(
                       onPressed: isRequestingPermission
@@ -180,8 +182,10 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 modalError = null;
                               });
                               try {
-                                LocationPermission permission = await Geolocator.requestPermission();
-                                if (permission == LocationPermission.whileInUse ||
+                                LocationPermission permission =
+                                    await Geolocator.requestPermission();
+                                if (permission ==
+                                        LocationPermission.whileInUse ||
                                     permission == LocationPermission.always) {
                                   if (context.mounted) {
                                     Navigator.of(context).pop();
@@ -189,12 +193,14 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                   }
                                 } else {
                                   setModalState(() {
-                                    modalError = 'Location permission denied. Please use the form below.';
+                                    modalError =
+                                        'Location permission denied. Please use the form below.';
                                   });
                                 }
                               } catch (e) {
                                 setModalState(() {
-                                  modalError = 'Could not request permissions: $e';
+                                  modalError =
+                                      'Could not request permissions: $e';
                                 });
                               } finally {
                                 setModalState(() {
@@ -208,7 +214,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.map_outlined),
@@ -222,7 +229,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         ),
                       ),
                     ),
-                    
+
                     if (modalError != null) ...[
                       const SizedBox(height: 12.0),
                       Text(
@@ -323,7 +330,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
                         if (street.isEmpty) {
                           setModalState(() {
-                            modalError = 'Street address is required to locate the course.';
+                            modalError =
+                                'Street address is required to locate the course.';
                           });
                           return;
                         }
@@ -335,7 +343,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         if (zip.isNotEmpty) parts.add(zip);
 
                         final fullAddress = parts.join(', ');
-                        
+
                         setState(() {
                           _address = fullAddress;
                           _addressController.text = fullAddress;
@@ -353,12 +361,14 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text('Resolving coordinates for: $fullAddress...'),
+                                  child: Text(
+                                      'Resolving coordinates for: $fullAddress...'),
                                 ),
                               ],
                             ),
@@ -367,7 +377,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         );
 
                         try {
-                          final locations = await geocoding.locationFromAddress(fullAddress);
+                          final locations =
+                              await geocoding.locationFromAddress(fullAddress);
                           if (locations.isNotEmpty && context.mounted) {
                             if (mounted) {
                               setState(() {
@@ -457,15 +468,25 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
       // Reverse geocode to fill in address automatically!
       try {
-        final placemarks = await geocoding.placemarkFromCoordinates(position.latitude, position.longitude);
+        final placemarks = await geocoding.placemarkFromCoordinates(
+            position.latitude, position.longitude);
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
           final parts = <String>[];
-          if (place.street != null && place.street!.isNotEmpty) parts.add(place.street!);
-          if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
-          if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
-          if (place.postalCode != null && place.postalCode!.isNotEmpty) parts.add(place.postalCode!);
-          
+          if (place.street != null && place.street!.isNotEmpty) {
+            parts.add(place.street!);
+          }
+          if (place.locality != null && place.locality!.isNotEmpty) {
+            parts.add(place.locality!);
+          }
+          if (place.administrativeArea != null &&
+              place.administrativeArea!.isNotEmpty) {
+            parts.add(place.administrativeArea!);
+          }
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+            parts.add(place.postalCode!);
+          }
+
           final resolved = parts.join(', ');
           setState(() {
             _address = resolved;
@@ -473,14 +494,16 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           });
         }
       } catch (e) {
-        Utilities.debugPrintWithCallerInfo("Reverse geocoding failed in _fetchGPSLocation: $e");
+        Utilities.debugPrintWithCallerInfo(
+            "Reverse geocoding failed in _fetchGPSLocation: $e");
       }
 
       setState(() {
         _isFetchingGPS = false;
       });
     } catch (e) {
-      Utilities.debugPrintWithCallerInfo("Failed to get GPS location in form: $e");
+      Utilities.debugPrintWithCallerInfo(
+          "Failed to get GPS location in form: $e");
       setState(() {
         _gpsError = e.toString();
         _isFetchingGPS = false;
@@ -488,9 +511,12 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     }
   }
 
-  Future<List<Course>> _findConflictingCourses(double? lat, double? lng, String? address) async {
+  Future<List<Course>> _findConflictingCourses(
+      double? lat, double? lng, String? address) async {
     final List<Course> conflicts = [];
-    if (lat == null && lng == null && (address == null || address.trim().isEmpty)) {
+    if (lat == null &&
+        lng == null &&
+        (address == null || address.trim().isEmpty)) {
       return conflicts;
     }
 
@@ -500,7 +526,10 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
       for (final course in allCourses) {
         bool isConflict = false;
-        if (lat != null && lng != null && course.latitude != null && course.longitude != null) {
+        if (lat != null &&
+            lng != null &&
+            course.latitude != null &&
+            course.longitude != null) {
           try {
             final distance = Geolocator.distanceBetween(
               lat,
@@ -511,14 +540,18 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
             if (distance <= 200) {
               isConflict = true;
             }
-          } catch (_) {}
+          } catch (e) {
+            Utilities.debugPrintWithCallerInfo(
+                "Error calculating distance for conflict check: $e");
+          }
         }
         if (!isConflict &&
             address != null &&
             address.trim().isNotEmpty &&
             course.address != null &&
             course.address!.trim().isNotEmpty) {
-          if (course.address!.trim().toLowerCase() == address.trim().toLowerCase()) {
+          if (course.address!.trim().toLowerCase() ==
+              address.trim().toLowerCase()) {
             isConflict = true;
           }
         }
@@ -527,7 +560,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
         }
       }
     } catch (e) {
-      Utilities.debugPrintWithCallerInfo("Error fetching courses for conflict check: $e");
+      Utilities.debugPrintWithCallerInfo(
+          "Error fetching courses for conflict check: $e");
     }
 
     return conflicts;
@@ -543,7 +577,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           ),
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+              Icon(Icons.warning_amber_rounded,
+                  color: Colors.orange.shade700, size: 28),
               const SizedBox(width: 8.0),
               const Text(
                 'Nearby Courses Found',
@@ -576,15 +611,19 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 8.0),
                           title: Text(
                             conflictCourse.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green),
                           ),
                           subtitle: Text(
                             '${conflictCourse.numberOfHoles} holes'
                             '${conflictCourse.address != null && conflictCourse.address!.isNotEmpty ? '\n${conflictCourse.address}' : ''}',
-                            style: TextStyle(height: 1.3, color: Colors.grey.shade800),
+                            style: TextStyle(
+                                height: 1.3, color: Colors.grey.shade800),
                           ),
                           leading: Container(
                             padding: const EdgeInsets.all(8.0),
@@ -592,9 +631,11 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.golf_course, color: Colors.green),
+                            child: const Icon(Icons.golf_course,
+                                color: Colors.green),
                           ),
-                          trailing: const Icon(Icons.chevron_right, color: Colors.green),
+                          trailing: const Icon(Icons.chevron_right,
+                              color: Colors.green),
                           onTap: () {
                             Navigator.of(context).pop(conflictCourse);
                           },
@@ -606,13 +647,16 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
               ],
             ),
           ),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(null); // Cancel
               },
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              child: const Text('Cancel',
+                  style: TextStyle(
+                      color: Colors.grey, fontWeight: FontWeight.bold)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -625,7 +669,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
               onPressed: () {
                 Navigator.of(context).pop(true); // Add anyway
               },
-              child: const Text('Add Second Course Anyway', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('Add Second Course Anyway',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -645,7 +690,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
             children: [
               Icon(Icons.error_outline, color: Colors.red.shade700),
               const SizedBox(width: 8.0),
-              const Text('Duplicate Course', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Duplicate Course',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           content: const Text(
@@ -657,7 +703,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('OK',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -682,9 +729,12 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
     double? finalLat = _latitude;
     double? finalLng = _longitude;
-    
+
     // Geocode address if text is present and GPS is not locked
-    if (finalLat == null && finalLng == null && _address != null && _address!.trim().isNotEmpty) {
+    if (finalLat == null &&
+        finalLng == null &&
+        _address != null &&
+        _address!.trim().isNotEmpty) {
       try {
         final locations = await geocoding.locationFromAddress(_address!);
         if (locations.isNotEmpty) {
@@ -696,11 +746,13 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           });
         }
       } catch (e) {
-        Utilities.debugPrintWithCallerInfo("Geocoding failed for $_address: $e");
+        Utilities.debugPrintWithCallerInfo(
+            "Geocoding failed for $_address: $e");
       }
     }
 
-    final conflicts = await _findConflictingCourses(finalLat, finalLng, _address);
+    final conflicts =
+        await _findConflictingCourses(finalLat, finalLng, _address);
     if (widget.course != null) {
       // Filter out self when editing
       conflicts.removeWhere((c) => c.id == widget.course!.id);
@@ -742,7 +794,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           Navigator.of(context).pop(result);
         }
       } catch (e) {
-        Utilities.debugPrintWithCallerInfo("Error saving course to database: $e");
+        Utilities.debugPrintWithCallerInfo(
+            "Error saving course to database: $e");
         if (mounted) {
           _showDuplicateCourseDialog();
         }
@@ -798,7 +851,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
               style: TextStyle(
                 fontSize: 16.0,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.green.shade800 : Colors.grey.shade700,
+                color:
+                    isSelected ? Colors.green.shade800 : Colors.grey.shade700,
               ),
             ),
           ],
@@ -847,7 +901,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         color: Colors.green.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.remove, size: 16, color: Colors.green),
+                      child: const Icon(Icons.remove,
+                          size: 16, color: Colors.green),
                     ),
                   ),
                   Padding(
@@ -874,7 +929,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         color: Colors.green.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.add, size: 16, color: Colors.green),
+                      child:
+                          const Icon(Icons.add, size: 16, color: Colors.green),
                     ),
                   ),
                 ],
@@ -903,7 +959,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       appBar: AppBar(
         title: Text(
           isEditing ? 'Edit Course' : 'Create New Course',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style:
+              const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.green.shade700,
         elevation: 0,
@@ -931,7 +988,9 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isEditing ? 'Make adjustments to your fairway configuration' : 'Enter the details of your new mini-golf course',
+                    isEditing
+                        ? 'Make adjustments to your fairway configuration'
+                        : 'Enter the details of your new mini-golf course',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14.0,
@@ -940,7 +999,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                 ],
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Form(
@@ -957,11 +1016,13 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(16.0),
-                          border: Border.all(color: Colors.red.shade200, width: 1.5),
+                          border: Border.all(
+                              color: Colors.red.shade200, width: 1.5),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 24),
+                            Icon(Icons.error_outline_rounded,
+                                color: Colors.red.shade700, size: 24),
                             const SizedBox(width: 12.0),
                             Expanded(
                               child: Text(
@@ -975,7 +1036,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               ),
                             ),
                             IconButton(
-                              icon: Icon(Icons.close, color: Colors.red.shade700, size: 20),
+                              icon: Icon(Icons.close,
+                                  color: Colors.red.shade700, size: 20),
                               onPressed: () {
                                 setState(() {
                                   _gpsError = null;
@@ -1015,13 +1077,15 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               textCapitalization: TextCapitalization.words,
                               decoration: InputDecoration(
                                 labelText: 'Course Name',
-                                prefixIcon: const Icon(Icons.golf_course, color: Colors.green),
+                                prefixIcon: const Icon(Icons.golf_course,
+                                    color: Colors.green),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(color: Colors.green.shade700, width: 2.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.green.shade700, width: 2.0),
                                 ),
                               ),
                               validator: (value) {
@@ -1040,44 +1104,52 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               textCapitalization: TextCapitalization.words,
                               decoration: InputDecoration(
                                 labelText: 'Address (Optional)',
-                                prefixIcon: const Icon(Icons.map, color: Colors.green),
+                                prefixIcon:
+                                    const Icon(Icons.map, color: Colors.green),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(color: Colors.green.shade700, width: 2.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.green.shade700, width: 2.0),
                                 ),
                                 suffixIcon: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (_isFetchingGPS)
                                       const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 12.0),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 12.0),
                                         child: SizedBox(
                                           width: 20,
                                           height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.green),
                                           ),
                                         ),
                                       )
                                     else ...[
                                       IconButton(
-                                        icon: const Icon(Icons.my_location, color: Colors.green),
+                                        icon: const Icon(Icons.my_location,
+                                            color: Colors.green),
                                         tooltip: 'Use Current Location',
                                         onPressed: _fetchGPSLocation,
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.map_outlined, color: Colors.green),
+                                        icon: const Icon(Icons.map_outlined,
+                                            color: Colors.green),
                                         tooltip: 'Select on Map',
                                         onPressed: _selectOnMap,
                                       ),
                                     ],
                                   ],
                                 ),
-                                helperText: (_latitude != null && _longitude != null)
+                                helperText: (_latitude != null &&
+                                        _longitude != null)
                                     ? 'Coordinates attached. Address is optional.'
                                     : 'Optional address to geolocate.',
                               ),
@@ -1088,15 +1160,18 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                             if (_latitude != null && _longitude != null) ...[
                               const SizedBox(height: 12.0),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 8.0),
                                 decoration: BoxDecoration(
                                   color: Colors.green.shade50,
                                   borderRadius: BorderRadius.circular(12.0),
-                                  border: Border.all(color: Colors.green.shade200),
+                                  border:
+                                      Border.all(color: Colors.green.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.gps_fixed, color: Colors.green, size: 16),
+                                    const Icon(Icons.gps_fixed,
+                                        color: Colors.green, size: 16),
                                     const SizedBox(width: 8.0),
                                     Expanded(
                                       child: Text(
@@ -1174,7 +1249,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               const Divider(),
                               const SizedBox(height: 12.0),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Adjust Hole Pars',
@@ -1197,7 +1273,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 3,
                                   childAspectRatio: 0.85,
                                   crossAxisSpacing: 8,
@@ -1223,7 +1300,10 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(30.0),
                               gradient: LinearGradient(
-                                colors: [Colors.green.shade700, Colors.teal.shade600],
+                                colors: [
+                                  Colors.green.shade700,
+                                  Colors.teal.shade600
+                                ],
                               ),
                               boxShadow: [
                                 BoxShadow(
@@ -1237,7 +1317,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16.0),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30.0),
                                 ),

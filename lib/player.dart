@@ -191,8 +191,8 @@ class Player {
   }
 
   static Future<Player?> fetchPlayerFromDatabase(String id) async {
-    final doc =
-        await DatabaseConnection.client.collection('players').doc(id).get();
+    final doc = await _safeGetDocument(
+        DatabaseConnection.client.collection('players').doc(id));
     if (!doc.exists) return null;
 
     var data = doc.data()!;
@@ -206,11 +206,10 @@ class Player {
       return directMatch;
     }
 
-    final snapshot = await DatabaseConnection.client
+    final snapshot = await _safeGetQuery(DatabaseConnection.client
         .collection('players')
         .where('claimed_by_uid', isEqualTo: uid)
-        .limit(1)
-        .get();
+        .limit(1));
     if (snapshot.docs.isEmpty) {
       return null;
     }
@@ -222,101 +221,111 @@ class Player {
   }
 
   static Future<Player?> getPlayerByEmailFromDB(String email) async {
-    final normalizedEmail = ContactIdentity.normalizeEmail(email);
-    if (normalizedEmail == null) {
-      return null;
-    }
-    final reservedPlayer = await _getReservedPlayer('email', normalizedEmail);
-    if (reservedPlayer != null) {
-      return reservedPlayer;
-    }
+    try {
+      final normalizedEmail = ContactIdentity.normalizeEmail(email);
+      if (normalizedEmail == null) {
+        return null;
+      }
+      final reservedPlayer = await _getReservedPlayer('email', normalizedEmail);
+      if (reservedPlayer != null) {
+        return reservedPlayer;
+      }
 
-    var snapshot = await DatabaseConnection.client
-        .collection('players')
-        .where('normalized_email', isEqualTo: normalizedEmail)
-        .get();
-    if (snapshot.docs.isEmpty) {
-      snapshot = await DatabaseConnection.client
+      var snapshot = await _safeGetQuery(DatabaseConnection.client
           .collection('players')
-          .where('email', isEqualTo: email)
-          .get();
-    }
+          .where('normalized_email', isEqualTo: normalizedEmail));
+      if (snapshot.docs.isEmpty) {
+        snapshot = await _safeGetQuery(DatabaseConnection.client
+            .collection('players')
+            .where('email', isEqualTo: email));
+      }
 
-    if (snapshot.docs.isEmpty) {
-      return null;
-    }
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
 
-    // If there are multiple profiles with the same email, prioritize the one
-    // matching the current authenticated user's ID.
-    if (Firebase.apps.isNotEmpty) {
-      try {
-        final currentUser = FirebaseAuth.instance.currentUser;
-        if (currentUser != null) {
-          QueryDocumentSnapshot<Map<String, dynamic>>? matchesUser;
-          for (final doc in snapshot.docs) {
-            if (doc.id == currentUser.uid) {
-              matchesUser = doc;
-              break;
+      // If there are multiple profiles with the same email, prioritize the one
+      // matching the current authenticated user's ID.
+      if (Firebase.apps.isNotEmpty) {
+        try {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            QueryDocumentSnapshot<Map<String, dynamic>>? matchesUser;
+            for (final doc in snapshot.docs) {
+              if (doc.id == currentUser.uid) {
+                matchesUser = doc;
+                break;
+              }
             }
+            matchesUser ??= snapshot.docs[0];
+            var data = matchesUser.data();
+            data['id'] = matchesUser.id;
+            return Player.fromJson(data);
           }
-          matchesUser ??= snapshot.docs[0];
-          var data = matchesUser.data();
-          data['id'] = matchesUser.id;
-          return Player.fromJson(data);
+        } catch (e) {
+          Utilities.debugPrintWithCallerInfo(
+              'Error accessing FirebaseAuth in getPlayerByEmailFromDB: $e');
         }
-      } catch (e) {
-        Utilities.debugPrintWithCallerInfo(
-            'Error accessing FirebaseAuth in getPlayerByEmailFromDB: $e');
       }
-    }
 
-    // Otherwise, prioritize the self-owned profile (id == owner_id)
-    // representing a real authenticated account rather than an offline guest profile.
-    QueryDocumentSnapshot<Map<String, dynamic>>? matchesSelfOwned;
-    for (final doc in snapshot.docs) {
-      if (doc.id == doc.data()['owner_id']) {
-        matchesSelfOwned = doc;
-        break;
+      // Otherwise, prioritize the self-owned profile (id == owner_id)
+      // representing a real authenticated account rather than an offline guest profile.
+      QueryDocumentSnapshot<Map<String, dynamic>>? matchesSelfOwned;
+      for (final doc in snapshot.docs) {
+        if (doc.id == doc.data()['owner_id']) {
+          matchesSelfOwned = doc;
+          break;
+        }
       }
+      matchesSelfOwned ??= snapshot.docs[0];
+      var data = matchesSelfOwned.data();
+      data['id'] = matchesSelfOwned.id;
+      return Player.fromJson(data);
+    } on FirebaseException catch (e) {
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to fetch player by email: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to fetch player by email: ${e.message}');
     }
-    matchesSelfOwned ??= snapshot.docs[0];
-    var data = matchesSelfOwned.data();
-    data['id'] = matchesSelfOwned.id;
-    return Player.fromJson(data);
   }
 
   static Future<Player?> getPlayerByPhoneFromDB(String phoneNumber) async {
-    final normalizedPhoneNumber =
-        ContactIdentity.normalizePhoneNumber(phoneNumber);
-    if (normalizedPhoneNumber == null) {
-      return null;
-    }
-    final reservedPlayer =
-        await _getReservedPlayer('phone', normalizedPhoneNumber);
-    if (reservedPlayer != null) {
-      return reservedPlayer;
-    }
+    try {
+      final normalizedPhoneNumber =
+          ContactIdentity.normalizePhoneNumber(phoneNumber);
+      if (normalizedPhoneNumber == null) {
+        return null;
+      }
+      final reservedPlayer =
+          await _getReservedPlayer('phone', normalizedPhoneNumber);
+      if (reservedPlayer != null) {
+        return reservedPlayer;
+      }
 
-    var snapshot = await DatabaseConnection.client
-        .collection('players')
-        .where('normalized_phone_number', isEqualTo: normalizedPhoneNumber)
-        .limit(1)
-        .get();
-    if (snapshot.docs.isEmpty) {
-      snapshot = await DatabaseConnection.client
+      var snapshot = await _safeGetQuery(DatabaseConnection.client
           .collection('players')
-          .where('phone_number', isEqualTo: phoneNumber)
-          .limit(1)
-          .get();
-    }
-    if (snapshot.docs.isEmpty) {
-      return null;
-    }
+          .where('normalized_phone_number', isEqualTo: normalizedPhoneNumber)
+          .limit(1));
+      if (snapshot.docs.isEmpty) {
+        snapshot = await _safeGetQuery(DatabaseConnection.client
+            .collection('players')
+            .where('phone_number', isEqualTo: phoneNumber)
+            .limit(1));
+      }
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
 
-    final doc = snapshot.docs[0];
-    final data = doc.data();
-    data['id'] = doc.id;
-    return Player.fromJson(data);
+      final doc = snapshot.docs[0];
+      final data = doc.data();
+      data['id'] = doc.id;
+      return Player.fromJson(data);
+    } on FirebaseException catch (e) {
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to fetch player by phone: ${e.message}');
+      throw DatabaseConnectionError(
+          'Failed to fetch player by phone: ${e.message}');
+    }
   }
 
   static Future<Player?> getPlayerByContactFromDB(
@@ -557,24 +566,67 @@ class Player {
     });
   }
 
-  static Future<List<Player>> _getAllPlayersFromFriends(String playerId) async {
-    final friendLinks = await DatabaseConnection.client
-        .collection('friends')
-        .where('player_id', isEqualTo: playerId)
-        .get();
-
-    final loadedPlayers = <Player>[];
-    for (final friendLink in friendLinks.docs) {
-      final friendId = friendLink.data()['friend_id'];
-      if (friendId is! String) {
-        continue;
-      }
-      final friend = await fetchPlayerFromDatabase(friendId);
-      if (friend != null) {
-        loadedPlayers.add(friend);
+  static Future<DocumentSnapshot<Map<String, dynamic>>> _safeGetDocument(
+      DocumentReference<Map<String, dynamic>> ref) async {
+    int retries = 0;
+    while (true) {
+      try {
+        return await ref.get();
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied' && retries < 3) {
+          retries++;
+          Utilities.debugPrintWithCallerInfo(
+              'Firestore permission-denied race condition detected on get. Retry $retries/3 in 200ms...');
+          await Future.delayed(const Duration(milliseconds: 200));
+        } else {
+          rethrow;
+        }
       }
     }
-    return loadedPlayers;
+  }
+
+  static Future<QuerySnapshot<Map<String, dynamic>>> _safeGetQuery(
+      Query<Map<String, dynamic>> query) async {
+    int retries = 0;
+    while (true) {
+      try {
+        return await query.get();
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied' && retries < 3) {
+          retries++;
+          Utilities.debugPrintWithCallerInfo(
+              'Firestore permission-denied race condition detected on query. Retry $retries/3 in 200ms...');
+          await Future.delayed(const Duration(milliseconds: 200));
+        } else {
+          rethrow;
+        }
+      }
+    }
+  }
+
+  static Future<List<Player>> _getAllPlayersFromFriends(String playerId) async {
+    try {
+      final friendLinks = await _safeGetQuery(DatabaseConnection.client
+          .collection('friends')
+          .where('player_id', isEqualTo: playerId));
+
+      final loadedPlayers = <Player>[];
+      for (final friendLink in friendLinks.docs) {
+        final friendId = friendLink.data()['friend_id'];
+        if (friendId is! String) {
+          continue;
+        }
+        final friend = await fetchPlayerFromDatabase(friendId);
+        if (friend != null) {
+          loadedPlayers.add(friend);
+        }
+      }
+      return loadedPlayers;
+    } on FirebaseException catch (e) {
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to load friends: ${e.message}');
+      throw DatabaseConnectionError('Failed to load friends: ${e.message}');
+    }
   }
 
   static Future<Player?> _getReservedPlayer(
@@ -582,10 +634,9 @@ class Player {
     final reservationId = kind == 'email'
         ? ContactIdentity.reservationIdForEmail(normalizedValue)
         : ContactIdentity.reservationIdForPhoneNumber(normalizedValue);
-    final reservation = await DatabaseConnection.client
+    final reservation = await _safeGetDocument(DatabaseConnection.client
         .collection('player_contacts')
-        .doc(reservationId)
-        .get();
+        .doc(reservationId));
     if (!reservation.exists) {
       return null;
     }

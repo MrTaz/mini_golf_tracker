@@ -17,7 +17,7 @@ class GolfBallPainter extends CustomPainter {
         stops: const [0.0, 0.75, 1.0],
         center: const Alignment(-0.25, -0.25),
       ).createShader(Rect.fromCircle(center: center, radius: radius));
-    
+
     canvas.drawCircle(center, radius, ballPaint);
 
     // 2. Draw subtle border/shadow to give depth
@@ -66,7 +66,8 @@ class GolfBallPainter extends CustomPainter {
     final dimpleRadius = radius * 0.11;
 
     for (var offset in dimpleOffsets) {
-      final dimpleCenter = center + Offset(offset.dx * radius * 0.85, offset.dy * radius * 0.85);
+      final dimpleCenter =
+          center + Offset(offset.dx * radius * 0.85, offset.dy * radius * 0.85);
       canvas.drawCircle(dimpleCenter, dimpleRadius, dimplePaint);
       canvas.drawCircle(dimpleCenter, dimpleRadius, dimpleBorderPaint);
     }

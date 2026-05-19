@@ -80,7 +80,7 @@ class CoursesScreenState extends State<CoursesScreen> {
       if (permission == LocationPermission.deniedForever) {
         setState(() {
           _isLocating = false;
-          });
+        });
         return;
       }
       Position position = await Geolocator.getCurrentPosition(
@@ -125,7 +125,9 @@ class CoursesScreenState extends State<CoursesScreen> {
   }
 
   double? _calculateDistance(Course course) {
-    if (_currentPosition == null || course.latitude == null || course.longitude == null) {
+    if (_currentPosition == null ||
+        course.latitude == null ||
+        course.longitude == null) {
       return null;
     }
     try {
@@ -154,8 +156,6 @@ class CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
-
-
   Future<List<Course>> _initializeCourses() async {
     if (_isLoading) return courses;
     setState(() {
@@ -168,11 +168,13 @@ class CoursesScreenState extends State<CoursesScreen> {
     try {
       final List<Course> loadedCourses;
       if (_currentPosition != null) {
-        Utilities.debugPrintWithCallerInfo("Loading all courses from database for proximity sorting");
+        Utilities.debugPrintWithCallerInfo(
+            "Loading all courses from database for proximity sorting");
         final allCoursesNullable = await Course.fetchCourses();
         loadedCourses = allCoursesNullable.whereType<Course>().toList();
       } else {
-        Utilities.debugPrintWithCallerInfo("Loading courses from database (first page)");
+        Utilities.debugPrintWithCallerInfo(
+            "Loading courses from database (first page)");
         final result = await Course.fetchCoursesPaginated(
           limit: _pageSize,
         );
@@ -180,7 +182,8 @@ class CoursesScreenState extends State<CoursesScreen> {
         _lastDocument = result.lastDocument;
       }
 
-      await _saveLocalCourses(loadedCourses); // Save courses locally to keep cache updated
+      await _saveLocalCourses(
+          loadedCourses); // Save courses locally to keep cache updated
 
       Utilities.debugPrintWithCallerInfo(
           "Loaded courses from DB: ${loadedCourses.map((course) => course.toJson())}");
@@ -203,13 +206,16 @@ class CoursesScreenState extends State<CoursesScreen> {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         final List<String>? coursesJson = prefs.getStringList('courses');
-        Utilities.debugPrintWithCallerInfo("Courses saved locally: $coursesJson");
+        Utilities.debugPrintWithCallerInfo(
+            "Courses saved locally: $coursesJson");
         List<Course> loadedCourses = [];
 
         if (coursesJson != null) {
-          Utilities.debugPrintWithCallerInfo("Loading courses from sharedprefs");
+          Utilities.debugPrintWithCallerInfo(
+              "Loading courses from sharedprefs");
           loadedCourses = coursesJson
-              .map((String courseJson) => Course.fromJson(jsonDecode(courseJson)))
+              .map((String courseJson) =>
+                  Course.fromJson(jsonDecode(courseJson)))
               .toList();
         }
         if (mounted) {
@@ -249,7 +255,7 @@ class CoursesScreenState extends State<CoursesScreen> {
       );
 
       final newCourses = result.courses;
-      
+
       if (mounted) {
         setState(() {
           courses.addAll(newCourses);
@@ -260,7 +266,8 @@ class CoursesScreenState extends State<CoursesScreen> {
         _sortCoursesByProximity();
       }
     } catch (exception) {
-      Utilities.debugPrintWithCallerInfo("Exception when loading more courses: $exception");
+      Utilities.debugPrintWithCallerInfo(
+          "Exception when loading more courses: $exception");
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
@@ -278,13 +285,11 @@ class CoursesScreenState extends State<CoursesScreen> {
     await prefs.setStringList('courses', coursesString);
   }
 
-
-
   Widget _buildCourseListItem(int index) {
     final Course course = courses[index];
     final bool isSelected =
         selectedCourse != null && course.id == selectedCourse!.id;
-    
+
     final double? distanceMeters = _calculateDistance(course);
     String? distanceStr;
     if (distanceMeters != null) {
@@ -369,7 +374,8 @@ class CoursesScreenState extends State<CoursesScreen> {
               ],
               if (course.latitude != null && course.longitude != null) ...[
                 const SizedBox(height: 8.0),
-                Text('Coordinates: ${course.latitude!.toStringAsFixed(5)}, ${course.longitude!.toStringAsFixed(5)}'),
+                Text(
+                    'Coordinates: ${course.latitude!.toStringAsFixed(5)}, ${course.longitude!.toStringAsFixed(5)}'),
               ],
               const SizedBox(height: 16.0),
               ...List.generate(course.numberOfHoles, (index) {
@@ -428,8 +434,6 @@ class CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
-
-
   void _deleteCourse(Course course) async {
     try {
       await course.deleteCourseFromDatabase();
@@ -469,7 +473,8 @@ class CoursesScreenState extends State<CoursesScreen> {
         if (_isLoading && courses.isEmpty)
           Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
               margin: const EdgeInsets.symmetric(horizontal: 24.0),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.85),

@@ -15,7 +15,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  Widget createCoursesScreen({bool creatingGame = false, Course? selectedCourse}) {
+  Widget createCoursesScreen(
+      {bool creatingGame = false, Course? selectedCourse}) {
     return MaterialApp(
       home: CoursesScreen(
         creatingGame: creatingGame,
@@ -24,7 +25,9 @@ void main() {
     );
   }
 
-  testWidgets('shows loading screen initially and then empty state if no courses exist', (tester) async {
+  testWidgets(
+      'shows loading screen initially and then empty state if no courses exist',
+      (tester) async {
     // 1. Build screen
     await tester.pumpWidget(createCoursesScreen());
 
@@ -41,7 +44,8 @@ void main() {
     expect(find.byIcon(Icons.sports_golf), findsOneWidget);
   });
 
-  testWidgets('shows courses list when courses exist in database', (tester) async {
+  testWidgets('shows courses list when courses exist in database',
+      (tester) async {
     // Populate fake Firestore
     await fakeFirestore.collection('courses').add({
       'name': 'Pebble Beach Mini',
@@ -64,7 +68,8 @@ void main() {
     expect(find.text('9 holes'), findsOneWidget);
   });
 
-  testWidgets('supports selecting a course in creatingGame mode', (tester) async {
+  testWidgets('supports selecting a course in creatingGame mode',
+      (tester) async {
     // Populate fake Firestore
     final docRef = await fakeFirestore.collection('courses').add({
       'name': 'Selectable Course',
@@ -83,7 +88,8 @@ void main() {
                 returnedCourse = await Navigator.push<Course>(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CoursesScreen(creatingGame: true),
+                    builder: (context) =>
+                        const CoursesScreen(creatingGame: true),
                   ),
                 );
               },
@@ -97,7 +103,8 @@ void main() {
     // Tap button to go to CoursesScreen
     await tester.tap(find.text('Go to Selection'));
     await tester.pump(); // Start navigation transition
-    await tester.pump(const Duration(milliseconds: 500)); // Finish transition and allow fetch to complete
+    await tester.pump(const Duration(
+        milliseconds: 500)); // Finish transition and allow fetch to complete
     await tester.pump(); // Rebuild with fetched data
 
     // Verify selectable course exists
@@ -109,7 +116,8 @@ void main() {
     // Tap selection button
     await tester.tap(find.byIcon(Icons.check));
     await tester.pump(); // Start pop transition
-    await tester.pump(const Duration(milliseconds: 500)); // Finish pop transition
+    await tester
+        .pump(const Duration(milliseconds: 500)); // Finish pop transition
 
     // Verify it popped back and returned the selected course
     expect(returnedCourse, isNotNull);
@@ -139,7 +147,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   });
 
-  testWidgets('tapping add button shows create new course dialog', (tester) async {
+  testWidgets('tapping add button shows create new course dialog',
+      (tester) async {
     await tester.pumpWidget(createCoursesScreen());
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -153,7 +162,8 @@ void main() {
     expect(find.text('Create New Course'), findsOneWidget);
   });
 
-  testWidgets('tapping course item shows details dialog and allows deletion', (tester) async {
+  testWidgets('tapping course item shows details dialog and allows deletion',
+      (tester) async {
     // Populate fake Firestore with a course
     await fakeFirestore.collection('courses').add({
       'name': 'Pebble Beach Mini',
@@ -177,14 +187,16 @@ void main() {
     // Tap Delete button
     await tester.tap(find.text('Delete'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Finish deletion & dialog dismissal
+    await tester.pump(const Duration(
+        milliseconds: 500)); // Finish deletion & dialog dismissal
 
     // Verify dialog is closed and course is gone from database & UI
     expect(find.text('Number of Holes: 9'), findsNothing);
     expect(find.text('Pebble Beach Mini'), findsNothing);
   });
 
-  testWidgets('tapping course item shows details dialog and allows editing', (tester) async {
+  testWidgets('tapping course item shows details dialog and allows editing',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 2500);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -209,19 +221,22 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     await tester.tap(find.text('Edit'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Open Edit Course dialog
+    await tester
+        .pump(const Duration(milliseconds: 500)); // Open Edit Course dialog
 
     // Verify Edit dialog is shown
     expect(find.text('Edit Course'), findsOneWidget);
 
     // Change course name by typing in TextField
-    await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'New Course Name');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'New Course Name');
     await tester.pump();
 
     // Tap Save button
     await tester.tap(find.text('Save Changes'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Finish save and dialog dismissal
+    await tester.pump(
+        const Duration(milliseconds: 500)); // Finish save and dialog dismissal
 
     // Verify dialog/screen is dismissed
     expect(find.text('Edit Course'), findsNothing);
@@ -230,7 +245,8 @@ void main() {
     expect(find.text('New Course Name'), findsOneWidget);
   });
 
-  testWidgets('creating a new course via the dialog saves to database', (tester) async {
+  testWidgets('creating a new course via the dialog saves to database',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 2500);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -245,7 +261,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Enter name
-    await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'Fresh Course');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'Fresh Course');
     await tester.pump();
 
     // Select 9 Holes card
@@ -256,7 +273,8 @@ void main() {
     expect(find.text('Create Course'), findsOneWidget);
     await tester.tap(find.text('Create Course'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Finish create and dialog dismissal
+    await tester.pump(const Duration(
+        milliseconds: 500)); // Finish create and dialog dismissal
 
     // Verify dialog/screen is dismissed
     expect(find.text('Create New Course'), findsNothing);
@@ -265,7 +283,9 @@ void main() {
     expect(find.text('Fresh Course'), findsOneWidget);
   });
 
-  testWidgets('attempting to save duplicate course shows duplicate error dialog', (tester) async {
+  testWidgets(
+      'attempting to save duplicate course shows duplicate error dialog',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 2500);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -287,7 +307,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Enter the same name
-    await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'Existing Course');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'Existing Course');
     await tester.pump();
 
     // Select 9 Holes card
@@ -297,11 +318,16 @@ void main() {
     // Tap Create button
     await tester.tap(find.text('Create Course'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500)); // Attemps to save, gets duplicate, shows error dialog
+    await tester.pump(const Duration(
+        milliseconds:
+            500)); // Attemps to save, gets duplicate, shows error dialog
 
     // Verify Duplicate Course dialog is shown
     expect(find.text('Duplicate Course'), findsOneWidget);
-    expect(find.text('A course with the same name and number of holes already exists in the database.'), findsOneWidget);
+    expect(
+        find.text(
+            'A course with the same name and number of holes already exists in the database.'),
+        findsOneWidget);
 
     // Dismiss dialog
     await tester.tap(find.text('OK'));

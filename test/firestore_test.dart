@@ -1,7 +1,15 @@
+// ignore_for_file: subtype_of_sealed_class, must_be_immutable, depend_on_referenced_packages, unnecessary_import, override_on_non_overriding_member
+
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mock_exceptions/mock_exceptions.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
+import 'package:firebase_core_platform_interface/test.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
@@ -1824,5 +1832,781 @@ void main() {
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
+
+    group('Player static helpers transient Firestore error retry mechanism',
+        () {
+      test(
+          'Player._safeGetDocument retries on permission-denied up to 3 times and then throws DatabaseConnectionError',
+          () async {
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        final docRef = testFirestore
+            .collection('player_contacts')
+            .doc('phone_+15551234567');
+
+        whenCalling(Invocation.method(#get, null)).on(docRef).thenThrow(
+              FirebaseException(
+                plugin: 'cloud_firestore',
+                code: 'permission-denied',
+                message: 'transient permission-denied',
+              ),
+            );
+
+        final stopwatch = Stopwatch()..start();
+        await expectLater(
+          Player.getPlayerByPhoneFromDB('+15551234567'),
+          throwsA(isA<DatabaseConnectionError>()),
+        );
+        stopwatch.stop();
+
+        // Delays 200ms per retry and retries 3 times -> total delay at least 600ms
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(600));
+
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      });
+
+      test(
+          'Player._safeGetDocument successfully recovers after transient permission-denied retries',
+          () async {
+        final testFirestore = FakeFirebaseFirestore();
+
+        // Seed the player contact reservation and player document in the real test database
+        await testFirestore
+            .collection('player_contacts')
+            .doc('phone_+15551234567')
+            .set({'player_id': 'transient-player-id'});
+        await testFirestore
+            .collection('players')
+            .doc('transient-player-id')
+            .set({
+          'player_name': 'Transient Success Player',
+          'nickname': 'TSP',
+          'owner_id': 'transient-player-id',
+          'total_score': 0,
+        });
+
+        final realDocRef = testFirestore
+            .collection('player_contacts')
+            .doc('phone_+15551234567');
+        final mockFirestore = MockTransientFirestore(testFirestore, realDocRef);
+        DatabaseConnection.setFirestoreInstanceForTesting(mockFirestore);
+
+        final stopwatch = Stopwatch()..start();
+        final player = await Player.getPlayerByPhoneFromDB('+15551234567');
+        stopwatch.stop();
+
+        expect(player, isNotNull);
+        expect(player!.playerName, 'Transient Success Player');
+        expect(mockFirestore.mockDocRef.getCalls, 3);
+        // Delays 200ms per retry and retries 2 times before success -> total delay at least 400ms
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(400));
+
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      });
+
+      test(
+          'Player._safeGetQuery retries on permission-denied up to 3 times and then throws DatabaseConnectionError',
+          () async {
+        final mockFirestore = MockQueryExceptionFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(mockFirestore);
+
+        final stopwatch = Stopwatch()..start();
+        await expectLater(
+          Player.getPlayerByEmailFromDB('test@example.com'),
+          throwsA(isA<DatabaseConnectionError>()),
+        );
+        stopwatch.stop();
+
+        // Delays 200ms per retry and retries 3 times -> total delay at least 600ms
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(600));
+
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      });
+
+      test(
+          'Player._safeGetQuery successfully recovers after transient permission-denied retries',
+          () async {
+        final testFirestore = FakeFirebaseFirestore();
+
+        // Seed a player document in the real test database
+        await testFirestore
+            .collection('players')
+            .doc('transient-query-player-id')
+            .set({
+          'player_name': 'Transient Query Success Player',
+          'nickname': 'TQSP',
+          'owner_id': 'transient-query-player-id',
+          'total_score': 0,
+          'normalized_email': 'transient-query@test.com',
+          'email': 'transient-query@test.com',
+        });
+
+        final mockFirestore = MockTransientQueryFirestore(testFirestore);
+        DatabaseConnection.setFirestoreInstanceForTesting(mockFirestore);
+
+        final stopwatch = Stopwatch()..start();
+        final player =
+            await Player.getPlayerByEmailFromDB('transient-query@test.com');
+        stopwatch.stop();
+
+        expect(player, isNotNull);
+        expect(player!.playerName, 'Transient Query Success Player');
+        // Delays 200ms per retry and retries 2 times before success -> total delay at least 400ms
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(400));
+
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      });
+
+      test(
+          'createPlayer transaction throws duplicate player error if reservation exists',
+          () async {
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        // Seed a contact reservation document directly, but DO NOT create the corresponding player document!
+        // This means getPlayerByContactFromDB will return null (since it checks players collection),
+        // but the reservation document already exists!
+        await testFirestore
+            .collection('player_contacts')
+            .doc('email_txn-dup@test.com')
+            .set({
+          'player_id': 'some-other-player-id',
+        });
+
+        await expectLater(
+          Player.createPlayer('Txn Dup', 'TD', email: 'txn-dup@test.com'),
+          throwsA(isA<DatabaseConnectionError>()),
+        );
+
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      });
+    });
   });
+
+  group('Player additional coverage tests', () {
+    test(
+        'getPlayerByEmailFromDB with active Firebase apps and matching currentUser UID',
+        () async {
+      final originalFirebase = FirebasePlatform.instance;
+      final originalAuth = FirebaseAuthPlatform.instance;
+
+      try {
+        setupFirebaseCoreMocks();
+        await Firebase.initializeApp();
+
+        final mockUser = MyMockUserPlatform(
+          uid: 'matching-uid',
+          email: 'test-matching@example.com',
+        );
+        MockFirebaseAuthPlatform.mockUser = mockUser;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebaseAuthPlatform.instance = MockFirebaseAuthPlatform();
+
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        // Seed two players with the same email
+        await testFirestore.collection('players').doc('other-uid').set({
+          'player_name': 'Other Player',
+          'nickname': 'Other',
+          'email': 'test-matching@example.com',
+          'owner_id': 'other-uid',
+          'total_score': 0,
+        });
+
+        await testFirestore.collection('players').doc('matching-uid').set({
+          'player_name': 'Matching Player',
+          'nickname': 'Matching',
+          'email': 'test-matching@example.com',
+          'owner_id': 'matching-uid',
+          'total_score': 0,
+        });
+
+        final player =
+            await Player.getPlayerByEmailFromDB('test-matching@example.com');
+        expect(player, isNotNull);
+        expect(player!.id, 'matching-uid');
+        expect(player.playerName, 'Matching Player');
+      } finally {
+        MockFirebaseAuthPlatform.mockUser = null;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebasePlatform.instance = originalFirebase;
+        FirebaseAuthPlatform.instance = originalAuth;
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      }
+    });
+
+    test(
+        'getPlayerByEmailFromDB with active Firebase apps and non-matching currentUser UID (falls back to first)',
+        () async {
+      final originalFirebase = FirebasePlatform.instance;
+      final originalAuth = FirebaseAuthPlatform.instance;
+
+      try {
+        setupFirebaseCoreMocks();
+        await Firebase.initializeApp();
+
+        final mockUser = MyMockUserPlatform(
+          uid: 'nonmatching-uid',
+          email: 'test-fallback@example.com',
+        );
+        MockFirebaseAuthPlatform.mockUser = mockUser;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebaseAuthPlatform.instance = MockFirebaseAuthPlatform();
+
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        await testFirestore.collection('players').doc('first-uid').set({
+          'player_name': 'First Player',
+          'nickname': 'First',
+          'email': 'test-fallback@example.com',
+          'owner_id': 'first-uid',
+          'total_score': 0,
+        });
+
+        final player =
+            await Player.getPlayerByEmailFromDB('test-fallback@example.com');
+        expect(player, isNotNull);
+        expect(player!.id, 'first-uid');
+      } finally {
+        MockFirebaseAuthPlatform.mockUser = null;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebasePlatform.instance = originalFirebase;
+        FirebaseAuthPlatform.instance = originalAuth;
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      }
+    });
+
+    test('getPlayerByEmailFromDB when FirebaseAuth access throws', () async {
+      final originalFirebase = FirebasePlatform.instance;
+      final originalAuth = FirebaseAuthPlatform.instance;
+
+      try {
+        setupFirebaseCoreMocks();
+        await Firebase.initializeApp();
+
+        MockFirebaseAuthPlatform.mockUser = null;
+        MockFirebaseAuthPlatform.shouldThrow = true;
+        FirebaseAuthPlatform.instance = MockFirebaseAuthPlatform();
+
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        await testFirestore.collection('players').doc('fallback-uid').set({
+          'player_name': 'Fallback Player',
+          'nickname': 'Fallback',
+          'email': 'test-throw@example.com',
+          'owner_id': 'fallback-uid',
+          'total_score': 0,
+        });
+
+        final player =
+            await Player.getPlayerByEmailFromDB('test-throw@example.com');
+        expect(player, isNotNull);
+        expect(player!.id, 'fallback-uid');
+      } finally {
+        MockFirebaseAuthPlatform.mockUser = null;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebasePlatform.instance = originalFirebase;
+        FirebaseAuthPlatform.instance = originalAuth;
+        DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      }
+    });
+
+    test('claimPlayerForAuthUser fallback path (no existing player profile)',
+        () async {
+      final testFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+      final player = await Player.claimPlayerForAuthUser(
+        uid: 'new-auth-uid-123',
+        email: 'brandnew@example.com',
+        playerName: 'Brand New',
+        nickname: 'Brandie',
+      );
+
+      expect(player.id, 'new-auth-uid-123');
+      expect(player.playerName, 'Brand New');
+      expect(player.email, 'brandnew@example.com');
+
+      final doc = await testFirestore
+          .collection('players')
+          .doc('new-auth-uid-123')
+          .get();
+      expect(doc.exists, isTrue);
+      expect(doc.data()?['player_name'], 'Brand New');
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test(
+        'updateUnclaimedPlayer throws DatabaseConnectionError if player already claimed',
+        () async {
+      final player = Player(
+        id: 'claimed-pid',
+        playerName: 'Already Claimed',
+        nickname: 'Claimed',
+        ownerId: 'owner-1',
+        totalScore: 0,
+        claimedByUid: 'some-uid',
+      );
+
+      expect(
+        () => Player.updateUnclaimedPlayer(player),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+    });
+
+    test(
+        'updateUnclaimedPlayer throws DatabaseConnectionError if new email/phone already reserved by another player',
+        () async {
+      final testFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+      // Seed an existing reservation owned by 'another-player-id'
+      await testFirestore
+          .collection('player_contacts')
+          .doc('email_reserved@example.com')
+          .set({'player_id': 'another-player-id'});
+
+      final player = Player(
+        id: 'my-player-id',
+        playerName: 'My Player',
+        nickname: 'My',
+        ownerId: 'my-player-id',
+        totalScore: 0,
+      );
+      await testFirestore
+          .collection('players')
+          .doc(player.id)
+          .set(player.toJson());
+
+      player.email = 'reserved@example.com';
+
+      expect(
+        () => Player.updateUnclaimedPlayer(player),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test(
+        '_getAllPlayersFromFriends throws DatabaseConnectionError when fetchPlayerFromDatabase fails with FirebaseException',
+        () async {
+      final testFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+      // Seed a friend link
+      await testFirestore.collection('friends').add({
+        'player_id': 'owner-id',
+        'friend_id': 'friend-id-1',
+      });
+
+      // Set up friend player doc ref to throw on get()
+      final friendDocRef =
+          testFirestore.collection('players').doc('friend-id-1');
+      whenCalling(Invocation.method(#get, null)).on(friendDocRef).thenThrow(
+            FirebaseException(
+              plugin: 'cloud_firestore',
+              code: 'unavailable',
+              message: 'Simulated unavailable',
+            ),
+          );
+
+      // Expect the load friends call to throw DatabaseConnectionError
+      final ownerPlayer = Player(
+        id: 'owner-id',
+        playerName: 'Owner',
+        nickname: 'O',
+        ownerId: 'owner-id',
+        totalScore: 0,
+      );
+
+      await expectLater(
+        ownerPlayer.loadUserPlayers(),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test('resolveGuestPlayer returns canonical player when found in DB',
+        () async {
+      final testFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+      // Seed a player in DB
+      final dbPlayer = Player(
+        id: 'db-player-123',
+        playerName: 'John Doe',
+        nickname: 'JD',
+        email: 'john@example.com',
+        phoneNumber: '123456789',
+        ownerId: 'db-player-123',
+        totalScore: 0,
+      );
+      await testFirestore
+          .collection('players')
+          .doc(dbPlayer.id)
+          .set(dbPlayer.toJson());
+
+      // Seed contact identity reservation
+      await testFirestore
+          .collection('player_contacts')
+          .doc('email_john@example.com')
+          .set({
+        'player_id': dbPlayer.id,
+      });
+
+      final guestPlayer = Player(
+        id: 'guest-id',
+        playerName: 'Guest John',
+        nickname: 'GJ',
+        email: 'john@example.com',
+        phoneNumber: '123456789',
+        ownerId: 'guest-id',
+        totalScore: 0,
+      );
+
+      final resolved = await Player.resolveGuestPlayer(guestPlayer);
+      expect(resolved.id, 'db-player-123');
+      expect(resolved.playerName, 'John Doe');
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test('resolveGuestPlayer returns guest player when not found in DB',
+        () async {
+      final guestPlayer = Player(
+        id: 'guest-id',
+        playerName: 'Guest John',
+        nickname: 'GJ',
+        email: 'john-nonexistent@example.com',
+        phoneNumber: '999999999',
+        ownerId: 'guest-id',
+        totalScore: 0,
+      );
+
+      final resolved = await Player.resolveGuestPlayer(guestPlayer);
+      expect(resolved.id, 'guest-id');
+      expect(resolved.playerName, 'Guest John');
+    });
+
+    test('getPlayerByEmailFromDB returns null when normalized email is null',
+        () async {
+      final player = await Player.getPlayerByEmailFromDB('');
+      expect(player, isNull);
+    });
+
+    test('getPlayerByPhoneFromDB returns null when normalized phone is null',
+        () async {
+      final player = await Player.getPlayerByPhoneFromDB('');
+      expect(player, isNull);
+    });
+  });
+}
+
+class MockFirebasePlatform extends FirebasePlatform {
+  final bool shouldThrow;
+  MockFirebasePlatform({this.shouldThrow = false}) : super();
+
+  @override
+  Future<FirebaseAppPlatform> initializeApp({
+    String? name,
+    FirebaseOptions? options,
+  }) async {
+    return FirebaseAppPlatform(
+      name ?? '[DEFAULT]',
+      options ??
+          const FirebaseOptions(
+            apiKey: 'key',
+            appId: 'id',
+            messagingSenderId: 'sender',
+            projectId: 'project',
+          ),
+    );
+  }
+
+  @override
+  List<FirebaseAppPlatform> get apps => [
+        FirebaseAppPlatform(
+            '[DEFAULT]',
+            const FirebaseOptions(
+              apiKey: 'key',
+              appId: 'id',
+              messagingSenderId: 'sender',
+              projectId: 'project',
+            ))
+      ];
+
+  @override
+  FirebaseAppPlatform app([String name = '[DEFAULT]']) {
+    if (shouldThrow) {
+      throw Exception('Simulated Firebase Platform Exception');
+    }
+    return apps.first;
+  }
+}
+
+class MyMockUserPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements UserPlatform {
+  @override
+  final String uid;
+  @override
+  final String? email;
+  @override
+  final bool emailVerified;
+
+  MyMockUserPlatform({
+    required this.uid,
+    this.email,
+    this.emailVerified = true,
+  });
+}
+
+class MockFirebaseAuthPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements FirebaseAuthPlatform {
+  static UserPlatform? mockUser;
+  static bool shouldThrow = false;
+
+  MockFirebaseAuthPlatform();
+
+  @override
+  FirebaseAuthPlatform delegateFor({required FirebaseApp app}) => this;
+
+  @override
+  FirebaseAuthPlatform setInitialValues({
+    covariant dynamic currentUser,
+    covariant dynamic languageCode,
+  }) {
+    return this;
+  }
+
+  @override
+  Stream<UserPlatform?> authStateChanges() => const Stream.empty();
+
+  @override
+  Stream<UserPlatform?> userChanges() => const Stream.empty();
+
+  @override
+  Stream<UserPlatform?> idTokenChanges() => const Stream.empty();
+
+  @override
+  UserPlatform? get currentUser {
+    if (shouldThrow) {
+      throw Exception('Simulated Auth Exception');
+    }
+    return mockUser;
+  }
+}
+
+// Custom Mock classes for testing retry mechanisms in player.dart
+
+class MockExceptionDocumentSnapshot extends Fake
+    implements DocumentSnapshot<Map<String, dynamic>> {
+  @override
+  bool get exists => false;
+}
+
+class MockExceptionDocumentReference extends Fake
+    implements DocumentReference<Map<String, dynamic>> {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #get) {
+      return Future.value(MockExceptionDocumentSnapshot());
+    }
+    return super.noSuchMethod(invocation);
+  }
+}
+
+class MockQueryExceptionFirestore extends Fake implements FirebaseFirestore {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #collection) {
+      return MockExceptionCollectionReference();
+    }
+    return super.noSuchMethod(invocation);
+  }
+}
+
+class MockExceptionCollectionReference extends Fake
+    implements CollectionReference<Map<String, dynamic>> {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #where) {
+      return MockExceptionQuery();
+    }
+    if (invocation.memberName == #doc) {
+      return MockExceptionDocumentReference();
+    }
+    return super.noSuchMethod(invocation);
+  }
+}
+
+class MockExceptionQuery extends Fake implements Query<Map<String, dynamic>> {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #get) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'permission-denied',
+        message: 'transient permission-denied',
+      );
+    }
+    return super.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientDocumentReference extends Fake
+    implements DocumentReference<Map<String, dynamic>> {
+  final DocumentReference<Map<String, dynamic>> realRef;
+  int getCalls = 0;
+
+  MockTransientDocumentReference(this.realRef);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #get) {
+      getCalls++;
+      if (getCalls <= 2) {
+        throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'permission-denied',
+          message: 'transient permission-denied',
+        );
+      }
+      return realRef.get();
+    }
+    return realRef.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientFirestore extends Fake implements FirebaseFirestore {
+  final FirebaseFirestore realFirestore;
+  final DocumentReference<Map<String, dynamic>> realDocRef;
+  late final MockTransientDocumentReference mockDocRef;
+
+  MockTransientFirestore(this.realFirestore, this.realDocRef) {
+    mockDocRef = MockTransientDocumentReference(realDocRef);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #collection) {
+      return MockTransientCollectionReference(
+        realFirestore.collection(invocation.positionalArguments[0]),
+        mockDocRef,
+        invocation.positionalArguments[0],
+      );
+    }
+    return realFirestore.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientCollectionReference extends Fake
+    implements CollectionReference<Map<String, dynamic>> {
+  final CollectionReference<Map<String, dynamic>> realCollection;
+  final MockTransientDocumentReference mockDocRef;
+  final String collectionName;
+
+  MockTransientCollectionReference(
+      this.realCollection, this.mockDocRef, this.collectionName);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #doc) {
+      final docId = invocation.positionalArguments.isNotEmpty
+          ? invocation.positionalArguments[0] as String?
+          : null;
+      if (collectionName == 'player_contacts' &&
+          docId == 'phone_+15551234567') {
+        return mockDocRef;
+      }
+      return realCollection.doc(docId);
+    }
+    return realCollection.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientQuery extends Fake implements Query<Map<String, dynamic>> {
+  final Query<Map<String, dynamic>> realQuery;
+  int getCalls = 0;
+
+  MockTransientQuery(this.realQuery);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #get) {
+      getCalls++;
+      if (getCalls <= 2) {
+        throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'permission-denied',
+          message: 'transient permission-denied',
+        );
+      }
+      return realQuery.get();
+    }
+    if (invocation.memberName == #limit) {
+      return MockTransientQuery(
+          realQuery.limit(invocation.positionalArguments[0]));
+    }
+    if (invocation.memberName == #where) {
+      final newRealQuery = Function.apply(
+        realQuery.where,
+        invocation.positionalArguments,
+        invocation.namedArguments,
+      ) as Query<Map<String, dynamic>>;
+      return MockTransientQuery(newRealQuery);
+    }
+    return realQuery.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientQueryFirestore extends Fake implements FirebaseFirestore {
+  final FirebaseFirestore realFirestore;
+
+  MockTransientQueryFirestore(this.realFirestore);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #collection) {
+      return MockTransientQueryCollectionReference(
+        realFirestore.collection(invocation.positionalArguments[0]),
+      );
+    }
+    return realFirestore.noSuchMethod(invocation);
+  }
+}
+
+class MockTransientQueryCollectionReference extends Fake
+    implements CollectionReference<Map<String, dynamic>> {
+  final CollectionReference<Map<String, dynamic>> realCollection;
+
+  MockTransientQueryCollectionReference(this.realCollection);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #where) {
+      final realQuery = Function.apply(
+        realCollection.where,
+        invocation.positionalArguments,
+        invocation.namedArguments,
+      ) as Query<Map<String, dynamic>>;
+
+      return MockTransientQuery(realQuery);
+    }
+    if (invocation.memberName == #doc) {
+      final docId = invocation.positionalArguments.isNotEmpty
+          ? invocation.positionalArguments[0] as String?
+          : null;
+      return realCollection.doc(docId);
+    }
+    return realCollection.noSuchMethod(invocation);
+  }
 }

@@ -7,7 +7,12 @@ import 'player_profile_widget.dart';
 
 class PlayersCard extends StatefulWidget {
   const PlayersCard(
-      {super.key, this.cardTitle, this.sortedPlayerIds, this.sortedPlayerScores, this.onTap, this.onPlayerCardTap});
+      {super.key,
+      this.cardTitle,
+      this.sortedPlayerIds,
+      this.sortedPlayerScores,
+      this.onTap,
+      this.onPlayerCardTap});
 
   final String? cardTitle;
   final ValueChanged<bool>? onPlayerCardTap;
@@ -29,9 +34,14 @@ class PlayersCardState extends State<PlayersCard> {
   void initState() {
     super.initState();
     playerFriends = loggedInUser!.getAllPlayerFriends();
-    sortedPlayers = widget.sortedPlayerIds != null && widget.sortedPlayerIds!.isNotEmpty
-        ? (widget.sortedPlayerIds!.map((id) => playerFriends.firstWhere((player) => player.id == id)).toList()
-          ..sort((a, b) => widget.sortedPlayerIds!.indexOf(a.id).compareTo(widget.sortedPlayerIds!.indexOf(b.id))))
+    sortedPlayers = widget.sortedPlayerIds != null &&
+            widget.sortedPlayerIds!.isNotEmpty
+        ? (widget.sortedPlayerIds!
+            .map((id) => playerFriends.firstWhere((player) => player.id == id))
+            .toList()
+          ..sort((a, b) => widget.sortedPlayerIds!
+              .indexOf(a.id)
+              .compareTo(widget.sortedPlayerIds!.indexOf(b.id))))
         : (List.from(playerFriends)
           ..sort((a, b) {
             if (a.totalScore != b.totalScore) {
@@ -66,7 +76,8 @@ class PlayersCardState extends State<PlayersCard> {
                   })
                 }
             : null,
-        child: PlayerProfileWidget(player: player, rank: i, isSelected: isSelected),
+        child: PlayerProfileWidget(
+            player: player, rank: i, isSelected: isSelected),
       ));
     }
     return playerCards;
@@ -76,7 +87,9 @@ class PlayersCardState extends State<PlayersCard> {
   Widget build(BuildContext context) {
     return Center(
         child: GestureDetector(
-            onTap: widget.onPlayerCardTap != null ? () => {widget.onPlayerCardTap!(true)} : null,
+            onTap: widget.onPlayerCardTap != null
+                ? () => {widget.onPlayerCardTap!(true)}
+                : null,
             child: Card(
                 elevation: 6,
                 child: Padding(
@@ -86,7 +99,8 @@ class PlayersCardState extends State<PlayersCard> {
                         title: Text(widget.cardTitle ?? "Friends"),
                       ),
                       SingleChildScrollView(
-                          scrollDirection: Axis.horizontal, child: Row(children: getPlayerCards(context))),
+                          scrollDirection: Axis.horizontal,
+                          child: Row(children: getPlayerCards(context))),
                     ])))));
   }
 }

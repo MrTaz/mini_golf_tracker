@@ -5,7 +5,10 @@ import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 
 // Helper to build a standard test game
-Game buildTestGame({String? id, String status = 'unstarted_game', List<PlayerGameInfo>? players}) {
+Game buildTestGame(
+    {String? id,
+    String status = 'unstarted_game',
+    List<PlayerGameInfo>? players}) {
   final course = Course(
     id: 'c1',
     name: 'Test Course',
@@ -67,7 +70,8 @@ void main() {
   group('Game.fromJson', () {
     test('round-trips through JSON correctly', () {
       final p1 = makePlayer('p1', 'g1');
-      final original = buildTestGame(id: 'g1', players: [p1], status: 'in_progress');
+      final original =
+          buildTestGame(id: 'g1', players: [p1], status: 'in_progress');
       original.startTime = DateTime(2024, 1, 15, 11, 0);
       original.completedTime = DateTime(2024, 1, 15, 13, 0);
 

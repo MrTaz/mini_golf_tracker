@@ -78,9 +78,14 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         return;
       }
 
-      final Game newGame = Game(name: name, course: _selectedCourse!, players: [], scheduledTime: _scheduledTime);
+      final Game newGame = Game(
+          name: name,
+          course: _selectedCourse!,
+          players: [],
+          scheduledTime: _scheduledTime);
       for (var player in _selectedPlayers) {
-        PlayerGameInfo pgi = PlayerGameInfo(playerId: player.id, gameId: newGame.id, scores: []);
+        PlayerGameInfo pgi =
+            PlayerGameInfo(playerId: player.id, gameId: newGame.id, scores: []);
         newGame.addPlayer(pgi);
       }
 
@@ -139,7 +144,8 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                 const SizedBox(height: 16.0),
                 ListTile(
                   title: const Text('Start Time'),
-                  subtitle: Text(DateFormat.yMMMMd().add_jm().format(_scheduledTime)),
+                  subtitle:
+                      Text(DateFormat.yMMMMd().add_jm().format(_scheduledTime)),
                   onTap: () async {
                     final DateTime? selectedTime = await showDatePicker(
                       context: context,

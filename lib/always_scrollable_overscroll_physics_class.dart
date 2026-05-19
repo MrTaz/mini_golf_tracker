@@ -48,7 +48,8 @@ class AlwaysScrollableOverscrollPhysics extends AlwaysScrollableScrollPhysics {
 
   @override
   double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    return super.applyPhysicsToUserOffset(expandScrollMetrics(position), offset);
+    return super
+        .applyPhysicsToUserOffset(expandScrollMetrics(position), offset);
   }
 
   @override
@@ -61,8 +62,10 @@ class AlwaysScrollableOverscrollPhysics extends AlwaysScrollableScrollPhysics {
   }
 
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
-    return super.createBallisticSimulation(expandScrollMetrics(position), velocity);
+  Simulation? createBallisticSimulation(
+      ScrollMetrics position, double velocity) {
+    return super
+        .createBallisticSimulation(expandScrollMetrics(position), velocity);
   }
 
   @override
@@ -117,7 +120,8 @@ class NeverScrollableOverscrollPhysics extends NeverScrollableScrollPhysics {
 
   @override
   double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    return super.applyPhysicsToUserOffset(expandScrollMetrics(position), offset);
+    return super
+        .applyPhysicsToUserOffset(expandScrollMetrics(position), offset);
   }
 
   @override
@@ -130,8 +134,10 @@ class NeverScrollableOverscrollPhysics extends NeverScrollableScrollPhysics {
   }
 
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
-    return super.createBallisticSimulation(expandScrollMetrics(position), velocity);
+  Simulation? createBallisticSimulation(
+      ScrollMetrics position, double velocity) {
+    return super
+        .createBallisticSimulation(expandScrollMetrics(position), velocity);
   }
 
   @override

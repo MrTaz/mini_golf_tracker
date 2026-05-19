@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mini_golf_tracker/add_edit_course_screen.dart';
 import 'package:mini_golf_tracker/course.dart';
@@ -18,6 +19,25 @@ class MockGeolocatorPlatform extends GeolocatorPlatform {
   Position? mockPosition;
   String? exceptionToThrow;
   Duration? delayToUse;
+  bool throwOnDistanceBetween = false;
+
+  @override
+  double distanceBetween(
+    double startLatitude,
+    double startLongitude,
+    double endLatitude,
+    double endLongitude,
+  ) {
+    if (throwOnDistanceBetween) {
+      throw Exception('Simulated distanceBetween error');
+    }
+    return super.distanceBetween(
+      startLatitude,
+      startLongitude,
+      endLatitude,
+      endLongitude,
+    );
+  }
 
   @override
   Future<bool> isLocationServiceEnabled() async {
@@ -104,6 +124,18 @@ class MockGeocodingPlatform extends GeocodingPlatform {
             )
           ];
   }
+}
+
+// --- EXCEPTION THROWING FIRESTORE MOCK ---
+class ExceptionThrowingFirestore implements FirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String collectionPath) {
+    throw FirebaseException(
+        plugin: 'cloud_firestore', message: 'Simulated fetch error');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -657,5 +689,114 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsWidgets);
 
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('displays error when location services are disabled',
+      (tester) async {
+    mockGeolocator.serviceEnabled = false;
+
+    await tester.pumpWidget(createScreen());
+
+    final locationBtn = find.byIcon(Icons.my_location);
+    await tester.tap(locationBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Location services are disabled on your phone.'),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'displays error when GPS location permission is denied on request',
+      (tester) async {
+    mockGeolocator.checkPermissionResult = LocationPermission.denied;
+    mockGeolocator.requestPermissionResult = LocationPermission.denied;
+
+    await tester.pumpWidget(createScreen());
+
+    final locationBtn = find.byIcon(Icons.my_location);
+    await tester.tap(locationBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Location permissions were denied.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'distanceBetween fails on invalid coordinate and continues conflict check',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    mockGeolocator.throwOnDistanceBetween = true;
+
+    // Insert a course with invalid coordinates to force distanceBetween to throw
+    await fakeFirestore.collection('courses').add({
+      'name': 'Invalid Coord Course',
+      'number_of_holes': 18,
+      'latitude': 95.0, // > 90, invalid!
+      'longitude': -71.54321,
+      'address': 'Some Address',
+      'par_strokes': {'1': 3},
+    });
+
+    await tester.pumpWidget(createScreen());
+
+    // Select 18 holes
+    await tester.tap(find.text('18 Holes'));
+    await tester.pump();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'New Course');
+
+    // Set valid coordinate via mock GPS
+    await tester.tap(find.byIcon(Icons.my_location));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Save Course
+    await tester.tap(find.text('Create Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // It should successfully catch the error inside Geolocator.distanceBetween,
+    // continue checking other conflicts (none), and then successfully save the course.
+    final savedCourses = await fakeFirestore.collection('courses').get();
+    expect(savedCourses.docs.any((d) => d.get('name') == 'New Course'), isTrue);
+  });
+
+  testWidgets('handles database fetch error gracefully during conflict check',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final failingFirestore = ExceptionThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(failingFirestore);
+
+    await tester.pumpWidget(createScreen());
+
+    // Select 18 holes
+    await tester.tap(find.text('18 Holes'));
+    await tester.pump();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'New Course');
+
+    // Set valid coordinate via mock GPS
+    await tester.tap(find.byIcon(Icons.my_location));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Save Course
+    await tester.tap(find.text('Create Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Clean up
+    DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
   });
 }

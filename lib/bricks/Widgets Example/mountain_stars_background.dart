@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class BackgroundImageFb1 extends StatelessWidget {
   final Widget child;
   final String imageUrl;

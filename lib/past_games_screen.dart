@@ -27,10 +27,13 @@ class PastGameScreenState extends State<PastGamesScreen> {
   }
 
   Future<void> _loadPastGames() async {
-    List<Game?> loadedPastGames = await Game.getLocallySavedGames(gameStatusTypes: ["completed"]);
-    List<Game> filteredLoadedPastGames = loadedPastGames.whereType<Game>().toList();
+    List<Game?> loadedPastGames =
+        await Game.getLocallySavedGames(gameStatusTypes: ["completed"]);
+    List<Game> filteredLoadedPastGames =
+        loadedPastGames.whereType<Game>().toList();
     setState(() {
-      pastGames.addAll(filteredLoadedPastGames); // Update the courses list after loading
+      pastGames.addAll(
+          filteredLoadedPastGames); // Update the courses list after loading
     });
   }
 
@@ -66,7 +69,8 @@ class PastGameScreenState extends State<PastGamesScreen> {
                     itemCount: pastGames.length,
                     itemBuilder: (BuildContext context, int index) {
                       if (pastGames.isNotEmpty) {
-                        bool isSelected = widget.currentlySelectedGame == pastGames[index];
+                        bool isSelected =
+                            widget.currentlySelectedGame == pastGames[index];
                         return _buildPastGameListItem(index, isSelected);
                       }
                       return null;

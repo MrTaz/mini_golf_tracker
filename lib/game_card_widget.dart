@@ -22,7 +22,8 @@ class GameCardWidgetState extends State<GameCardWidget> {
   }
 
   Future<void> updateGameCard() async {
-    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
+    await Game.getLocallySavedGames(
+        gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {});
   }
 
@@ -34,18 +35,21 @@ class GameCardWidgetState extends State<GameCardWidget> {
       final Set<String> keys = prefs.getKeys().cast<String>();
       for (String key in keys) {
         dynamic value = prefs.get(key);
-        Utilities.debugPrintWithCallerInfo("Found shared preference: $key $value");
+        Utilities.debugPrintWithCallerInfo(
+            "Found shared preference: $key $value");
         if (value is String) {
           try {
             jsonDecode(value);
             prefs.remove(key);
           } catch (e) {
-            Utilities.debugPrintWithCallerInfo("Not a JSON-formatted string. Plain value: $value");
+            Utilities.debugPrintWithCallerInfo(
+                "Not a JSON-formatted string. Plain value: $value");
           }
         } else if (value is List<String>) {
           Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
         } else {
-          Utilities.debugPrintWithCallerInfo("Value cannot be parsed. Type: ${value.runtimeType}");
+          Utilities.debugPrintWithCallerInfo(
+              "Value cannot be parsed. Type: ${value.runtimeType}");
         }
       }
     }
@@ -60,7 +64,8 @@ class GameCardWidgetState extends State<GameCardWidget> {
         });
       }),
     );
-    await Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]);
+    await Game.getLocallySavedGames(
+        gameStatusTypes: ["unstarted_game", "started"]);
     setState(() {}); // Refresh the widget after creating a new game
   }
 
@@ -92,14 +97,17 @@ class GameCardWidgetState extends State<GameCardWidget> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: FutureBuilder<List<Game?>>(
-            future: Game.getLocallySavedGames(gameStatusTypes: ["unstarted_game", "started"]),
-            builder: (BuildContext context, AsyncSnapshot<List<Game?>> gameSnapshot) {
+            future: Game.getLocallySavedGames(
+                gameStatusTypes: ["unstarted_game", "started"]),
+            builder: (BuildContext context,
+                AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               } else if (gameSnapshot.hasError) {
-                Utilities.debugPrintWithCallerInfo(gameSnapshot.error.toString());
+                Utilities.debugPrintWithCallerInfo(
+                    gameSnapshot.error.toString());
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -117,7 +125,9 @@ class GameCardWidgetState extends State<GameCardWidget> {
                     ),
                   ],
                 );
-              } else if (gameSnapshot.hasData && gameSnapshot.data != null && gameSnapshot.data!.isNotEmpty) {
+              } else if (gameSnapshot.hasData &&
+                  gameSnapshot.data != null &&
+                  gameSnapshot.data!.isNotEmpty) {
                 return Column(
                   children: <Widget>[
                     ListView.builder(
@@ -132,10 +142,12 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                 ListTile(
                                   title: FutureBuilder<String>(
                                     future: Utilities.formatStartTime(
-                                        game.status != "unstarted_game" && game.startTime != null
+                                        game.status != "unstarted_game" &&
+                                                game.startTime != null
                                             ? game.startTime!
                                             : game.scheduledTime),
-                                    builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                                    builder: (BuildContext context,
+                                        AsyncSnapshot<String> snapshot) {
                                       if (snapshot.hasData) {
                                         return Text(
                                             "${game.name} - ${(game.status != "unstarted_game" && game.startTime != null) ? "Started at ${snapshot.data}" : "Scheduled for ${snapshot.data}"}");
@@ -152,15 +164,19 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                   children: <Widget>[
                                     if (game.status == "unstarted_game") ...[
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8.0),
                                         child: ElevatedButton(
                                           onPressed: () {
                                             Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (context) {
-                                                return GameStartScreen(unstartedGame: game);
+                                              MaterialPageRoute(
+                                                  builder: (context) {
+                                                return GameStartScreen(
+                                                    unstartedGame: game);
                                               }),
                                             ).then((_) {
-                                              setState(() {}); // Refresh the widget after creating a new game
+                                              setState(
+                                                  () {}); // Refresh the widget after creating a new game
                                             });
                                           },
                                           child: const Text('Start Game'),
@@ -170,15 +186,19 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                     ],
                                     if (game.status == "started") ...[
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8.0),
                                         child: ElevatedButton(
                                           onPressed: () {
                                             Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (context) {
-                                                return GameInprogressScreen(currentGame: game);
+                                              MaterialPageRoute(
+                                                  builder: (context) {
+                                                return GameInprogressScreen(
+                                                    currentGame: game);
                                               }),
                                             ).then((_) {
-                                              setState(() {}); // Refresh the widget after creating a new game
+                                              setState(
+                                                  () {}); // Refresh the widget after creating a new game
                                             });
                                           },
                                           child: const Text('Continue Game'),
@@ -187,13 +207,18 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                       const SizedBox(width: 8),
                                     ],
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0, right: 8.0),
+                                      padding: const EdgeInsets.only(
+                                          bottom: 8.0, right: 8.0),
                                       child: ElevatedButton(
                                         onPressed: () {
-                                          deleteSavedGame(gameToDelete: game).then((_) {
+                                          deleteSavedGame(gameToDelete: game)
+                                              .then((_) {
                                             if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Deleted saved game')),
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Deleted saved game')),
                                             );
                                           });
                                         },

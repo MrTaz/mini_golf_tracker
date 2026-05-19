@@ -15,7 +15,9 @@ class DatabaseConnection {
       try {
         // Android emulators require '10.0.2.2' to access the host machine's localhost.
         // iOS emulators and desktop runs can use standard 'localhost'.
-        final String host = defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost';
+        final String host = defaultTargetPlatform == TargetPlatform.android
+            ? '10.0.2.2'
+            : 'localhost';
         FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
         debugPrint('🔌 Connected to local Firestore Emulator at $host:8080');
 
@@ -33,6 +35,7 @@ class DatabaseConnection {
     _firestoreInstance = instance;
   }
 
-  static FirebaseFirestore get client => _firestoreInstance ?? FirebaseFirestore.instance;
+  static FirebaseFirestore get client =>
+      _firestoreInstance ?? FirebaseFirestore.instance;
   static FirebaseFirestore getFirestore() => client;
 }

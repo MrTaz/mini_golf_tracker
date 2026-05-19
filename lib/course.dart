@@ -30,26 +30,33 @@ class Course {
   factory Course.fromJson(Map<String, dynamic> json) {
     final String id = json['id'] ?? '';
     final String name = json['name'] ?? '';
-    final int numberOfHoles = _parseInt(json['number_of_holes'] ?? json['numberOfHoles']);
-    
+    final int numberOfHoles =
+        _parseInt(json['number_of_holes'] ?? json['numberOfHoles']);
+
     final Map<int, int> parStrokes = {};
     final dynamic rawParStrokes = json['par_strokes'] ?? json['parStrokes'];
     if (rawParStrokes is Map) {
       rawParStrokes.forEach((key, value) {
-        final int? parsedKey = int.tryParse(key.toString()) ?? double.tryParse(key.toString())?.toInt();
+        final int? parsedKey = int.tryParse(key.toString()) ??
+            double.tryParse(key.toString())?.toInt();
         final int? parsedValue = value is int
             ? value
             : value is double
                 ? value.toInt()
-                : int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.toInt();
+                : int.tryParse(value.toString()) ??
+                    double.tryParse(value.toString())?.toInt();
         if (parsedKey != null && parsedValue != null) {
           parStrokes[parsedKey] = parsedValue;
         }
       });
     }
 
-    final double? latitude = json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null;
-    final double? longitude = json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null;
+    final double? latitude = json['latitude'] != null
+        ? double.tryParse(json['latitude'].toString())
+        : null;
+    final double? longitude = json['longitude'] != null
+        ? double.tryParse(json['longitude'].toString())
+        : null;
     final String? address = json['address'] as String?;
 
     return Course(
@@ -66,26 +73,33 @@ class Course {
   factory Course.fromMap(Map<String, dynamic> map) {
     final String id = map['id'] as String? ?? '';
     final String name = map['name'] as String? ?? '';
-    final int numberOfHoles = _parseInt(map['numberOfHoles'] ?? map['number_of_holes']);
+    final int numberOfHoles =
+        _parseInt(map['numberOfHoles'] ?? map['number_of_holes']);
 
     final Map<int, int> parStrokes = {};
     final dynamic rawParStrokes = map['parStrokes'] ?? map['par_strokes'];
     if (rawParStrokes is Map) {
       rawParStrokes.forEach((key, value) {
-        final int? parsedKey = int.tryParse(key.toString()) ?? double.tryParse(key.toString())?.toInt();
+        final int? parsedKey = int.tryParse(key.toString()) ??
+            double.tryParse(key.toString())?.toInt();
         final int? parsedValue = value is int
             ? value
             : value is double
                 ? value.toInt()
-                : int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.toInt();
+                : int.tryParse(value.toString()) ??
+                    double.tryParse(value.toString())?.toInt();
         if (parsedKey != null && parsedValue != null) {
           parStrokes[parsedKey] = parsedValue;
         }
       });
     }
 
-    final double? latitude = map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null;
-    final double? longitude = map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null;
+    final double? latitude = map['latitude'] != null
+        ? double.tryParse(map['latitude'].toString())
+        : null;
+    final double? longitude = map['longitude'] != null
+        ? double.tryParse(map['longitude'].toString())
+        : null;
     final String? address = map['address'] as String?;
 
     return Course(
@@ -133,7 +147,8 @@ class Course {
   static Future<List<Course?>> fetchCourses() async {
     try {
       // Fetch the courses from the database
-      final snapshot = await DatabaseConnection.client.collection('courses').get();
+      final snapshot =
+          await DatabaseConnection.client.collection('courses').get();
       final courses = snapshot.docs.map<Course?>((doc) {
         var data = doc.data();
         data['id'] = doc.id;
@@ -168,7 +183,10 @@ class Course {
 
       if (id.isNotEmpty) {
         // Edit/update existing course
-        await db.collection('courses').doc(id).set(courseData, SetOptions(merge: true));
+        await db
+            .collection('courses')
+            .doc(id)
+            .set(courseData, SetOptions(merge: true));
         return this;
       } else {
         // Fetch existing courses with the same name from the database
@@ -198,8 +216,7 @@ class Course {
         return updatedCourse;
       }
     } on FirebaseException catch (e) {
-      Utilities.debugPrintWithCallerInfo(
-          'Failed to save course: ${e.message}');
+      Utilities.debugPrintWithCallerInfo('Failed to save course: ${e.message}');
       throw DatabaseConnectionError('Failed to save course: ${e.message}');
     }
   }
@@ -209,7 +226,8 @@ class Course {
       await db.collection('courses').doc(id).delete();
       Utilities.debugPrintWithCallerInfo("Deleted course: $id");
     } on FirebaseException catch (e) {
-      Utilities.debugPrintWithCallerInfo('Failed to delete course: ${e.message}');
+      Utilities.debugPrintWithCallerInfo(
+          'Failed to delete course: ${e.message}');
       throw DatabaseConnectionError('Failed to delete course: ${e.message}');
     }
   }
@@ -219,7 +237,8 @@ class Course {
     required int limit,
   }) async {
     try {
-      Query query = DatabaseConnection.client.collection('courses').orderBy('name');
+      Query query =
+          DatabaseConnection.client.collection('courses').orderBy('name');
       if (startAfter != null) {
         query = query.startAfterDocument(startAfter);
       }

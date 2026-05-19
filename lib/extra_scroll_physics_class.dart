@@ -24,7 +24,8 @@ class OverscrollList extends StatelessWidget {
       child: Listener(
         onPointerSignal: (PointerSignalEvent event) {
           if (kIsWeb) {
-            GestureBinding.instance.pointerSignalResolver.register(event, (event) {
+            GestureBinding.instance.pointerSignalResolver.register(event,
+                (event) {
               _scrollList((event as PointerScrollEvent).scrollDelta);
             });
           }

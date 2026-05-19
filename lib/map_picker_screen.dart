@@ -34,7 +34,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   void initState() {
     super.initState();
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
-      _selectedLocation = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      _selectedLocation =
+          LatLng(widget.initialLatitude!, widget.initialLongitude!);
       _reverseGeocode(_selectedLocation!);
     } else {
       // Prompt GPS search immediately to center on user
@@ -88,7 +89,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       _reverseGeocode(userLatLng);
     } catch (e) {
       if (!mounted) return;
-      Utilities.debugPrintWithCallerInfo("Error getting user location in map picker: $e");
+      Utilities.debugPrintWithCallerInfo(
+          "Error getting user location in map picker: $e");
       setState(() {
         _isLocatingUser = false;
       });
@@ -135,7 +137,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         if (place.locality != null && place.locality!.isNotEmpty) {
           parts.add(place.locality!);
         }
-        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+        if (place.administrativeArea != null &&
+            place.administrativeArea!.isNotEmpty) {
           parts.add(place.administrativeArea!);
         }
         if (place.postalCode != null && place.postalCode!.isNotEmpty) {
@@ -143,9 +146,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         }
 
         setState(() {
-          _resolvedAddress = parts.isNotEmpty
-              ? parts.join(', ')
-              : 'Unknown location';
+          _resolvedAddress =
+              parts.isNotEmpty ? parts.join(', ') : 'Unknown location';
           _isResolvingAddress = false;
         });
       } else {
@@ -167,9 +169,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final hasLocation = _selectedLocation != null;
-    final initialCenter = hasLocation
-        ? _selectedLocation!
-        : LatLng(defaultLat, defaultLng);
+    final initialCenter =
+        hasLocation ? _selectedLocation! : LatLng(defaultLat, defaultLng);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -279,7 +280,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                               color: Colors.green.shade50,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.pin_drop, color: Colors.green, size: 20),
+                            child: const Icon(Icons.pin_drop,
+                                color: Colors.green, size: 20),
                           ),
                           const SizedBox(width: 12.0),
                           const Expanded(
@@ -298,7 +300,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.green),
                               ),
                             ),
                         ],
@@ -341,7 +344,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                                     : Colors.grey.shade400,
                                 foregroundColor: Colors.white,
                                 elevation: 2,
-                                padding: const EdgeInsets.symmetric(vertical: 14.0),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14.0),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16.0),
                                 ),
@@ -349,19 +353,25 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                               onPressed: hasLocation
                                   ? () {
                                       Navigator.of(context).pop({
-                                        'address': _resolvedAddress.startsWith('Resolving') ||
-                                                _resolvedAddress.startsWith('Tap')
+                                        'address': _resolvedAddress
+                                                    .startsWith('Resolving') ||
+                                                _resolvedAddress
+                                                    .startsWith('Tap')
                                             ? ''
                                             : _resolvedAddress,
                                         'latitude': _selectedLocation!.latitude,
-                                        'longitude': _selectedLocation!.longitude,
+                                        'longitude':
+                                            _selectedLocation!.longitude,
                                       });
                                     }
                                   : null,
-                              icon: const Icon(Icons.check_circle_outline_rounded),
+                              icon: const Icon(
+                                  Icons.check_circle_outline_rounded),
                               label: const Text(
                                 'Confirm Location',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15.0),
                               ),
                             ),
                           ),

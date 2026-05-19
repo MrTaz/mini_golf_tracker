@@ -41,7 +41,8 @@ class PlayerScoreCardState extends State<PlayerScoreCard> {
                       if (selectedPlayerIds.contains(gameInfo.playerId))
                         Column(
                           children: [
-                            for (final score in gameInfo.scores) Text(score.toString()),
+                            for (final score in gameInfo.scores)
+                              Text(score.toString()),
                           ],
                         ),
                     ],

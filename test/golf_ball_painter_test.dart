@@ -10,7 +10,8 @@ void main() {
       expect(painter.shouldRepaint(GolfBallPainter()), isFalse);
     });
 
-    testWidgets('paints golf ball on canvas successfully without throwing', (tester) async {
+    testWidgets('paints golf ball on canvas successfully without throwing',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -26,7 +27,8 @@ void main() {
 
       // Verify that a CustomPaint widget with a GolfBallPainter exists and is rendered
       expect(
-        find.byWidgetPredicate((w) => w is CustomPaint && w.painter is GolfBallPainter),
+        find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is GolfBallPainter),
         findsOneWidget,
       );
     });

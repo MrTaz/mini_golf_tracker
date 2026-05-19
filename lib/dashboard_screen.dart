@@ -91,7 +91,8 @@ class DashBoardScreenState extends State<DashboardScreen> {
 }
 
 class DashBoardLayout extends StatefulWidget {
-  const DashBoardLayout({super.key, required this.updateBottomNavChangeNotifier});
+  const DashBoardLayout(
+      {super.key, required this.updateBottomNavChangeNotifier});
 
   final ValueChanged<bool> updateBottomNavChangeNotifier;
 
@@ -128,7 +129,8 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
       return const Center(child: Text("Please log in"));
     }
 
-    final avatarUrl = (loggedInUser.avatarImageLocation != null && loggedInUser.avatarImageLocation!.isNotEmpty)
+    final avatarUrl = (loggedInUser.avatarImageLocation != null &&
+            loggedInUser.avatarImageLocation!.isNotEmpty)
         ? loggedInUser.avatarImageLocation!
         : Gravatar(loggedInUser.email ?? "").imageUrl(size: 60);
 
@@ -165,7 +167,8 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                                     ),
                                     const SizedBox(width: 15),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           "Hi, ${loggedInUser.nickname}!",
@@ -176,7 +179,8 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                                         Text(
                                           loggedInUser.playerName,
                                           style: TextStyle(
-                                              fontSize: 14, color: Colors.grey[600]),
+                                              fontSize: 14,
+                                              color: Colors.grey[600]),
                                         ),
                                       ],
                                     ),

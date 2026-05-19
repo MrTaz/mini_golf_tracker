@@ -42,8 +42,10 @@ class PastGameListItemState extends State<PastGameListItem> {
           ListTile(
             title: widget.pastGame.completedTime != null
                 ? FutureBuilder<String>(
-                    future: Utilities.formatStartTime(widget.pastGame.completedTime!),
-                    builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                    future: Utilities.formatStartTime(
+                        widget.pastGame.completedTime!),
+                    builder:
+                        (BuildContext context, AsyncSnapshot<String> snapshot) {
                       String timeText;
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         timeText = "Loading...";
@@ -54,13 +56,19 @@ class PastGameListItemState extends State<PastGameListItem> {
                       }
                       return Text(
                         "${widget.pastGame.name} - $timeText",
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w300,
+                            fontStyle: FontStyle.italic),
                       );
                     },
                   )
                 : Text(
                     widget.pastGame.name,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300, fontStyle: FontStyle.italic),
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w300,
+                        fontStyle: FontStyle.italic),
                   ),
             subtitle: Text(
               'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, Winner: ${loggedInUser!.getPlayerFriendById(widget.pastGame.getWinner().playerId)!.nickname}',
@@ -70,7 +78,9 @@ class PastGameListItemState extends State<PastGameListItem> {
             ),
             selected: isSelected,
             iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
-              return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
+              return states.contains(WidgetState.selected)
+                  ? Colors.green
+                  : Colors.teal;
             }),
             onTap: widget.onPastGameCardTap != null
                 ? () => {widget.onPastGameCardTap!(true)}

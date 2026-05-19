@@ -29,7 +29,8 @@ class BouncyAnimation extends StatefulWidget {
   BouncyAnimationState createState() => BouncyAnimationState();
 }
 
-class BouncyAnimationState extends State<BouncyAnimation> with TickerProviderStateMixin {
+class BouncyAnimationState extends State<BouncyAnimation>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -48,7 +49,11 @@ class BouncyAnimationState extends State<BouncyAnimation> with TickerProviderSta
   @override
   Widget build(BuildContext context) {
     return _BouncyAnimation(
-        controller: _controller, lift: widget.lift, pause: widget.pause, ratio: widget.ratio, child: widget.child);
+        controller: _controller,
+        lift: widget.lift,
+        pause: widget.pause,
+        ratio: widget.ratio,
+        child: widget.child);
   }
 }
 
@@ -59,12 +64,16 @@ class _BouncyAnimation extends StatelessWidget {
     required this.pause,
     required this.ratio,
     required this.child,
-  })  : upPhase = Tween<double>(begin: 0.0, end: lift).animate(
-            CurvedAnimation(parent: controller, curve: Interval(0.0, ratio * (1 - pause), curve: Curves.decelerate))),
+  })  : upPhase = Tween<double>(begin: 0.0, end: lift).animate(CurvedAnimation(
+            parent: controller,
+            curve:
+                Interval(0.0, ratio * (1 - pause), curve: Curves.decelerate))),
         downPhase = Tween<double>(begin: lift, end: 0).animate(CurvedAnimation(
-            parent: controller, curve: Interval(ratio * (1 - pause), (1.0 - pause), curve: Curves.bounceOut))),
-        pausePhase =
-            Tween<double>(begin: 0, end: 0).animate(CurvedAnimation(parent: controller, curve: Interval(1 - pause, 1)));
+            parent: controller,
+            curve: Interval(ratio * (1 - pause), (1.0 - pause),
+                curve: Curves.bounceOut))),
+        pausePhase = Tween<double>(begin: 0, end: 0).animate(
+            CurvedAnimation(parent: controller, curve: Interval(1 - pause, 1)));
 
   final Widget child;
   final AnimationController controller;
@@ -80,14 +89,18 @@ class _BouncyAnimation extends StatelessWidget {
     if (controller.value >= 0 && controller.value < (ratio * (1 - pause))) {
       phase = upPhase;
     }
-    if (controller.value >= (ratio * (1 - pause)) && (controller.value < (1 - pause))) {
+    if (controller.value >= (ratio * (1 - pause)) &&
+        (controller.value < (1 - pause))) {
       phase = downPhase;
     }
-    return Transform(transform: Matrix4.translationValues(0, -1 * phase.value, 0), child: child ?? const SizedBox());
+    return Transform(
+        transform: Matrix4.translationValues(0, -1 * phase.value, 0),
+        child: child ?? const SizedBox());
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: controller, builder: _buildAnimation, child: child);
+    return AnimatedBuilder(
+        animation: controller, builder: _buildAnimation, child: child);
   }
 }
