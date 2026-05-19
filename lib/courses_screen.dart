@@ -22,7 +22,7 @@ class CoursesScreen extends StatefulWidget {
 }
 
 class CoursesScreenState extends State<CoursesScreen> {
-  late List<Course> courses = [];
+  late List<Course> courses;
   Course? selectedCourse; // Allow null value for selectedCourse
 
   final ScrollController _scrollController = ScrollController();
@@ -39,6 +39,7 @@ class CoursesScreenState extends State<CoursesScreen> {
   @override
   void initState() {
     super.initState();
+    courses = [];
     _scrollController.addListener(_scrollListener);
     setState(() {
       selectedCourse = widget.selectedCourse;
@@ -132,13 +133,15 @@ class CoursesScreenState extends State<CoursesScreen> {
       return null;
     }
     try {
-      return Geolocator.distanceBetween(
+      final double distance = Geolocator.distanceBetween(
         _currentPosition!.latitude,
         _currentPosition!.longitude,
         course.latitude!,
         course.longitude!,
       );
+      return distance;
     } catch (e) {
+      Utilities.debugPrintWithCallerInfo("Error calculating distance: $e");
       return null;
     }
   }
@@ -151,8 +154,12 @@ class CoursesScreenState extends State<CoursesScreen> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (!_scrollController.hasClients) return;
+    final pixels = _scrollController.position.pixels;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    Utilities.debugPrintWithCallerInfo(
+        "_scrollListener: pixels = $pixels, maxScrollExtent = $maxScroll, hasMore = $_hasMore, isLoadingMore = $_isLoadingMore");
+    if (pixels >= maxScroll - 200) {
       _loadMoreCourses();
     }
   }

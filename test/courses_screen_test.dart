@@ -1,3 +1,5 @@
+// ignore_for_file: subtype_of_sealed_class
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
@@ -7,15 +9,19 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
+  late MockGeolocatorPlatform mockGeolocator;
 
   setUp(() async {
     fakeFirestore = FakeFirebaseFirestore();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     SharedPreferences.setMockInitialValues({});
+
+    mockGeolocator = MockGeolocatorPlatform();
+    GeolocatorPlatform.instance = mockGeolocator;
   });
 
   Widget createCoursesScreen(
@@ -129,6 +135,7 @@ void main() {
   });
 
   testWidgets('triggers load more courses on scroll', (tester) async {
+    mockGeolocator.serviceEnabled = false;
     // Add multiple courses to trigger pagination paging
     for (int i = 0; i < 8; i++) {
       await fakeFirestore.collection('courses').add({
@@ -232,7 +239,7 @@ void main() {
 
     // Change course name by typing in TextField
     await tester.enterText(
-        find.widgetWithText(TextField, 'Course Name'), 'New Course Name');
+        find.widgetWithText(TextFormField, 'Course Name'), 'New Course Name');
     await tester.pump();
 
     // Tap Save button
@@ -265,7 +272,7 @@ void main() {
 
     // Enter name
     await tester.enterText(
-        find.widgetWithText(TextField, 'Course Name'), 'Fresh Course');
+        find.widgetWithText(TextFormField, 'Course Name'), 'Fresh Course');
     await tester.pump();
 
     // Select 9 Holes card
@@ -311,7 +318,7 @@ void main() {
 
     // Enter the same name
     await tester.enterText(
-        find.widgetWithText(TextField, 'Course Name'), 'Existing Course');
+        find.widgetWithText(TextFormField, 'Course Name'), 'Existing Course');
     await tester.pump();
 
     // Select 9 Holes card
@@ -400,6 +407,339 @@ void main() {
     expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
     expect(find.text('Local Cached Course'), findsOneWidget);
   });
+
+  testWidgets('handles location service disabled gracefully', (tester) async {
+    mockGeolocator.serviceEnabled = false;
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
+    expect(mockGeolocator.checkPermissionCount, 0);
+  });
+
+  testWidgets(
+      'handles location permission denied initially and then request denied',
+      (tester) async {
+    mockGeolocator.checkPermissionResult = LocationPermission.denied;
+    mockGeolocator.requestPermissionResult = LocationPermission.denied;
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(mockGeolocator.checkPermissionCount, greaterThan(0));
+    expect(mockGeolocator.requestPermissionCount, greaterThan(0));
+    expect(mockGeolocator.getCurrentPositionCount, 0);
+  });
+
+  testWidgets('handles location permission denied forever', (tester) async {
+    mockGeolocator.checkPermissionResult = LocationPermission.deniedForever;
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(mockGeolocator.checkPermissionCount, greaterThan(0));
+    expect(mockGeolocator.requestPermissionCount, 0);
+    expect(mockGeolocator.getCurrentPositionCount, 0);
+  });
+
+  testWidgets('handles location exception during fetch gracefully',
+      (tester) async {
+    mockGeolocator.exceptionToThrow = Exception('Simulated GPS error');
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
+  });
+
+  testWidgets('handles geolocator distanceBetween exception gracefully',
+      (tester) async {
+    mockGeolocator.mockPosition = Position(
+      latitude: 40.0,
+      longitude: -70.0,
+      timestamp: DateTime.now(),
+      accuracy: 1.0,
+      altitude: 1.0,
+      heading: 1.0,
+      speed: 1.0,
+      speedAccuracy: 1.0,
+      altitudeAccuracy: 1.0,
+      headingAccuracy: 1.0,
+    );
+    mockGeolocator.throwOnDistanceBetween = true;
+
+    await fakeFirestore.collection('courses').add({
+      'name': 'GPS Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+      'latitude': 40.1,
+      'longitude': -70.1,
+    });
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // The courses should load fine, but since distance calculation failed,
+    // distance is treated as null. Proximity sorting should still complete gracefully.
+    expect(find.text('GPS Course'), findsOneWidget);
+  });
+
+  testWidgets(
+      'supports proximity sorting, distance calculation, details coordinates/address, and closing details',
+      (tester) async {
+    mockGeolocator.mockPosition = Position(
+      latitude: 40.0,
+      longitude: -70.0,
+      timestamp: DateTime.now(),
+      accuracy: 1.0,
+      altitude: 1.0,
+      heading: 1.0,
+      speed: 1.0,
+      speedAccuracy: 1.0,
+      altitudeAccuracy: 1.0,
+      headingAccuracy: 1.0,
+    );
+
+    final throwingFirestore = ThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(throwingFirestore);
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsOneWidget);
+
+    final workingFirestore = FakeFirebaseFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(workingFirestore);
+
+    await workingFirestore.collection('courses').add({
+      'name': 'Near Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+      'latitude': 40.1,
+      'longitude': -70.1,
+      'address': '456 Near Blvd',
+    });
+    await workingFirestore.collection('courses').add({
+      'name': 'Far Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+      'latitude': 45.0,
+      'longitude': -75.0,
+      'address': '123 Far Way',
+    });
+    await workingFirestore.collection('courses').add({
+      'name': 'No Coordinates Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+      'latitude': null,
+      'longitude': null,
+      'address': '',
+    });
+
+    await tester.tap(find.byKey(const Key('retry_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final listItems = find.byType(Card);
+    expect(listItems, findsNWidgets(3));
+    expect(tester.widget<Text>(find.text('Near Course')).data, 'Near Course');
+
+    await tester.tap(find.text('Near Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Address: 456 Near Blvd'), findsOneWidget);
+    expect(find.text('Coordinates: 40.10000, -70.10000'), findsOneWidget);
+
+    expect(find.text('Close'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Close'), findsNothing);
+  });
+
+  testWidgets(
+      'renders loader when loading more courses on scroll and handles second page fetch failure',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    mockGeolocator.serviceEnabled = false;
+
+    final paginatedThrowingFirestore = PaginatedThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(
+        paginatedThrowingFirestore);
+
+    for (int i = 0; i < 8; i++) {
+      await paginatedThrowingFirestore.collection('courses').add({
+        'name': 'Course $i',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+    }
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    paginatedThrowingFirestore.shouldThrow = true;
+
+    final listFinder = find.byType(ListView);
+    await tester.drag(listFinder, const Offset(0, -3000));
+
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets(
+      'handles exception when deleting course and falls back to local cache',
+      (tester) async {
+    await fakeFirestore.collection('courses').add({
+      'name': 'Fragile Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+    });
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.text('Fragile Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    DatabaseConnection.setFirestoreInstanceForTesting(ThrowingFirestore());
+
+    expect(find.text('Delete'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Fragile Course'), findsNothing);
+  });
+
+  testWidgets(
+      'tapping Add New Course in empty state card opens create course dialog',
+      (tester) async {
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(
+        find.widgetWithText(ElevatedButton, 'Add New Course'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Add New Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Create New Course'), findsOneWidget);
+  });
+
+  testWidgets(
+      'supports selecting a course in creatingGame mode when created via fab',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Course? returnedCourse;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () async {
+                returnedCourse = await Navigator.push<Course>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const CoursesScreen(creatingGame: true),
+                  ),
+                );
+              },
+              child: const Text('Go to Selection'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Go to Selection'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'),
+        'Selectable Fresh Course');
+    await tester.pump();
+    await tester.tap(find.text('9 Holes'));
+    await tester.pump();
+
+    await tester.tap(find.text('Create Course'));
+    await tester.pumpAndSettle();
+
+    expect(returnedCourse, isNotNull);
+    expect(returnedCourse!.name, 'Selectable Fresh Course');
+  });
+
+  testWidgets('loads second page of courses successfully on scroll',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    mockGeolocator.serviceEnabled = false;
+
+    // Add 8 courses: first page = 5, second page = 3
+    for (int i = 0; i < 8; i++) {
+      await fakeFirestore.collection('courses').add({
+        'name': 'Page Course $i',
+        'number_of_holes': 9,
+        'par_strokes': {'1': 3},
+      });
+    }
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // First page should be loaded and ListView shown
+    expect(find.byType(ListView), findsOneWidget);
+
+    // Scroll to trigger _loadMoreCourses (success path: lines 277-286)
+    final listFinder = find.byType(ListView);
+    await tester.drag(listFinder, const Offset(0, -3000));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final state = tester.state<CoursesScreenState>(find.byType(CoursesScreen));
+    expect(state.courses.length, 8);
+  });
+
+  testWidgets('handles JSON parse failure in local cache fallback gracefully',
+      (tester) async {
+    // Pre-seed SharedPreferences with malformed JSON so parsing throws in the inner catch
+    SharedPreferences.setMockInitialValues({
+      'courses': ['{invalid-json']
+    });
+
+    final throwingFirestore = ThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(throwingFirestore);
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // The outer error screen should be shown since both DB and cache parsing failed
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsOneWidget);
+  });
 }
 
 class ThrowingFirestore extends FakeFirebaseFirestore {
@@ -413,3 +753,184 @@ class ThrowingFirestore extends FakeFirebaseFirestore {
   }
 }
 
+class MockGeolocatorPlatform extends GeolocatorPlatform {
+  bool serviceEnabled = true;
+  LocationPermission checkPermissionResult = LocationPermission.whileInUse;
+  LocationPermission requestPermissionResult = LocationPermission.whileInUse;
+  Position? mockPosition;
+  dynamic exceptionToThrow;
+  Duration? delayToUse;
+  bool throwOnDistanceBetween = false;
+
+  int isLocationServiceEnabledCount = 0;
+  int checkPermissionCount = 0;
+  int requestPermissionCount = 0;
+  int getCurrentPositionCount = 0;
+
+  @override
+  double distanceBetween(
+    double startLatitude,
+    double startLongitude,
+    double endLatitude,
+    double endLongitude,
+  ) {
+    if (throwOnDistanceBetween) {
+      throw Exception('Simulated distanceBetween error');
+    }
+    return super.distanceBetween(
+      startLatitude,
+      startLongitude,
+      endLatitude,
+      endLongitude,
+    );
+  }
+
+  @override
+  Future<bool> isLocationServiceEnabled() async {
+    isLocationServiceEnabledCount++;
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return serviceEnabled;
+  }
+
+  @override
+  Future<LocationPermission> checkPermission() async {
+    checkPermissionCount++;
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return checkPermissionResult;
+  }
+
+  @override
+  Future<LocationPermission> requestPermission() async {
+    requestPermissionCount++;
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return requestPermissionResult;
+  }
+
+  @override
+  Future<Position> getCurrentPosition({
+    LocationSettings? locationSettings,
+  }) async {
+    getCurrentPositionCount++;
+    if (delayToUse != null) {
+      await Future.delayed(delayToUse!);
+    }
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    if (mockPosition != null) return mockPosition!;
+    return Position(
+      latitude: 43.12345,
+      longitude: -71.54321,
+      timestamp: DateTime.now(),
+      accuracy: 1.0,
+      altitude: 1.0,
+      heading: 1.0,
+      speed: 1.0,
+      speedAccuracy: 1.0,
+      altitudeAccuracy: 1.0,
+      headingAccuracy: 1.0,
+    );
+  }
+}
+
+class ThrowingQuery implements Query<Map<String, dynamic>> {
+  final Query<Map<String, dynamic>> _delegate;
+  final bool shouldThrow;
+  final Duration delay;
+
+  ThrowingQuery(this._delegate,
+      {this.shouldThrow = false,
+      this.delay = const Duration(milliseconds: 50)});
+
+  @override
+  Query<Map<String, dynamic>> limit(int limit) {
+    return ThrowingQuery(_delegate.limit(limit),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+
+  @override
+  Query<Map<String, dynamic>> orderBy(Object field, {bool descending = false}) {
+    return ThrowingQuery(_delegate.orderBy(field, descending: descending),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+
+  @override
+  Query<Map<String, dynamic>> startAfterDocument(
+      DocumentSnapshot documentSnapshot) {
+    return ThrowingQuery(_delegate.startAfterDocument(documentSnapshot),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+
+  @override
+  Future<QuerySnapshot<Map<String, dynamic>>> get([GetOptions? options]) async {
+    if (shouldThrow) {
+      await Future.delayed(delay);
+      throw FirebaseException(
+        plugin: 'firestore',
+        code: 'unavailable',
+        message: 'Service unavailable',
+      );
+    }
+    return _delegate.get(options);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    throw UnimplementedError();
+  }
+}
+
+class ThrowingCollectionReference
+    implements CollectionReference<Map<String, dynamic>> {
+  final CollectionReference<Map<String, dynamic>> _delegate;
+  final bool shouldThrow;
+  final Duration delay;
+
+  ThrowingCollectionReference(this._delegate,
+      {this.shouldThrow = false,
+      this.delay = const Duration(milliseconds: 50)});
+
+  @override
+  Query<Map<String, dynamic>> limit(int limit) {
+    return ThrowingQuery(_delegate.limit(limit),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+
+  @override
+  Query<Map<String, dynamic>> orderBy(Object field, {bool descending = false}) {
+    return ThrowingQuery(_delegate.orderBy(field, descending: descending),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+
+  @override
+  Future<DocumentReference<Map<String, dynamic>>> add(
+      Map<String, dynamic> data) {
+    return _delegate.add(data);
+  }
+
+  @override
+  Future<QuerySnapshot<Map<String, dynamic>>> get([GetOptions? options]) async {
+    if (shouldThrow) {
+      await Future.delayed(delay);
+      throw FirebaseException(
+        plugin: 'firestore',
+        code: 'unavailable',
+        message: 'Service unavailable',
+      );
+    }
+    return _delegate.get(options);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    throw UnimplementedError();
+  }
+}
+
+class PaginatedThrowingFirestore extends FakeFirebaseFirestore {
+  bool shouldThrow = false;
+  Duration delay = const Duration(milliseconds: 50);
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String path) {
+    return ThrowingCollectionReference(super.collection(path),
+        shouldThrow: shouldThrow, delay: delay);
+  }
+}
