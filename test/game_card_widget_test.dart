@@ -8,6 +8,8 @@ import 'package:mini_golf_tracker/game_card_widget.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/game_start_screen.dart';
+import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
@@ -312,7 +314,7 @@ void main() {
       expect(find.text('Deleted saved game'), findsOneWidget);
     });
 
-    testWidgets('can navigate to create game from card', (WidgetTester tester) async {
+    testWidgets('can navigate to create game from card, call callback to update card, and pop to refresh', (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
@@ -320,6 +322,193 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
+
+      // Trigger the callback inside GameStartScreen
+      expect(find.byType(GameStartScreen), findsOneWidget);
+      final gameStartScreen = tester.widget<GameStartScreen>(find.byType(GameStartScreen));
+      gameStartScreen.callback?.call();
+      await tester.pump();
+
+      // Dismiss the AlertDialog first (which was automatically pushed by GameStartScreen)
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Now pop the GameStartScreen route to cover _navigateToGameCreateScreen return path
+      expect(find.byType(GameStartScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
+      await tester.pumpAndSettle();
+      await tester.idle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('can call updateGameCard directly on the widget state', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final state = tester.state<GameCardWidgetState>(find.byType(GameCardWidget));
+      await state.updateGameCard();
+    });
+
+    testWidgets('Start Game navigation resolves and then refreshes state', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+      });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start Game'), findsOneWidget);
+      await tester.tap(find.text('Start Game'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameStartScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Continue Game navigation resolves and then refreshes state', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_2': jsonEncode(startedGame.toJson()),
+      });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Continue Game'), findsOneWidget);
+      await tester.tap(find.text('Continue Game'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameInprogressScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Start Game navigation error triggers catchError SnackBar', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FakeNavigator(
+              onPush: (route) {
+                return Future.error(Exception('Simulated navigation error'));
+              },
+              child: const GameCardWidget(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start Game'), findsOneWidget);
+      await tester.tap(find.text('Start Game'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+    });
+
+    testWidgets('Continue Game navigation error triggers catchError SnackBar', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_2': jsonEncode(startedGame.toJson()),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FakeNavigator(
+              onPush: (route) {
+                return Future.error(Exception('Simulated navigation error'));
+              },
+              child: const GameCardWidget(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Continue Game'), findsOneWidget);
+      await tester.tap(find.text('Continue Game'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+    });
+
+    testWidgets('Start Game and Continue Game Navigator synchronous throws trigger try/catch SnackBar', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+        'game_2': jsonEncode(startedGame.toJson()),
+      });
+
+      // Render the card without a Navigator ancestor to cause a synchronous throw on Navigator.of(context)
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: ScaffoldMessenger(
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => const GameCardWidget(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start Game'), findsOneWidget);
+      await tester.tap(find.text('Start Game'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+
+      // Clear the SnackBar
+      ScaffoldMessenger.of(tester.element(find.byType(GameCardWidget))).clearSnackBars();
+      await tester.pump();
+
+      expect(find.text('Continue Game'), findsOneWidget);
+      await tester.tap(find.text('Continue Game'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
     });
   });
+}
+
+class FakeNavigator extends Navigator {
+  final Widget child;
+  final Future<dynamic> Function(Route route) onPush;
+
+  const FakeNavigator({
+    super.key,
+    required this.child,
+    required this.onPush,
+  }) : super(pages: const []);
+
+  @override
+  NavigatorState createState() => MockNavigatorState();
+}
+
+class MockNavigatorState extends State<Navigator> implements NavigatorState {
+  @override
+  Future<T?> push<T extends Object?>(Route<T> route) {
+    return (widget as FakeNavigator).onPush(route) as Future<T?>;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return (widget as FakeNavigator).child;
+  }
 }
