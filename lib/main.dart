@@ -10,6 +10,9 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +56,8 @@ class HomePage extends StatefulWidget {
 class MainScaffold extends State<HomePage> {
   MainScaffold();
 
+  static bool skipPrecacheForTesting = false;
+
   Widget body = const HomeScreen();
   Image profileImage = Image.asset(
     "assets/images/avatars_3d_avatar_28.png",
@@ -61,10 +66,18 @@ class MainScaffold extends State<HomePage> {
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  Future<List<void>>? _precacheFuture;
+
   @override
   void didChangeDependencies() {
-    precacheImage(AppImages.backgroundMainScreens, context);
     super.didChangeDependencies();
+    if (skipPrecacheForTesting) {
+      _precacheFuture = Future.value(<void>[]);
+    } else {
+      _precacheFuture ??= Future.wait([
+        precacheImage(AppImages.backgroundMainScreens, context),
+      ]);
+    }
   }
 
   @override
@@ -97,6 +110,18 @@ class MainScaffold extends State<HomePage> {
       body = const ClaimAccountScreen();
     } else {
       body = const HomeScreen();
+      _checkAndAutoResumeGuestGame();
+    }
+  }
+
+  void _checkAndAutoResumeGuestGame() async {
+    final activeGames = await Game.getLocallySavedGames(gameStatusTypes: ['started']);
+    if (activeGames.isNotEmpty && activeGames.first != null) {
+      if (mounted && UserProvider().loggedInUser == null && UserProvider().pendingClaimPlayer == null) {
+        setState(() {
+          body = GameInprogressScreen(currentGame: activeGames.first!);
+        });
+      }
     }
   }
 
@@ -129,6 +154,47 @@ class MainScaffold extends State<HomePage> {
     List<Widget> children = [];
     if (UserProvider().loggedInUser != null) {
       children.addAll(_buildUserAccounts(context));
+    } else {
+      children.addAll([
+        const UserAccountsDrawerHeader(
+          accountName: Text("Guest Profile"),
+          accountEmail: null,
+          currentAccountPicture: CircleAvatar(
+            backgroundColor: Colors.teal,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.people),
+          title: const Text("Friends"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.folder),
+          title: const Text("Past Games"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.golf_course),
+          title: const Text("Courses"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          },
+        ),
+      ]);
     }
     return children;
   }
@@ -172,9 +238,7 @@ class MainScaffold extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: Future.wait([
-          precacheImage(AppImages.backgroundMainScreens, context),
-        ]),
+        future: _precacheFuture,
         builder: (BuildContext context, AsyncSnapshot snap) {
           if (snap.connectionState != ConnectionState.waiting) {
             return Scaffold(

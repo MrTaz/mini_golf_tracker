@@ -29,11 +29,11 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 ##### 1.1 Harden Database Error Handling
 *  [x] Wrap `UserProvider.initialize` `authStateChanges` listener in a try-catch block to prevent `DatabaseConnectionError` crashes on startup.
 *  [x] Harden `ClaimAccountScreen._refreshClaim()` with a generic catch block to gracefully handle database/network failures without crashing.
-*  [ ] Implement comprehensive try-catch blocks in GameCardWidget and CoursesScreen to intercept DatabaseConnectionError.
-*  [ ] In CoursesScreen, replace the current _isLoading && courses.isEmpty ternary logic with an explicit error-state check such as _connectionError != null.
-*  [ ] Render a persistent "Fairway Unreachable" UI state with a "Retry" callback when course loading fails.
-*  [ ] In GameCardWidget, catch Firestore failures during getLocallySavedGames.
-*  [ ] Display a SnackBar using ScaffoldMessenger when remote sync is temporarily unavailable.
+*  [x] Implement comprehensive try-catch blocks in GameCardWidget and CoursesScreen to intercept DatabaseConnectionError.
+*  [x] In CoursesScreen, replace the current _isLoading && courses.isEmpty ternary logic with an explicit error-state check such as _connectionError != null.
+*  [x] Render a persistent "Fairway Unreachable" UI state with a "Retry" callback when course loading fails.
+*  [x] In GameCardWidget, catch Firestore failures during getLocallySavedGames.
+*  [x] Display a SnackBar using ScaffoldMessenger when remote sync is temporarily unavailable.
 
 ### 1.2 Modernize Game Creation UI
 
@@ -69,12 +69,18 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 - [ ] Add `"Clear All"` to the `AppBar` of `PlayersScreen`.
 - [ ] Reset the `selectedPlayers` list instantly when clearing selections.
 
-### 1.5 Guest-Aware Navigation Drawer
+##### 1.5 Unified Smart Navigation Drawer
 
-- [ ] Modify `_buildDrawerList` in `main.dart`.
-- [ ] If `UserProvider().loggedInUser` is `null`, inject a `UserAccountsDrawerHeader` with a `"Guest Mode"` placeholder.
-- [ ] Add a `"Claim History"` menu item that navigates to `ClaimAccountScreen`.
-- [ ] Add a `"Sign In"` option to encourage authentication without locking out guest data.
+*  [ ] Refactor `_buildDrawerList` in `main.dart` to provide a consistent menu for both Guests and Auth users.
+*  [ ] **Dynamic Header:** 
+    *  Auth: Show `UserAccountsDrawerHeader` with name, email, and "Edit Profile" action (pointing to `PlayerDetailsScreen`).
+    *  Guest: Show "Guest Profile" placeholder with a "Sign In / Sign Up" call to action.
+*  [ ] **Universal Navigation Items:** 
+    *  Add menu items for: Home, Current Game, Friends, Past Games, and Courses.
+*  [ ] **Context-Aware Routing:**
+    *  If Auth: Tapping "Friends," "History," or "Courses" navigates directly to those screens.
+    *  If Guest: Tapping these items redirects the user to the `LoginScreen` with a prompt highlighting the benefits of cloud sync.
+*  [ ] **Active Game Visibility:** Dynamically show a "Resume Active Game" link in the drawer if a local game has a `started` status.
 
 ### 1.6 Course Location Awareness & Duplicate Prevention
 
@@ -108,6 +114,30 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 - [ ] Use `locationSettings` with a `5-second timeLimit`.
 - [ ] Display a non-blocking `SnackBar` or status icon if the timeout triggers.
 - [ ] Do not fail silently on location timeout.
+
+##### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
+
+*  [ ] **Global Active Game Auto-Launch:** Update `HomePage._updateState()` in `main.dart` to check for an active local game via `Game.getLocallySavedGames(gameStatusTypes: ["started"])`.
+*  [ ] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the `body` to `GameInprogressScreen` to ensure the round persists across app restarts.
+*  [ ] **Dynamic Bottom Navigation:** Modify `DashboardScreen` to hide the `BottomNavigationBar` if `UserProvider().loggedInUser` is null.
+*  [ ] **Game Creation Redirect:** Refactor `GameCreateScreen` and `GameStartScreen` so that upon clicking "Start," the app pushes `GameInprogressScreen` immediately instead of popping to the home screen.
+
+##### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
+
+*  [ ] **Activity Fetch Logic:** Implement helper methods in `Game` or `main.dart` to retrieve:
+    *  Up to 5 "unstarted_game" records scheduled for the future, ordered by `scheduled_time` ascending.
+    *  Up to 5 "completed" records, ordered by `completed_time` descending.
+*  [ ] **Scheduled Games Section:**
+    *  Add a "Scheduled Games" header `ListTile` that navigates to the full list.
+    *  Inject up to 5 sub-items (indented or smaller text) showing "Game Name - Date".
+    *  Tapping a sub-item navigates directly to `GameStartScreen` for that specific game.
+*  [ ] **Recent History Section:**
+    *  Add a "Past Games" header `ListTile` that navigates to `PastGamesScreen`.
+    *  Inject up to 5 sub-items showing "Course Name - Score/Result".
+    *  Tapping a sub-item navigates directly to `PastGameDetailsScreen`.
+*  [ ] **Guest UX Intercept:** 
+    *  For Guests: If local data exists, show it. If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
+*  [ ] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
 
 ---
 
@@ -791,8 +821,21 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Unit Tests
 
-*  [x] Achieve 100% unit test coverage for `userprovider.dart` (including line 180 null user boundary).
-*  [x] Achieve 100% unit test coverage for `claim_account_screen.dart` (including generic exception handling).
+**Fully Covered Files (100% Line Coverage):**
+*  [x] `add_edit_course_screen.dart`
+*  [x] `asset_bouncy_animation.dart`
+*  [x] `asset_golf_ball_path.dart`
+*  [x] `claim_account_screen.dart`
+*  [x] `courses_screen.dart`
+*  [x] `database_connection_error.dart`
+*  [x] `game_card_widget.dart`
+*  [x] `map_picker_screen.dart`
+*  [x] `player.dart`
+*  [x] `player_create_screen.dart`
+*  [x] `player_game_info.dart`
+*  [x] `userprovider.dart`
+
+**Pending Specific Behavioral Tests:**
 *  [ ] Player.createPlayer nickname-only creation.
 *  [ ] PlayerForm quick-play validation bypass.
 *  [ ] ContactIdentity.normalizeEmail.

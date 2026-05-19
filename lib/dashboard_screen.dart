@@ -57,35 +57,38 @@ class DashBoardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loggedInUser = UserProvider().loggedInUser;
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
       body: body,
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFF009688),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Friends',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder),
-            label: 'Past Games',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.golf_course),
-            label: 'Courses',
-          )
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onBottomNavigationButtonTapped,
-      ),
+      bottomNavigationBar: loggedInUser == null
+          ? null
+          : BottomNavigationBar(
+              selectedItemColor: const Color(0xFF009688),
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people),
+                  label: 'Friends',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.folder),
+                  label: 'Past Games',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.golf_course),
+                  label: 'Courses',
+                )
+              ],
+              currentIndex: _selectedIndex,
+              onTap: _onBottomNavigationButtonTapped,
+            ),
     );
   }
 }
