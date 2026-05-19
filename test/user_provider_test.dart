@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mock_exceptions/mock_exceptions.dart';
+import 'package:mock_exceptions/src/mock_exceptions.dart' as me;
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -18,6 +21,7 @@ void main() {
     fakeFirestore = FakeFirebaseFirestore();
     mockAuth = MockFirebaseAuth();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    me.expectations.clear();
 
     SharedPreferences.setMockInitialValues({});
 
@@ -360,6 +364,31 @@ void main() {
 
       expect(claimedPlayer, isNull);
       expect(userProvider.pendingClaimPlayer?.id, 'existing-player');
+    });
+
+    test('refreshPendingClaim returns null if no user is signed in', () async {
+      mockAuth = MockFirebaseAuth();
+      userProvider.setAuthInstanceForTesting(mockAuth);
+      final result = await userProvider.refreshPendingClaim();
+      expect(result, isNull);
+    });
+
+    test('Listen to auth state changes - error inside listener is caught and logged', () async {
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'error-user', email: 'error@example.com'),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+
+      final docRef = fakeFirestore.collection('players').doc('error-user');
+      whenCalling(Invocation.method(#get, null))
+          .on(docRef)
+          .thenThrow(FirebaseException(plugin: 'cloud_firestore', message: 'Simulated error'));
+
+      await userProvider.initialize();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      expect(userProvider.loggedInUser, isNull);
     });
   });
 }

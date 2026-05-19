@@ -76,6 +76,12 @@ class _ClaimAccountScreenState extends State<ClaimAccountScreen> {
           _message = error.message ?? 'Unable to refresh verification status.';
         });
       }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _message = 'Database or network error. Please try again.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

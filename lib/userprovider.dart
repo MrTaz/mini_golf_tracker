@@ -87,85 +87,90 @@ class UserProvider extends ChangeNotifier {
     // Listen to Firebase Auth changes
     await _authStateSubscription?.cancel();
     _authStateSubscription = auth.authStateChanges().listen((User? user) async {
-      final String? listenerTargetUid = user?.uid;
+      try {
+        final String? listenerTargetUid = user?.uid;
 
-      if (user == null) {
-        if (_loggedInUser != null || _pendingClaimPlayer != null) {
-          _loggedInUser = null;
-          _pendingClaimPlayer = null;
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove("email");
-          await prefs.remove("loggedInUser");
-          await Game.clearLocallySavedGames();
-          await Player.clearLocalGuestPlayers();
-          notifyListeners();
-        }
-      } else {
-        // If Firebase says we are logged in, but our local state is empty or different,
-        // try to fetch the player profile using the UID.
-        if (_loggedInUser == null || _loggedInUser!.id != user.uid) {
-          Player? player = await Player.fetchPlayerForAuthUid(user.uid);
+        if (user == null) {
+          if (_loggedInUser != null || _pendingClaimPlayer != null) {
+            _loggedInUser = null;
+            _pendingClaimPlayer = null;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove("email");
+            await prefs.remove("loggedInUser");
+            await Game.clearLocallySavedGames();
+            await Player.clearLocalGuestPlayers();
+            notifyListeners();
+          }
+        } else {
+          // If Firebase says we are logged in, but our local state is empty or different,
+          // try to fetch the player profile using the UID.
+          if (_loggedInUser == null || _loggedInUser!.id != user.uid) {
+            Player? player = await Player.fetchPlayerForAuthUid(user.uid);
 
-          // Verify we are still looking at the same user before updating state
-          if (auth.currentUser?.uid != listenerTargetUid) return;
-
-          if (player != null) {
-            // Update avatar if provided by Firebase and not set in player profile
-            if (user.photoURL != null &&
-                player.avatarImageLocation != user.photoURL) {
-              player.avatarImageLocation = user.photoURL;
-            }
-            await login(player);
-          } else {
-            final claimedPlayer = await Player.claimPlayerForVerifiedAuthUser(
-              uid: user.uid,
-              email: user.email,
-              emailVerified: user.emailVerified,
-              phoneNumber: user.phoneNumber,
-            );
-            if (claimedPlayer != null) {
-              await login(claimedPlayer);
-              return;
-            }
-
-            final existingCandidate = await Player.getPlayerByContactFromDB(
-              user.email,
-              user.phoneNumber,
-            );
-            if (existingCandidate != null) {
-              _pendingClaimPlayer = existingCandidate;
-              notifyListeners();
-              return;
-            }
-
-            // New user from social login (like Google) - create their profile
-            Utilities.debugPrintWithCallerInfo(
-                'Creating new player profile for social user: ${user.email}');
-            Utilities.debugPrintWithCallerInfo(
-                'No Firestore profile found for user ${user.email}. Creating one now...');
-
-            final newUserProfile = await Player.createPlayer(
-              user.displayName ?? 'New User',
-              user.displayName ?? 'user_${user.uid.substring(0, 5)}',
-              email: user.email ?? '',
-              phoneNumber: user.phoneNumber,
-              id: user.uid,
-            );
-
-            // Double check user hasn't changed/logged out during the async createPlayer call
+            // Verify we are still looking at the same user before updating state
             if (auth.currentUser?.uid != listenerTargetUid) return;
 
-            Utilities.debugPrintWithCallerInfo(
-                'Auto-created Firestore profile: ${newUserProfile.id}');
+            if (player != null) {
+              // Update avatar if provided by Firebase and not set in player profile
+              if (user.photoURL != null &&
+                  player.avatarImageLocation != user.photoURL) {
+                player.avatarImageLocation = user.photoURL;
+              }
+              await login(player);
+            } else {
+              final claimedPlayer = await Player.claimPlayerForVerifiedAuthUser(
+                uid: user.uid,
+                email: user.email,
+                emailVerified: user.emailVerified,
+                phoneNumber: user.phoneNumber,
+              );
+              if (claimedPlayer != null) {
+                await login(claimedPlayer);
+                return;
+              }
 
-            // Sync the photoURL if available
-            if (user.photoURL != null) {
-              newUserProfile.avatarImageLocation = user.photoURL;
+              final existingCandidate = await Player.getPlayerByContactFromDB(
+                user.email,
+                user.phoneNumber,
+              );
+              if (existingCandidate != null) {
+                _pendingClaimPlayer = existingCandidate;
+                notifyListeners();
+                return;
+              }
+
+              // New user from social login (like Google) - create their profile
+              Utilities.debugPrintWithCallerInfo(
+                  'Creating new player profile for social user: ${user.email}');
+              Utilities.debugPrintWithCallerInfo(
+                  'No Firestore profile found for user ${user.email}. Creating one now...');
+
+              final newUserProfile = await Player.createPlayer(
+                user.displayName ?? 'New User',
+                user.displayName ?? 'user_${user.uid.substring(0, 5)}',
+                email: user.email ?? '',
+                phoneNumber: user.phoneNumber,
+                id: user.uid,
+              );
+
+              // Double check user hasn't changed/logged out during the async createPlayer call
+              if (auth.currentUser?.uid != listenerTargetUid) return;
+
+              Utilities.debugPrintWithCallerInfo(
+                  'Auto-created Firestore profile: ${newUserProfile.id}');
+
+              // Sync the photoURL if available
+              if (user.photoURL != null) {
+                newUserProfile.avatarImageLocation = user.photoURL;
+              }
+
+              await login(newUserProfile);
             }
-
-            await login(newUserProfile);
           }
         }
+      } catch (e) {
+        Utilities.debugPrintWithCallerInfo(
+            'Error inside authStateChanges subscription listener: $e');
       }
     });
   }

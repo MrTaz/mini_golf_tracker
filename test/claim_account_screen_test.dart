@@ -8,6 +8,7 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mock_exceptions/mock_exceptions.dart';
+import 'package:mock_exceptions/src/mock_exceptions.dart' as me;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -16,6 +17,7 @@ void main() {
   late UserProvider userProvider;
 
   setUp(() async {
+    me.expectations.clear();
     fakeFirestore = FakeFirebaseFirestore();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     SharedPreferences.setMockInitialValues({});
@@ -123,6 +125,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Refresh failed.'), findsOneWidget);
+  });
+
+  testWidgets('shows refresh failures for non-Firebase exceptions',
+      (tester) async {
+    whenCalling(Invocation.method(#reload, []))
+        .on(mockAuth.currentUser!)
+        .thenThrow(Exception('Generic database connection failure'));
+
+    await tester.pumpWidget(buildScreen());
+    await tester.tap(find.text('I verified my contact'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Database or network error. Please try again.'),
+        findsOneWidget);
   });
 
   testWidgets('shows linked phone contact as verified', (tester) async {
