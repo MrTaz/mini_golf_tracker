@@ -121,4 +121,61 @@ void main() {
 
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
+
+  testWidgets('supports navigation and tapping Friends card', (tester) async {
+    final player = Player(
+      id: 'p123',
+      playerName: 'Test Player',
+      nickname: 'Tester',
+      ownerId: 'p123',
+      totalScore: 0,
+      email: 'test@example.com',
+      avatarImageLocation: 'http://example.com/avatar.png',
+    );
+    await UserProvider().login(player);
+
+    await tester.pumpWidget(createDashboardScreen());
+    await tester.pump();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // 1. Check user avatar location branch (lines 135-137) is covered because player.avatarImageLocation is non-null & non-empty.
+
+    final avatarFinder = find.byType(CircleAvatar);
+    expect(avatarFinder, findsOneWidget);
+    final CircleAvatar avatar = tester.widget(avatarFinder);
+    expect(avatar.backgroundImage, isA<NetworkImage>());
+    expect((avatar.backgroundImage as NetworkImage).url, 'http://example.com/avatar.png');
+
+    // 2. Cover notifyListeners / _onUserChanged (lines 121-123)
+    UserProvider().loggedInUser = player;
+    await tester.pump();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // 3. Find and tap Friends PlayersCard to cover lines 197-200 and lines 42-44
+    await tester.tap(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'PlayersCard'));
+    await tester.pumpAndSettle();
+
+    // Since the callback updateBottomNavChangeNotifier was called, it navigated to index 1 (Friends/PlayersScreen)
+    expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'PlayersScreen'), findsOneWidget);
+
+    // 4. Tap another bottom navigation bar item to cover other branches in _updateBody / _pages (lines 46-54)
+    // Tapping 'Past Games'
+    await tester.tap(find.text('Past Games'));
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'PastGamesScreen'), findsOneWidget);
+
+    // Tapping 'Courses'
+    await tester.tap(find.text('Courses'));
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'CoursesScreen'), findsOneWidget);
+
+    // Tapping 'Home'
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'DashBoardLayout'), findsOneWidget);
+  });
 }
