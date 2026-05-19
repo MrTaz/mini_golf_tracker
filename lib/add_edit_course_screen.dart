@@ -83,6 +83,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       return;
     }
 
+    if (!mounted) return;
     await _openMapScreen();
   }
 
@@ -90,7 +91,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) => MapPickerScreen(
+        builder: (_) => MapPickerScreen(
           initialLatitude: _latitude,
           initialLongitude: _longitude,
         ),
@@ -122,9 +123,9 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (modalContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (statefulContext, setModalState) {
             return Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -137,7 +138,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                 left: 24.0,
                 right: 24.0,
                 top: 24.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+                bottom: MediaQuery.of(statefulContext).viewInsets.bottom + 24.0,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -157,7 +158,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () => Navigator.of(statefulContext).pop(),
                         ),
                       ],
                     ),
@@ -187,25 +188,31 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 if (permission ==
                                         LocationPermission.whileInUse ||
                                     permission == LocationPermission.always) {
-                                  if (context.mounted) {
-                                    Navigator.of(context).pop();
+                                  if (statefulContext.mounted) {
+                                    Navigator.of(statefulContext).pop();
                                     await _openMapScreen();
                                   }
                                 } else {
-                                  setModalState(() {
-                                    modalError =
-                                        'Location permission denied. Please use the form below.';
-                                  });
+                                  if (statefulContext.mounted) {
+                                    setModalState(() {
+                                      modalError =
+                                          'Location permission denied. Please use the form below.';
+                                    });
+                                  }
                                 }
                               } catch (e) {
-                                setModalState(() {
-                                  modalError =
-                                      'Could not request permissions: $e';
-                                });
+                                if (statefulContext.mounted) {
+                                  setModalState(() {
+                                    modalError =
+                                        'Could not request permissions: $e';
+                                  });
+                                }
                               } finally {
-                                setModalState(() {
-                                  isRequestingPermission = false;
-                                });
+                                if (statefulContext.mounted) {
+                                  setModalState(() {
+                                    isRequestingPermission = false;
+                                  });
+                                }
                               }
                             },
                       icon: isRequestingPermission
@@ -329,10 +336,12 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                         final zip = zipController.text.trim();
 
                         if (street.isEmpty) {
-                          setModalState(() {
-                            modalError =
-                                'Street address is required to locate the course.';
-                          });
+                          if (statefulContext.mounted) {
+                            setModalState(() {
+                              modalError =
+                                  'Street address is required to locate the course.';
+                            });
+                          }
                           return;
                         }
 
@@ -344,64 +353,68 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
                         final fullAddress = parts.join(', ');
 
-                        setState(() {
-                          _address = fullAddress;
-                          _addressController.text = fullAddress;
-                        });
+                        if (mounted) {
+                          setState(() {
+                            _address = fullAddress;
+                            _addressController.text = fullAddress;
+                          });
+                        }
 
-                        Navigator.of(context).pop();
+                        Navigator.of(statefulContext).pop();
 
                         // Attempt to geocode in background to pin coordinate
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                      'Resolving coordinates for: $fullAddress...'),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                        'Resolving coordinates for: $fullAddress...'),
+                                  ),
+                                ],
+                              ),
+                              duration: const Duration(seconds: 2),
                             ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                          );
+                        }
 
                         try {
                           final locations =
                               await geocoding.locationFromAddress(fullAddress);
-                          if (locations.isNotEmpty && context.mounted) {
+                          if (locations.isNotEmpty) {
                             if (mounted) {
                               setState(() {
                                 _latitude = locations.first.latitude;
                                 _longitude = locations.first.longitude;
                               });
-                            }
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Coordinates successfully resolved and attached for $street!',
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Coordinates successfully resolved and attached for $street!',
+                                  ),
+                                  backgroundColor: Colors.green.shade700,
                                 ),
-                                backgroundColor: Colors.green.shade700,
-                              ),
-                            );
+                              );
+                            }
                           }
                         } catch (e) {
                           Utilities.debugPrintWithCallerInfo(
                             "Geocoding of user-captured address failed: $e",
                           );
                           // We don't block the user, just let them know
-                          if (context.mounted) {
+                          if (mounted) {
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -435,6 +448,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
   }
 
   Future<void> _fetchGPSLocation() async {
+    if (!mounted) return;
     setState(() {
       _isFetchingGPS = true;
       _gpsError = null;
@@ -442,12 +456,15 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!mounted) return;
       if (!serviceEnabled) {
         throw 'Location services are disabled on your phone.';
       }
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!mounted) return;
         if (permission == LocationPermission.denied) {
           throw 'Location permissions were denied.';
         }
@@ -461,6 +478,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           timeLimit: Duration(seconds: 5),
         ),
       );
+      if (!mounted) return;
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
@@ -470,6 +488,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       try {
         final placemarks = await geocoding.placemarkFromCoordinates(
             position.latitude, position.longitude);
+        if (!mounted) return;
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
           final parts = <String>[];
@@ -498,16 +517,20 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
             "Reverse geocoding failed in _fetchGPSLocation: $e");
       }
 
-      setState(() {
-        _isFetchingGPS = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isFetchingGPS = false;
+        });
+      }
     } catch (e) {
       Utilities.debugPrintWithCallerInfo(
           "Failed to get GPS location in form: $e");
-      setState(() {
-        _gpsError = e.toString();
-        _isFetchingGPS = false;
-      });
+      if (mounted) {
+        setState(() {
+          _gpsError = e.toString();
+          _isFetchingGPS = false;
+        });
+      }
     }
   }
 
@@ -570,7 +593,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
   Future<dynamic> _showLocationConflictDialog(List<Course> conflicts) {
     return showDialog<dynamic>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
@@ -601,7 +624,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                   child: ListView.builder(
                     shrinkWrap: true,
                     itemCount: conflicts.length,
-                    itemBuilder: (BuildContext context, int index) {
+                    itemBuilder: (BuildContext listContext, int index) {
                       final Course conflictCourse = conflicts[index];
                       return Card(
                         elevation: 1,
@@ -637,7 +660,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                           trailing: const Icon(Icons.chevron_right,
                               color: Colors.green),
                           onTap: () {
-                            Navigator.of(context).pop(conflictCourse);
+                            Navigator.of(dialogContext).pop(conflictCourse);
                           },
                         ),
                       );
@@ -652,7 +675,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(null); // Cancel
+                Navigator.of(dialogContext).pop(null); // Cancel
               },
               child: const Text('Cancel',
                   style: TextStyle(
@@ -667,7 +690,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                 ),
               ),
               onPressed: () {
-                Navigator.of(context).pop(true); // Add anyway
+                Navigator.of(dialogContext).pop(true); // Add anyway
               },
               child: const Text('Add Second Course Anyway',
                   style: TextStyle(fontWeight: FontWeight.bold)),
@@ -681,7 +704,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
   void _showDuplicateCourseDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
@@ -701,7 +724,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
               },
               child: const Text('OK',
                   style: TextStyle(fontWeight: FontWeight.bold)),
@@ -737,6 +760,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
         _address!.trim().isNotEmpty) {
       try {
         final locations = await geocoding.locationFromAddress(_address!);
+        if (!mounted) return;
         if (locations.isNotEmpty) {
           finalLat = locations.first.latitude;
           finalLng = locations.first.longitude;
@@ -751,8 +775,10 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       }
     }
 
+    if (!mounted) return;
     final conflicts =
         await _findConflictingCourses(finalLat, finalLng, _address);
+    if (!mounted) return;
     if (widget.course != null) {
       // Filter out self when editing
       conflicts.removeWhere((c) => c.id == widget.course!.id);
@@ -766,6 +792,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     if (proceed == null) {
       return; // User cancelled
     }
+
+    if (!mounted) return;
 
     if (proceed is Course) {
       // Select the existing course

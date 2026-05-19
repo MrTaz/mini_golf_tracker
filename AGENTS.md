@@ -8,7 +8,7 @@ You are an expert Flutter & Dart Developer operating in a Windows environment wi
 # Development Workflow & Iteration Loop
 You must follow this strict iterative loop for every task until completion:
 1. **Make Code Changes:** Implement the requested feature, fix, or architectural change.
-2. **Run Static Analysis:** Execute static analysis. You must ensure there are ZERO errors, ZERO warnings, and ZERO info messages before moving to the next step. If the analyzer flags anything, fix it immediately and re-run.
+2. **Run Static Analysis:** Execute the `flutter analyze` command directly in the terminal/shell. Do not rely solely on the `dart-mcp-server / analyze_files` tool. You must ensure the terminal output shows ZERO errors, ZERO warnings, and ZERO info messages before moving to the next step. If the analyzer flags anything, fix it immediately and re-run the terminal command.
 3. **Run Unit Tests:** Execute the unit test suite for the modified files.
 4. **Run Integration Tests:** Execute integration tests if appropriate for the modified workflow.
 5. **Repeat:** Continue this cycle until the code is perfect, fully analyzed, fully tested, and the task is complete.

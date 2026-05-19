@@ -34,6 +34,7 @@ class CoursesScreenState extends State<CoursesScreen> {
 
   Position? _currentPosition;
   bool _isLocating = false;
+  String? _connectionError;
 
   @override
   void initState() {
@@ -163,6 +164,7 @@ class CoursesScreenState extends State<CoursesScreen> {
       courses = [];
       _lastDocument = null;
       _hasMore = true;
+      _connectionError = null;
     });
 
     try {
@@ -203,6 +205,11 @@ class CoursesScreenState extends State<CoursesScreen> {
     } catch (exception) {
       Utilities.debugPrintWithCallerInfo(
           "Exception when loading courses from DB: ${exception.toString()}. Falling back to local cache.");
+      if (mounted) {
+        setState(() {
+          _connectionError = "Unable to load courses. Please check your connection.";
+        });
+      }
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         final List<String>? coursesJson = prefs.getStringList('courses');
@@ -210,23 +217,32 @@ class CoursesScreenState extends State<CoursesScreen> {
             "Courses saved locally: $coursesJson");
         List<Course> loadedCourses = [];
 
-        if (coursesJson != null) {
+        if (coursesJson != null && coursesJson.isNotEmpty) {
           Utilities.debugPrintWithCallerInfo(
               "Loading courses from sharedprefs");
           loadedCourses = coursesJson
               .map((String courseJson) =>
                   Course.fromJson(jsonDecode(courseJson)))
               .toList();
+          
+          if (mounted) {
+            setState(() {
+              courses = loadedCourses;
+              _hasMore = false; // Disable pagination on local cache fallback
+              _isLoading = false;
+              _connectionError = null; // Clear connection error since we have cached data
+            });
+            _sortCoursesByProximity();
+          }
+          return loadedCourses;
+        } else {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          return [];
         }
-        if (mounted) {
-          setState(() {
-            courses = loadedCourses;
-            _hasMore = false; // Disable pagination on local cache fallback
-            _isLoading = false;
-          });
-          _sortCoursesByProximity();
-        }
-        return loadedCourses;
       } catch (innerException) {
         Utilities.debugPrintWithCallerInfo(
             "Exception when loading courses from local cache: ${innerException.toString()}");
@@ -534,6 +550,91 @@ class CoursesScreenState extends State<CoursesScreen> {
                       backgroundColor: Colors.green.shade100,
                       color: Colors.green.shade700,
                       borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_connectionError != null)
+          Center(
+            child: Container(
+              key: const Key('fairway_unreachable_card'),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+              margin: const EdgeInsets.symmetric(horizontal: 24.0),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(24.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20.0,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.red.shade700.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.signal_wifi_off,
+                      size: 64.0,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 24.0),
+                  const Text(
+                    'Fairway Unreachable',
+                    style: TextStyle(
+                      fontSize: 22.0,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  Text(
+                    _connectionError!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15.0,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 28.0),
+                  ElevatedButton.icon(
+                    key: const Key('retry_button'),
+                    onPressed: () => _initializeCourses(),
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    label: const Text(
+                      'Retry',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 14.0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      elevation: 2.0,
                     ),
                   ),
                 ],

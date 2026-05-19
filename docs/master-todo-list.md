@@ -337,16 +337,18 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
   - `pendingVerification`
   - `claimed`
 
-### 5.4 Account Merge Workflow
+##### 5.4 Account Merge Workflow
 
-- [ ] Build account merge UI and backend.
-- [ ] Implement a Cloud Function trigger or backend logic to detect contact collisions during `resolveCanonicalPlayer`.
-- [ ] If a user adds a contact already owned by another `player_id`, set status to `pendingVerification`.
-- [ ] Trigger a `"Merge Challenge"`.
-- [ ] Send a clickable verification link to the challenged contact owner.
-- [ ] Develop a `"Merge Request"` dialog.
-- [ ] Ensure player records only merge after the challenged contact owner explicitly approves the merge through the link.
-- [ ] Write tests for merge approval.
+*  [ ] Build account merge UI and backend.
+*  [ ] Implement a Cloud Function trigger or backend logic to detect contact collisions during `resolveCanonicalPlayer`.
+*  [ ] If a user adds a contact already owned by another `player_id`, set status to `pendingVerification`.
+*  [ ] Trigger a "Merge Challenge".
+*  [ ] Send a clickable verification link to the challenged contact owner.
+*  [ ] Develop a "Merge Request" dialog.
+*  [ ] **Add a strict UI warning dialog explicitly stating that account merging is permanent and cannot be unmerged.**
+*  [ ] **Enforce strict security constraints: Ensure no accounts or contacts can be merged or added to a player profile unless they have been fully verified via Firebase Auth.**
+*  [ ] Ensure player records only merge after the challenged contact owner explicitly approves the merge through the link.
+*  [ ] Write tests for merge approval.
 
 ##### 5.5 Firestore Security Rules (`firestore.rules`)
 *  [ ] Overwrite the current default `firestore.rules` configuration with strict schema enforcement.
@@ -366,6 +368,18 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Update `PlayerForm` in `player_form_widget.dart` to include a `pii_sharing_prefs` toggle.
 - [ ] Use `SwitchListTile` for the PII sharing preference.
 - [ ] Respect `pii_sharing_prefs` in the UI.
+
+##### 5.7 Social Login Account Linking & Detection
+
+*  [ ] Implement backend logic to allow linking multiple social login providers (e.g., Google, Facebook, Snapchat, Instagram) to a single canonical `Player` account.
+*  [ ] Update the `LoginScreen` and authentication flow to preemptively detect if a newly authenticated social login email or phone matches an existing canonical player record.
+*  [ ] Create a "Match Found" UI prompt alerting the user that game history or a player account already exists under a different login method.
+*  [ ] Provide an explicit "Link Accounts" UX action, allowing the user to merge the new social login into their existing canonical player, consolidating their game history.
+*  [ ] Provide an explicit "Keep Separate" UX action to allow users to intentionally opt-out of linking if they prefer to maintain multiple separate accounts.
+*  [ ] Update the `Player` model and `player_contacts` schema to track linked authentication providers.
+*  [ ] Integrate this detection and linking UI seamlessly with the existing `ClaimAccountScreen` and Phase 5.4 Account Merge workflows.
+*  [ ] **Security Constraint:** Ensure the social login email or phone number is fully verified by Firebase Auth before allowing it to be linked to the canonical player account.
+*  [ ] **UX Warning:** Ensure the "Link Accounts" UI includes the same strict warning from 5.4 explicitly stating that linking social accounts is permanent and cannot be undone.
 
 ---
 

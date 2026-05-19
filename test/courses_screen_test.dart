@@ -5,6 +5,9 @@ import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -334,4 +337,79 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
   });
+
+  testWidgets(
+      'displays Fairway Unreachable error screen on DB failure with empty cache, and supports retry',
+      (tester) async {
+    // 1. Set the throwing firestore instance
+    final throwingFirestore = ThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(throwingFirestore);
+    SharedPreferences.setMockInitialValues({});
+
+    // 2. Build screen
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // 3. Verify it shows the Fairway Unreachable card and connection error message
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsOneWidget);
+    expect(find.text('Unable to load courses. Please check your connection.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('retry_button')), findsOneWidget);
+
+    // 4. Reset database connection to a working fake database
+    final workingFirestore = FakeFirebaseFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(workingFirestore);
+    await workingFirestore.collection('courses').add({
+      'name': 'Recovered Course',
+      'number_of_holes': 9,
+      'par_strokes': {'1': 3},
+    });
+
+    // 5. Tap Retry button
+    await tester.tap(find.byKey(const Key('retry_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // 6. Verify error is cleared and it shows the newly loaded course
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
+    expect(find.text('Recovered Course'), findsOneWidget);
+  });
+
+  testWidgets(
+      'falls back to local cache when DB fetch fails and cache is not empty',
+      (tester) async {
+    // 1. Set up local cache in SharedPreferences and set throwing firestore
+    final throwingFirestore = ThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(throwingFirestore);
+    SharedPreferences.setMockInitialValues({
+      'courses': [
+        jsonEncode(Course(
+          id: 'c_local',
+          name: 'Local Cached Course',
+          numberOfHoles: 9,
+          parStrokes: {1: 3},
+        ).toJson())
+      ],
+    });
+
+    // 2. Build screen
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // 3. Verify it gracefully loads from cache and doesn't display the error card
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
+    expect(find.text('Local Cached Course'), findsOneWidget);
+  });
 }
+
+class ThrowingFirestore extends FakeFirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String path) {
+    throw FirebaseException(
+      plugin: 'firestore',
+      code: 'unavailable',
+      message: 'Service unavailable',
+    );
+  }
+}
+

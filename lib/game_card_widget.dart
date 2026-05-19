@@ -28,32 +28,36 @@ class GameCardWidgetState extends State<GameCardWidget> {
   }
 
   Future<void> deleteSavedGame({Game? gameToDelete}) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (gameToDelete != null) {
-      await prefs.remove(gameToDelete.id);
-    } else {
-      final Set<String> keys = prefs.getKeys().cast<String>();
-      for (String key in keys) {
-        dynamic value = prefs.get(key);
-        Utilities.debugPrintWithCallerInfo(
-            "Found shared preference: $key $value");
-        if (value is String) {
-          try {
-            jsonDecode(value);
-            prefs.remove(key);
-          } catch (e) {
-            Utilities.debugPrintWithCallerInfo(
-                "Not a JSON-formatted string. Plain value: $value");
-          }
-        } else if (value is List<String>) {
-          Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
-        } else {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (gameToDelete != null) {
+        await prefs.remove(gameToDelete.id);
+      } else {
+        final Set<String> keys = prefs.getKeys().cast<String>();
+        for (String key in keys) {
+          dynamic value = prefs.get(key);
           Utilities.debugPrintWithCallerInfo(
-              "Value cannot be parsed. Type: ${value.runtimeType}");
+              "Found shared preference: $key $value");
+          if (value is String) {
+            try {
+              jsonDecode(value);
+              prefs.remove(key);
+            } catch (e) {
+              Utilities.debugPrintWithCallerInfo(
+                  "Not a JSON-formatted string. Plain value: $value");
+            }
+          } else if (value is List<String>) {
+            Utilities.debugPrintWithCallerInfo("It's a List of strings: $value");
+          } else {
+            Utilities.debugPrintWithCallerInfo(
+                "Value cannot be parsed. Type: ${value.runtimeType}");
+          }
         }
       }
+      setState(() {}); // Refresh the widget after deletion
+    } catch (e) {
+      rethrow;
     }
-    setState(() {}); // Refresh the widget after deletion
   }
 
   Future<void> _navigateToGameCreateScreen() async {
@@ -108,6 +112,14 @@ class GameCardWidgetState extends State<GameCardWidget> {
               } else if (gameSnapshot.hasError) {
                 Utilities.debugPrintWithCallerInfo(
                     gameSnapshot.error.toString());
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Remote sync temporarily unavailable')),
+                    );
+                  }
+                });
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -119,6 +131,14 @@ class GameCardWidgetState extends State<GameCardWidget> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Deleted saved game')),
                           );
+                        }).catchError((e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'Remote sync temporarily unavailable')),
+                            );
+                          }
                         });
                       },
                       child: const Text('Delete Game'),
@@ -168,16 +188,33 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                             const EdgeInsets.only(bottom: 8.0),
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (context) {
-                                                return GameStartScreen(
-                                                    unstartedGame: game);
-                                              }),
-                                            ).then((_) {
-                                              setState(
-                                                  () {}); // Refresh the widget after creating a new game
-                                            });
+                                            try {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                    builder: (context) {
+                                                  return GameStartScreen(
+                                                      unstartedGame: game);
+                                                }),
+                                              ).then((_) {
+                                                setState(() {});
+                                              }).catchError((e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text(
+                                                            'Remote sync temporarily unavailable')),
+                                                  );
+                                                }
+                                              });
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Remote sync temporarily unavailable')),
+                                                );
+                                              }
+                                            }
                                           },
                                           child: const Text('Start Game'),
                                         ),
@@ -190,16 +227,33 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                             const EdgeInsets.only(bottom: 8.0),
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (context) {
-                                                return GameInprogressScreen(
-                                                    currentGame: game);
-                                              }),
-                                            ).then((_) {
-                                              setState(
-                                                  () {}); // Refresh the widget after creating a new game
-                                            });
+                                            try {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                    builder: (context) {
+                                                  return GameInprogressScreen(
+                                                      currentGame: game);
+                                                }),
+                                              ).then((_) {
+                                                setState(() {});
+                                              }).catchError((e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text(
+                                                            'Remote sync temporarily unavailable')),
+                                                  );
+                                                }
+                                              });
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Remote sync temporarily unavailable')),
+                                                );
+                                              }
+                                            }
                                           },
                                           child: const Text('Continue Game'),
                                         ),
@@ -220,6 +274,14 @@ class GameCardWidgetState extends State<GameCardWidget> {
                                                   content: Text(
                                                       'Deleted saved game')),
                                             );
+                                          }).catchError((e) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                    content: Text(
+                                                        'Remote sync temporarily unavailable')),
+                                              );
+                                            }
                                           });
                                         },
                                         child: const Text('Delete Game'),
