@@ -23,6 +23,7 @@ import 'package:mini_golf_tracker/claim_account_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
+import 'package:mini_golf_tracker/past_games_screen.dart';
 
 class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
@@ -151,10 +152,11 @@ void main() {
     expect(find.text('Guest Profile'), findsOneWidget);
     expect(find.text('Friends'), findsOneWidget);
     expect(find.text('Past Games'), findsOneWidget);
-    expect(find.text('Courses'), findsOneWidget);
+    expect(find.text('Scheduled Games'), findsOneWidget);
+    expect(find.text('Courses'), findsNothing);
 
-    // Tap Friends and verify we navigate to LoginScreen
-    await tester.tap(find.text('Friends'));
+    // Tap Scheduled Games and verify we navigate to LoginScreen
+    await tester.tap(find.text('Scheduled Games'));
     await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
     // Let any pending login screen animations or timers complete
@@ -332,7 +334,7 @@ void main() {
     expect(find.byType(ClaimAccountScreen), findsOneWidget);
   });
 
-  testWidgets('changeBodyCallback works and guest drawer items navigate to LoginScreen', (tester) async {
+  testWidgets('changeBodyCallback works and guest drawer items navigate to LoginScreen or respective screens', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       DefaultAssetBundle(
@@ -358,23 +360,26 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
+    // Guest should be able to navigate to Past Games directly
     await tester.tap(find.text('Past Games'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(LoginScreen), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(PastGamesScreen), findsOneWidget);
 
-    final loginState = tester.state<State<LoginScreen>>(find.byType(LoginScreen));
-    Navigator.of(loginState.context).pop();
+    // Pop the PastGamesScreen to go back
+    final pastGamesState = tester.state<State<PastGamesScreen>>(find.byType(PastGamesScreen));
+    Navigator.of(pastGamesState.context).pop();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
+    // Open the drawer again
     final ScaffoldState state2 = tester.firstState(find.byType(Scaffold));
     state2.openDrawer();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.text('Courses'));
+    // Guest tapping "Scheduled Games" should navigate to LoginScreen (gated)
+    await tester.tap(find.text('Scheduled Games'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(LoginScreen), findsOneWidget);

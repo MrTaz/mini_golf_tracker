@@ -5,6 +5,7 @@ import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/players_list_screen.dart';
@@ -45,6 +46,10 @@ class GameStartScreenState extends State<GameStartScreen> {
     Utilities.debugPrintWithCallerInfo(
         "unstartedGame: ${widget.unstartedGame?.toJson()}");
     _initializePlayersInfo();
+
+    if (UserProvider().loggedInUser == null && widget.unstartedGame != null) {
+      widget.unstartedGame!.scheduledTime = DateTime.now();
+    }
 
     if (widget.unstartedGame == null) {
       _isCreatingGame = true;
@@ -161,7 +166,47 @@ class GameStartScreenState extends State<GameStartScreen> {
     }
   }
 
+  void _showGatedSchedulingDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Scheduling is Gated'),
+            ],
+          ),
+          content: const Text(
+            'To schedule games in advance, please log in or sign up for an account. Logged-in users can schedule games and sync them across devices!',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: const Text('Log In / Sign Up'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _editStartTime() async {
+    if (UserProvider().loggedInUser == null) {
+      _showGatedSchedulingDialog();
+      return;
+    }
     final DateTime? selectedTime = await showDatePicker(
       context: context,
       initialDate: widget.unstartedGame!.scheduledTime,
@@ -188,6 +233,7 @@ class GameStartScreenState extends State<GameStartScreen> {
           selectedTimeOfDay.minute,
         );
 
+        if (!mounted) return;
         setState(() {
           widget.unstartedGame!.scheduledTime = selectedDateTime;
         });
@@ -255,6 +301,14 @@ class GameStartScreenState extends State<GameStartScreen> {
   }
 
   void _scheduleGame() async {
+    if (UserProvider().loggedInUser == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+      return;
+    }
+
     if (widget.unstartedGame == null) {
       return;
     }
@@ -341,18 +395,18 @@ class GameStartScreenState extends State<GameStartScreen> {
   }
 
   // UI for player list items
-  Widget _buildPlayerListItem(Player player, int playerIndex) {
+  Widget _buildPlayerListItem(Player player, int playerIndex, String uniqueId) {
     bool isSelected = false;
 
     return InkWell(
-      key: Key("inkwellOrderTap${player.id}"),
+      key: Key("inkwellOrderTap$uniqueId"),
       onTap: () {
         setState(() {
           isSelected = !isSelected;
         });
       },
       child: PlayerListItem(
-        key: Key(player.id.toString()),
+        key: Key(uniqueId),
         player: player,
         creatingGame: false,
         onPlayerSelected: null,
@@ -434,7 +488,7 @@ class GameStartScreenState extends State<GameStartScreen> {
                         final playerIndex = entry.key;
                         final player = Player.empty()
                             .getPlayerFriendById(playerInfo.playerId);
-                        return _buildPlayerListItem(player!, playerIndex);
+                        return _buildPlayerListItem(player!, playerIndex, playerInfo.playerId);
                       }).toList(),
                       onReorder: (int oldIndex, int newIndex) {
                         setState(() {
@@ -470,23 +524,35 @@ class GameStartScreenState extends State<GameStartScreen> {
 
   // UI for the scheduled start time section
   Widget _buildScheduledStartTimeSection() {
+    final bool isGuest = UserProvider().loggedInUser == null;
     return Center(
       child: Card(
-        elevation: 6,
+        elevation: isGuest ? 2 : 6,
+        color: isGuest ? Colors.grey[100] : Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              const Row(
+              Row(
                 children: [
                   Padding(
-                    padding: EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: Text(
                       'Schedule start time',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isGuest ? Colors.grey[600] : Colors.black,
+                      ),
                     ),
                   ),
+                  if (isGuest) ...[
+                    const Spacer(),
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8.0),
+                      child: Icon(Icons.lock, color: Colors.grey, size: 20),
+                    ),
+                  ]
                 ],
               ),
               ListTile(
@@ -496,16 +562,25 @@ class GameStartScreenState extends State<GameStartScreen> {
                   builder:
                       (BuildContext context, AsyncSnapshot<String> snapshot) {
                     if (snapshot.hasData) {
-                      return Text(snapshot.data!);
+                      return Text(
+                        snapshot.data!,
+                        style: TextStyle(
+                          color: isGuest ? Colors.grey[500] : Colors.black,
+                        ),
+                      );
                     } else {
                       return const Text("Loading...");
                     }
                   },
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.schedule),
-                  onPressed: _editStartTime,
+                  icon: Icon(
+                    isGuest ? Icons.lock_outline : Icons.schedule,
+                    color: isGuest ? Colors.grey : null,
+                  ),
+                  onPressed: isGuest ? _showGatedSchedulingDialog : _editStartTime,
                 ),
+                onTap: isGuest ? _showGatedSchedulingDialog : null,
               ),
             ],
           ),

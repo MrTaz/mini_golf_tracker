@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
@@ -7,21 +9,50 @@ import 'package:mini_golf_tracker/game_start_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
+    final fakeFirestore = FakeFirebaseFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     SharedPreferences.setMockInitialValues({});
     UserProvider().resetForTesting();
     Player.players = [_guestPlayer('p1', 'Ava'), _guestPlayer('p2', 'Ben')];
   });
 
   tearDown(() {
+    DatabaseConnection.setFirestoreInstanceForTesting(null);
     Player.players = [];
   });
 
-  testWidgets('guest can schedule a valid game locally', (tester) async {
+  testWidgets('guest scheduling is redirected to LoginScreen', (tester) async {
     final game = _guestGame();
+
+    await tester.pumpWidget(
+      MaterialApp(home: GameStartScreen(unstartedGame: game)),
+    );
+
+    await tester.tap(find.text('Schedule game'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+
+    // Pump to let the FlutterLogin intro animation timers complete
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('auth user can schedule a valid game', (tester) async {
+    final game = _guestGame();
+    final player = Player(
+      id: 'auth-uid',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'auth-uid',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    await UserProvider().login(player);
 
     await tester.pumpWidget(
       MaterialApp(home: GameStartScreen(unstartedGame: game)),

@@ -124,11 +124,13 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 ##### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
 
 *  [ ] **Global Active Game Auto-Launch:** Update `HomePage._updateState()` in `main.dart` to check for an active local game via `Game.getLocallySavedGames(gameStatusTypes: ["started"])`.
-*  [ ] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the `body` to `GameInprogressScreen` to ensure the round persists across app restarts.
-*  [ ] **Dynamic Bottom Navigation:** Modify `DashboardScreen` to hide the `BottomNavigationBar` if `UserProvider().loggedInUser` is null.
+*  [ ] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the body to `GameInprogressScreen` to ensure the round persists across app restarts.
+*  [x] **Dynamic Bottom Navigation:** Modify `DashboardScreen` to hide the `BottomNavigationBar` if `UserProvider().loggedInUser` is null.
 *  [ ] **Game Creation Redirect:** Refactor `GameCreateScreen` and `GameStartScreen` so that upon clicking "Start," the app pushes `GameInprogressScreen` immediately instead of popping to the home screen.
-*  [ ] **Gated Scheduling:** In `GameStartScreen` and `GameCreateScreen`, check if `UserProvider().loggedInUser` is null.
-*  [ ] If a Guest: Intercept the "Schedule Game" action (`btnScheduleGame`) and redirect to the `LoginScreen` [1].
+*  [ ] **Subscriber-Gated Scheduling UI:** In `GameStartScreen` and `GameCreateScreen`, implement a "Locked" state for the "Start Time" selection for non-subscribers.
+*  [ ] **Read-Only Implementation:** If the user is a Guest, the date and time picker should be disabled and locked to `DateTime.now()`.
+*  [ ] If a Guest: Intercept the "Schedule Game" action (`btnScheduleGame`) and redirect to the `LoginScreen`.
+*  [ ] **Conversion Call-to-Action:** Intercept taps on the locked "Start Time" section to show an informational message (e.g., "Upgrade to Premium to schedule games for the future!") with a link to the signup/subscription screen.
 *  [ ] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
 
 ##### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
@@ -464,6 +466,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
 *  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
 *  [ ] **Subscription Logic:** Plan a `UserProvider` attribute for `isPremium` to manage feature access.
+*  [ ] **Scheduling Paywall:** Enforce the rule that only users with `isPremium == true` can persist games with a `scheduled_time` in the future.
+*  [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
+*  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
 
 ---
 
@@ -844,8 +849,10 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `asset_golf_ball_path.dart`
 *  [x] `claim_account_screen.dart`
 *  [x] `courses_screen.dart`
+*  [x] `dashboard_screen.dart`
 *  [x] `database_connection_error.dart`
 *  [x] `game_card_widget.dart`
+*  [x] `main.dart`
 *  [x] `map_picker_screen.dart`
 *  [x] `player.dart`
 *  [x] `player_create_screen.dart`

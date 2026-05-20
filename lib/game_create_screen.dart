@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -62,7 +65,46 @@ class GameCreateScreenState extends State<GameCreateScreen> {
     }
   }
 
+  void _showGatedSchedulingDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Scheduling is Gated'),
+            ],
+          ),
+          content: const Text(
+            'To schedule games in advance, please log in or sign up for an account. Logged-in users can schedule games and sync them across devices!',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: const Text('Log In / Sign Up'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _createGame() async {
+    if (UserProvider().loggedInUser == null) {
+      _scheduledTime = DateTime.now();
+    }
     if (_formKey.currentState!.validate()) {
       final String name = _nameController.text.trim();
       if (_selectedCourse == null) {
@@ -89,6 +131,9 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         newGame.addPlayer(pgi);
       }
 
+      newGame.status = "started";
+      newGame.startTime = DateTime.now();
+
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String gameJson = jsonEncode(newGame);
       await prefs.setString(newGame.id, gameJson);
@@ -97,12 +142,17 @@ class GameCreateScreenState extends State<GameCreateScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Game created successfully'),
       ));
-      Navigator.pop(context);
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => GameInprogressScreen(currentGame: newGame),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isGuest = UserProvider().loggedInUser == null;
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
@@ -143,39 +193,54 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                 ),
                 const SizedBox(height: 16.0),
                 ListTile(
-                  title: const Text('Start Time'),
-                  subtitle:
-                      Text(DateFormat.yMMMMd().add_jm().format(_scheduledTime)),
-                  onTap: () async {
-                    final DateTime? selectedTime = await showDatePicker(
-                      context: context,
-                      initialDate: _scheduledTime,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
+                  title: Text(
+                    'Start Time',
+                    style: TextStyle(
+                      color: isGuest ? Colors.grey[600] : Colors.black,
+                    ),
+                  ),
+                  subtitle: Text(
+                    DateFormat.yMMMMd().add_jm().format(_scheduledTime),
+                    style: TextStyle(
+                      color: isGuest ? Colors.grey[500] : Colors.black87,
+                    ),
+                  ),
+                  trailing: Icon(
+                    isGuest ? Icons.lock : Icons.edit,
+                    color: isGuest ? Colors.grey : null,
+                  ),
+                  onTap: isGuest
+                      ? _showGatedSchedulingDialog
+                      : () async {
+                          final DateTime? selectedTime = await showDatePicker(
+                            context: context,
+                            initialDate: _scheduledTime,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
 
-                    if (selectedTime != null) {
-                      if (!context.mounted) return;
-                      final TimeOfDay? selectedTimeOfDay = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(_scheduledTime),
-                      );
+                          if (selectedTime != null) {
+                            if (!context.mounted) return;
+                            final TimeOfDay? selectedTimeOfDay = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.fromDateTime(_scheduledTime),
+                            );
 
-                      if (selectedTimeOfDay != null) {
-                        final DateTime selectedDateTime = DateTime(
-                          selectedTime.year,
-                          selectedTime.month,
-                          selectedTime.day,
-                          selectedTimeOfDay.hour,
-                          selectedTimeOfDay.minute,
-                        );
+                            if (selectedTimeOfDay != null) {
+                              final DateTime selectedDateTime = DateTime(
+                                selectedTime.year,
+                                selectedTime.month,
+                                selectedTime.day,
+                                selectedTimeOfDay.hour,
+                                selectedTimeOfDay.minute,
+                              );
 
-                        setState(() {
-                          _scheduledTime = selectedDateTime;
-                        });
-                      }
-                    }
-                  },
+                              setState(() {
+                                _scheduledTime = selectedDateTime;
+                              });
+                            }
+                          }
+                        },
                 ),
                 const SizedBox(height: 16.0),
                 ElevatedButton(
