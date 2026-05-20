@@ -263,6 +263,12 @@ class CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
+  @visibleForTesting
+  Future<void> loadMoreCoursesForTesting() => _loadMoreCourses();
+
+  @visibleForTesting
+  bool get hasMoreForTesting => _hasMore;
+
   Future<void> _loadMoreCourses() async {
     if (_isLoadingMore || !_hasMore) return;
 
