@@ -71,20 +71,20 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ##### 1.5 Unified Smart Navigation Drawer
 
-*  [ ] Refactor `_buildDrawerList` in `main.dart` to provide a consistent menu for both Guests and Auth users.
-*  [ ] **Dynamic Header:** 
+*  [x] Refactor `_buildDrawerList` in `main.dart` to provide a consistent menu for both Guests and Auth users.
+*  [x] **Dynamic Header:** 
     *  Auth: Show `UserAccountsDrawerHeader` with name, email, and "Edit Profile" action (pointing to `PlayerDetailsScreen`).
     *  Guest: Show "Guest Profile" placeholder with a "Sign In / Sign Up" call to action.
-*  [ ] **Dynamic 'Current Game' Item:**
+*  [x] **Dynamic 'Current Game' Item:**
     *  If an active game exists: Show "Resume Active Game" and navigate to `GameInprogressScreen`.
     *  If no active game exists: Show "No current game" (with a subtitle like "Tap to start playing") and navigate to `GameCreateScreen`.
-*  [ ] **Universal Navigation Items:** 
+*  [x] **Universal Navigation Items:** 
     *  Add menu items for: "Friends", "Scheduled Games", and "Past Games".
     *  *Remove* "Courses" from the main drawer to reduce clutter.
-*  [ ] **Open Routing for Guests (Local Data):**
+*  [x] **Open Routing for Guests (Local Data):**
     *  Guests must be allowed to navigate to `Friends` and `Past Games` to view their locally saved data [1].
     *  Instead of blocking navigation via the drawer, conversion prompts (e.g., "Sign in to backup your history") should be placed as banners or cards *inside* those specific screens later.
-*  [ ] **Gated Feature (Scheduled Games):**
+*  [x] **Gated Feature (Scheduled Games):**
     *  If Auth: Navigate to the `ScheduledGamesScreen`.
     *  If Guest: Tapping "Scheduled Games" redirects to the `LoginScreen` with a prompt: "Sign up to schedule future rounds and sync with friends."
 
@@ -123,15 +123,15 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ##### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
 
-*  [ ] **Global Active Game Auto-Launch:** Update `HomePage._updateState()` in `main.dart` to check for an active local game via `Game.getLocallySavedGames(gameStatusTypes: ["started"])`.
-*  [ ] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the body to `GameInprogressScreen` to ensure the round persists across app restarts.
+*  [x] **Global Active Game Auto-Launch:** Update `HomePage._updateState()` in `main.dart` to check for an active local game via `Game.getLocallySavedGames(gameStatusTypes: ["started"])`.
+*  [x] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the body to `GameInprogressScreen` to ensure the round persists across app restarts.
 *  [x] **Dynamic Bottom Navigation:** Modify `DashboardScreen` to hide the `BottomNavigationBar` if `UserProvider().loggedInUser` is null.
-*  [ ] **Game Creation Redirect:** Refactor `GameCreateScreen` and `GameStartScreen` so that upon clicking "Start," the app pushes `GameInprogressScreen` immediately instead of popping to the home screen.
-*  [ ] **Subscriber-Gated Scheduling UI:** In `GameStartScreen` and `GameCreateScreen`, implement a "Locked" state for the "Start Time" selection for non-subscribers.
-*  [ ] **Read-Only Implementation:** If the user is a Guest, the date and time picker should be disabled and locked to `DateTime.now()`.
-*  [ ] If a Guest: Intercept the "Schedule Game" action (`btnScheduleGame`) and redirect to the `LoginScreen`.
-*  [ ] **Conversion Call-to-Action:** Intercept taps on the locked "Start Time" section to show an informational message (e.g., "Upgrade to Premium to schedule games for the future!") with a link to the signup/subscription screen.
-*  [ ] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
+*  [x] **Game Creation Redirect:** Refactor `GameCreateScreen` and `GameStartScreen` so that upon clicking "Start," the app pushes `GameInprogressScreen` immediately instead of popping to the home screen.
+*  [x] **Subscriber-Gated Scheduling UI:** In `GameStartScreen` and `GameCreateScreen`, implement a "Locked" state for the "Start Time" selection for non-subscribers.
+*  [x] **Read-Only Implementation:** If the user is a Guest, the date and time picker should be disabled and locked to `DateTime.now()`.
+*  [x] If a Guest: Intercept the "Schedule Game" action (`btnScheduleGame`) and redirect to the `LoginScreen`.
+*  [x] **Conversion Call-to-Action:** Intercept taps on the locked "Start Time" section to show an informational message (e.g., "Upgrade to Premium to schedule games for the future!") with a link to the signup/subscription screen.
+*  [x] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
 
 ##### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
 
@@ -852,7 +852,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `dashboard_screen.dart`
 *  [x] `database_connection_error.dart`
 *  [x] `game_card_widget.dart`
-*  [x] `main.dart`
+*  [x] `game_create_screen.dart`
+*  [x] `game_start_screen.dart`
 *  [x] `map_picker_screen.dart`
 *  [x] `player.dart`
 *  [x] `player_create_screen.dart`
@@ -860,6 +861,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `userprovider.dart`
 
 **Pending Specific Behavioral Tests:**
+*  [ ] Restore 100% coverage for `main.dart` (currently 75% due to Smart Drawer updates).
+*  [ ] Achieve 100% coverage for `scheduled_games_screen.dart`.
 *  [ ] Player.createPlayer nickname-only creation.
 *  [ ] PlayerForm quick-play validation bypass.
 *  [ ] ContactIdentity.normalizeEmail.
