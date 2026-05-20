@@ -138,6 +138,15 @@ class GameStartScreenState extends State<GameStartScreen> {
     }
   }
 
+  @visibleForTesting
+  void selectCourseForTesting() => _selectCourse();
+
+  @visibleForTesting
+  void editStartTimeForTesting() => _editStartTime();
+
+  @visibleForTesting
+  Course? get newGameCourseForTesting => _newGameCourse;
+
   void _selectCourse() async {
     Utilities.debugPrintWithCallerInfo(
         "Opening select course screen, $_isCreatingGame, $_newGameCourse, ${widget.unstartedGame?.course.toJson()}");
@@ -366,7 +375,7 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
-    if (widget.unstartedGame!.scheduledTime != DateTime(0)) {
+    if (widget.unstartedGame!.scheduledTime == DateTime(0)) {
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }
 

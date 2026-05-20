@@ -35,6 +35,37 @@ class GameCreateScreenState extends State<GameCreateScreen> {
     _scheduledTime = DateTime.now();
   }
 
+  // ─── Test-only accessors ──────────────────────────────────────────────────
+  @visibleForTesting
+  void setSelectedCourseForTesting(Course? c) {
+    setState(() => _selectedCourse = c);
+  }
+
+  @visibleForTesting
+  void setSelectedPlayersForTesting(List<Player> players) {
+    setState(() => _selectedPlayers = players);
+  }
+
+  @visibleForTesting
+  void setScheduledTimeForTesting(DateTime dt) {
+    setState(() => _scheduledTime = dt);
+  }
+
+  @visibleForTesting
+  void handleCourseSelectionResult(Course? course) {
+    if (course != null) {
+      setState(() => _selectedCourse = course);
+    }
+  }
+
+  @visibleForTesting
+  void handlePlayersSelectionResult(List<Player>? players) {
+    if (players != null && players.isNotEmpty) {
+      setState(() => _selectedPlayers = players);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   Future<void> _selectCourse() async {
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
