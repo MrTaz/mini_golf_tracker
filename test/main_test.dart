@@ -24,6 +24,10 @@ import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/past_games_screen.dart';
+import 'package:mini_golf_tracker/scheduled_games_screen.dart';
+import 'package:mini_golf_tracker/game_start_screen.dart';
+import 'package:mini_golf_tracker/past_game_details_screen.dart';
+import 'package:mini_golf_tracker/game_create_screen.dart';
 
 class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
@@ -90,14 +94,25 @@ class FakeAssetBundle extends CachingAssetBundle {
   @override
   Future<ByteData> load(String key) async {
     if (key == 'AssetManifest.bin') {
-      return ByteData.sublistView(Uint8List.fromList([13, 0]));
+      return const StandardMessageCodec().encodeMessage({})!;
     }
     if (key == 'AssetManifest.json') {
-      return ByteData.sublistView(Uint8List.fromList(utf8.encode('{}')));
+      final manifest = {
+        "assets/images/rank1.png": ["assets/images/rank1.png"],
+        "assets/images/rank2.png": ["assets/images/rank2.png"],
+        "assets/images/rank3.png": ["assets/images/rank3.png"],
+        "assets/images/mini_golf_placeholder.png": ["assets/images/mini_golf_placeholder.png"],
+        "assets/images/loggedin_background_2.png": ["assets/images/loggedin_background_2.png"],
+      };
+      return ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(manifest))));
     }
     if (key.endsWith('.png') || key.endsWith('.jpg') || key.endsWith('.jpeg') || key.endsWith('.gif')) {
-      return ByteData.sublistView(Uint8List.fromList([
-        71, 73, 70, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255, 33, 249, 4, 1, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 76, 1, 0, 59
+      return ByteData.sublistView(Uint8List.fromList(<int>[
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+        0x42, 0x60, 0x82,
       ]));
     }
     throw FlutterError('Asset not found: $key');
@@ -198,7 +213,7 @@ void main() {
     final playerGameInfo = PlayerGameInfo(
       playerId: 'p1',
       gameId: 'g1',
-      scores: [2],
+      scores: [1],
     );
     final game = Game(
       id: 'g1',
@@ -427,5 +442,145 @@ void main() {
 
     expect(UserProvider().loggedInUser, isNull);
     expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('Activity Hub drawer navigates to Create Game when no active game', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(createMyApp());
+    await tester.pumpAndSettle();
+    
+    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('drawer-current-game')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameCreateScreen), findsOneWidget);
+  });
+
+  testWidgets('Activity Hub drawer interactions and game sorting', (tester) async {
+    mockAuth = MockFirebaseAuth(signedIn: true);
+    UserProvider().setAuthInstanceForTesting(mockAuth);
+
+    final uid = mockAuth.currentUser!.uid;
+
+    final course = Course(
+      id: 'c1',
+      name: 'Hub Course',
+      numberOfHoles: 1,
+      parStrokes: {1: 3},
+    );
+    final activeGame = Game(
+      id: 'active_game',
+      name: 'Active Game',
+      course: course,
+      players: [PlayerGameInfo(playerId: uid, gameId: 'active_game', scores: [1])],
+      scheduledTime: DateTime.now(),
+      status: 'started',
+    );
+    final upcomingGame = Game(
+      id: 'upcoming_game',
+      name: 'Upcoming Game',
+      course: course,
+      players: [PlayerGameInfo(playerId: uid, gameId: 'upcoming_game', scores: [1])],
+      scheduledTime: DateTime.now().add(const Duration(days: 1)),
+      status: 'unstarted_game',
+    );
+    final recentGameWithCompleted = Game(
+      id: 'recent_1',
+      name: 'Recent 1',
+      course: course,
+      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_1', scores: [1])],
+      startTime: DateTime.now().subtract(const Duration(days: 2)),
+      scheduledTime: DateTime.now().subtract(const Duration(days: 2)),
+      completedTime: DateTime.now().subtract(const Duration(days: 1)),
+      status: 'completed',
+    );
+    final recentGameWithoutCompleted = Game(
+      id: 'recent_2',
+      name: 'Recent 2',
+      course: course,
+      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_2', scores: [1])],
+      startTime: DateTime.now().subtract(const Duration(days: 3)),
+      scheduledTime: DateTime.now().subtract(const Duration(days: 3)),
+      status: 'completed',
+    );
+
+    SharedPreferences.setMockInitialValues({
+      'active_game': jsonEncode(activeGame.toJson()),
+      'upcoming_game': jsonEncode(upcomingGame.toJson()),
+      'recent_1': jsonEncode(recentGameWithCompleted.toJson()),
+      'recent_2': jsonEncode(recentGameWithoutCompleted.toJson()),
+    });
+
+    final player = Player(
+      id: uid,
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: uid,
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    Player.players = [player];
+    await mockAuth.signInAnonymously();
+    await UserProvider().login(player);
+
+    await tester.pumpWidget(createMyApp());
+    await tester.pumpAndSettle();
+
+    // Open drawer
+    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test Resume Active Game (lines 226-239 for hasActive case)
+    await tester.tap(find.byKey(const Key('drawer-current-game')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
+    await tester.pumpAndSettle();
+
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test Friends tap (lines 249-253)
+    await tester.tap(find.byKey(const Key('drawer-friends')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlayersScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(PlayersScreen))).pop();
+    await tester.pumpAndSettle();
+
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test Scheduled Games tap (logged in) (lines 280-283)
+    await tester.tap(find.byKey(const Key('drawer-scheduled-games')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ScheduledGamesScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(ScheduledGamesScreen))).pop();
+    await tester.pumpAndSettle();
+
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test Upcoming game tap (lines 321-344)
+    await tester.tap(find.byKey(const Key('drawer-upcoming-upcoming_game')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameStartScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
+    await tester.pumpAndSettle();
+
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test Recent game tap (lines 370-393)
+    // Test Recent game tap (lines 370-393)
+    final recentGameFinder = find.byKey(const Key('drawer-recent-recent_1'));
+    final listTile = tester.widget<ListTile>(recentGameFinder);
+    Player.players = [player]; // Ensure player exists in state
+    listTile.onTap!();
+    await tester.pumpAndSettle();
+    expect(find.byType(PastGameDetailsScreen), findsOneWidget);
   });
 }
