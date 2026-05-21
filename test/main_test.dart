@@ -541,7 +541,7 @@ void main() {
       id: 'recent_1',
       name: 'Recent 1',
       course: course,
-      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_1', scores: [1])],
+      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_1', scores: [1], totalScore: 5)],
       startTime: DateTime.now().subtract(const Duration(days: 2)),
       scheduledTime: DateTime.now().subtract(const Duration(days: 2)),
       completedTime: DateTime.now().subtract(const Duration(days: 1)),
@@ -572,8 +572,7 @@ void main() {
       totalScore: 0,
       email: 'jane@example.com',
     );
-    Player.players = [player];
-    await mockAuth.signInAnonymously();
+    await fakeFirestore.collection('players').doc(uid).set(player.toJson());
     await UserProvider().login(player);
 
     await tester.pumpWidget(createMyApp());
@@ -631,6 +630,7 @@ void main() {
     final recentGameFinder = find.byKey(const Key('drawer-recent-recent_1'));
     await tester.ensureVisible(recentGameFinder);
     await tester.pumpAndSettle();
+    expect(find.textContaining(' - Score: 5'), findsOneWidget); // Verifies lines 287-291 coverage
     await tester.tap(recentGameFinder);
     await tester.pumpAndSettle();
     expect(find.byType(PastGameDetailsScreen), findsOneWidget);

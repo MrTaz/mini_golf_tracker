@@ -154,6 +154,36 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
     *  For Guests: If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
 *  [ ] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
 
+###### 1.10 Guest UX Hardening & Navigation Fixes
+
+*  [ ] **Past Game Details Default State:** In `PastGameDetailsScreen.initState`, pre-populate the `clickedPlayer` and `clickedPlayerScores` lists with all the players from `widget.passedGame`. This ensures the `PlayerScoreDataTable` is fully visible upon opening rather than rendering an empty grey box.
+*  [ ] **Conditional AppBars for Guests:** In `PastGamesScreen` and `PlayersScreen`, dynamically render the `appBar` property based on authentication status.
+*  [ ] If `UserProvider().loggedInUser == null` (Guest), return a standard `AppBar` with a title ("Friends" or "Past Games") so the `Navigator.push` automatically provides a back navigation arrow.
+*  [ ] If Authenticated, keep `appBar: null` so the screens continue to rely seamlessly on the `BottomNavigationBar` within the `DashboardScreen`.
+
+###### 1.11 Game Start Screen UX & Logic Fixes
+
+*  [ ] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
+*  [ ] **Default Avatar Unification:** In `PlayerListItem._buildPlayerProfileCircleIcon`, replace the fallback `Text('?')` logic with the standard `assets/images/avatars_3d_avatar_28.png` image for users without a Gravatar.
+*  [ ] **Explicit Drag Handles:** In `GameStartScreen._buildPlayerOrderSection`, add an `Icons.drag_handle` to the right side of the `PlayerListItem` to make reordering visually obvious and instantly draggable without a long-press.
+*  [ ] **Course Selection Redesign:** Redesign `_buildSelectCourseCard()` in `GameStartScreen` to match the "Add players" button layout. Remove the confusing `Icons.edit` pencil icon from the course tile. Instead, add a `Row` at the bottom of the card with `mainAxisAlignment: MainAxisAlignment.end` containing an `ElevatedButton` that says "Select course" (or "Change course") which triggers the `_selectCourse()` action.
+
+###### 1.12 Course Creation & Map Enhancements
+
+*  [ ] **Course Model Update:** Add a `locationName` (Business Name) field to the `Course` model, distinct from the `name` (Course Name). Update `toJson`, `fromJson`, and `fromMap`.
+*  [ ] **Hide Raw GPS:** In `AddEditCourseScreen` and `CoursesScreen` detail views, remove the display of raw latitude and longitude coordinates.
+*  [ ] **Address Search:** In `MapPickerScreen`, add a search bar at the top that uses the `geocoding` package to convert a typed address into coordinates, jumping the map to that location.
+*  [ ] **Fix Course Dropdown Overflow:** In `CourseListItem`, replace the rigid `GridView.builder` for par values with a responsive `Wrap` or dynamic grid to eliminate the "BOTTOM OVERFLOWED" Flutter UI error.
+*  [ ] **Enhanced Details:** Display the "Total Par" and the new "Location Name" inside the `CourseListItem` dropdown details.
+
+###### 1.13 Game In-Progress UI & Logic Overhaul
+
+*  [ ] **Avatar Unification:** Apply the standard `assets/images/avatars_3d_avatar_28.png` fallback to the player list in `GameInprogressScreen`.
+*  [ ] **Fix Score Default Bug:** In `_buildPlayerCard`, change the fallback logic so unrecorded scores start at `0` instead of `1`.
+*  [ ] **UI Rescaling:** Redesign the score row in `_buildPlayerCard`. Reduce the size of the +/- buttons and give the "Current score" text more horizontal space so it is easily readable.
+*  [ ] **Bidirectional Hole Navigation:** Add a "Previous Hole" button next to the "Next Hole" button. Allow users to navigate freely between holes regardless of whether all scores are entered.
+*  [ ] **Skipped/Dropped Players Rule:** Implement logic where if the scorekeeper navigates to the next hole leaving a player's score at `0`, that player is automatically assigned a Max Score of `6` for that hole (which can be edited if they navigate back). Add a visual "Skip/Drop" toggle for players.
+
 ---
 
 ## Phase 2 — Identity Foundation & Local Game Adoption
@@ -286,6 +316,12 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] Update `firestore.indexes.json` to define necessary composite indexes.
 *  [ ] Add a composite index for the `games` collection to support querying by `creator_id` while ordering by `scheduled_time` (required for `Game.fetchGamesForCurrentUser`).
 *  [ ] Add a composite index for the `games` collection querying by `status` and ordering by scheduled_time.
+
+##### 3.7 Creator Score Oversight & Approval
+
+*  [ ] Implement a "Creator Override" permission system for active games.
+*  [ ] If a non-creator participant updates a score on their device, flag the score as "Pending Approval" on the Game Creator's screen.
+*  [ ] Provide a UI mechanism for the Game Creator to lock, approve, or reject score updates submitted by other players to maintain scorecard integrity.
 
 ---
 
@@ -462,6 +498,14 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Wrap expensive `StackTrace` logic in `Utilities.debugPrintWithCallerInfo` with `if (kDebugMode)`.
 - [ ] Use a `const bool` to ensure this logic is completely removed from production builds.
 - [ ] Optimize production performance.
+
+##### 7.3 Architectural Refactoring & Clean Architecture
+
+*  [ ] **Directory Reorganization:** Migrate the flat `lib/` file structure into logical domain folders (e.g., `/models`, `/screens`, `/widgets`, `/services`, `/utils`).
+*  [ ] **Update Imports:** Fix all internal imports across the application and test suites to align with the new directory structure.
+*  [ ] **Repository Pattern Abstraction:** Extract raw Firestore queries and `SharedPreferences` logic out of the core data models (`Course`, `Game`, `Player`).
+*  [ ] **Service Layer Creation:** Create dedicated repository classes (e.g., `GameRepository`, `PlayerRepository`, `CourseRepository`) to handle all data access operations.
+*  [ ] **Enforce Separation of Concerns:** Ensure UI components and models strictly call repository methods rather than interacting with `FirebaseFirestore.instance` or `SharedPreferences.getInstance()` directly.
 
 ---
 
@@ -858,15 +902,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `game_card_widget.dart`
 *  [x] `game_create_screen.dart`
 *  [x] `game_start_screen.dart`
+*  [x] `main.dart`
 *  [x] `map_picker_screen.dart`
 *  [x] `player.dart`
 *  [x] `player_create_screen.dart`
 *  [x] `player_game_info.dart`
+*  [x] `scheduled_games_screen.dart`
 *  [x] `userprovider.dart`
 
 **Pending Specific Behavioral Tests:**
-*  [ ] Restore 100% coverage for `main.dart` (currently 75% due to Smart Drawer updates).
-*  [ ] Achieve 100% coverage for `scheduled_games_screen.dart`.
 *  [ ] Player.createPlayer nickname-only creation.
 *  [ ] PlayerForm quick-play validation bypass.
 *  [ ] ContactIdentity.normalizeEmail.
