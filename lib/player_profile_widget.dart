@@ -3,6 +3,7 @@ import 'package:transparent_image/transparent_image.dart';
 
 import 'gravatar_image_view.dart';
 import 'player.dart';
+import 'main.dart';
 
 class PlayerProfileWidget extends StatefulWidget {
   const PlayerProfileWidget(
@@ -34,6 +35,9 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
   }
 
   ImageProvider getRankBackImg(int? currentRank) {
+    if (MainScaffold.skipPrecacheForTesting) {
+      return Image.memory(kTransparentImage).image;
+    }
     currentRank ??= 99;
     switch (currentRank) {
       case 0:

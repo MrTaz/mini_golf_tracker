@@ -29,8 +29,15 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
 
   final ScrollController _scrollController = ScrollController();
 
+  void _confettiListener() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    confettiController.removeListener(_confettiListener);
     confettiController.dispose();
     super.dispose();
   }
@@ -41,9 +48,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
     sortedPlayerScores = widget.passedGame.getSortedPlayerScores();
     Utilities.debugPrintWithCallerInfo(
         "Passed in game: ${widget.passedGame.toJson()}");
-    confettiController.addListener(() {
-      setState(() {});
-    });
+    confettiController.addListener(_confettiListener);
     // _scrollController = ScrollController();
   }
 

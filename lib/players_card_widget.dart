@@ -37,7 +37,7 @@ class PlayersCardState extends State<PlayersCard> {
     sortedPlayers = widget.sortedPlayerIds != null &&
             widget.sortedPlayerIds!.isNotEmpty
         ? (widget.sortedPlayerIds!
-            .map((id) => playerFriends.firstWhere((player) => player.id == id))
+            .map((id) => playerFriends.firstWhere((player) => player.id == id, orElse: () => Player(id: id, playerName: 'Unknown', nickname: 'Unknown', ownerId: '', totalScore: 0)))
             .toList()
           ..sort((a, b) => widget.sortedPlayerIds!
               .indexOf(a.id)
