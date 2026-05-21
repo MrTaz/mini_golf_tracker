@@ -254,6 +254,7 @@ class MainScaffold extends State<HomePage> {
                   );
                 },
               ),
+              const Divider(),
               ListTile(
                 key: const Key('drawer-past-games'),
                 leading: const Icon(Icons.history, color: Colors.teal),
@@ -266,13 +267,62 @@ class MainScaffold extends State<HomePage> {
                   );
                 },
               ),
+              if (topRecent.isNotEmpty)
+                ...topRecent.map((game) => ListTile(
+                      key: Key('drawer-recent-${game.id}'),
+                      contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
+                      dense: true,
+                      leading: const Icon(Icons.emoji_events, size: 18, color: Colors.amber),
+                      title: Text(
+                        game.course.name,
+                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                      ),
+                      subtitle: FutureBuilder<String>(
+                        future: Utilities.formatStartTime(game.completedTime ?? game.scheduledTime),
+                        builder: (context, snapshot) {
+                          final timeText = snapshot.data ?? "Loading...";
+                          int? score;
+                          if (user != null) {
+                            final playerInfo = game.players.where((p) => p.playerId == user.id).firstOrNull;
+                            score = playerInfo?.totalScore;
+                          }
+                          // Wait, guest intercept logic requires intercepting guest clicks.
+                          // Let's just put Score/Result here or just time text if score isn't easily available.
+                          final scoreText = score != null && score > 0 ? " - Score: $score" : "";
+                          return Text(
+                            "$timeText$scoreText",
+                            style: const TextStyle(fontSize: 11),
+                          );
+                        },
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (user == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Save this history to the cloud.")),
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PastGameDetailsScreen(passedGame: game),
+                            ),
+                          );
+                        }
+                      },
+                    )),
+              const Divider(),
               ListTile(
                 key: const Key('drawer-scheduled-games'),
                 leading: const Icon(Icons.schedule, color: Colors.teal),
                 title: const Text("Scheduled Games"),
                 onTap: () {
                   Navigator.pop(context);
-                  if (UserProvider().loggedInUser == null) {
+                  if (user == null) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -285,41 +335,28 @@ class MainScaffold extends State<HomePage> {
                   }
                 },
               ),
-              const Divider(),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  "ACTIVITY HUB",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal,
-                    fontSize: 12,
-                    letterSpacing: 1.2,
+              if (user == null)
+                ListTile(
+                  key: const Key('drawer-locked-preview'),
+                  contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
+                  dense: true,
+                  leading: const Icon(Icons.lock, size: 18, color: Colors.grey),
+                  title: const Text(
+                    "🔒 Sign up to schedule future rounds.",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                child: Text(
-                  "Upcoming Games",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              if (topUpcoming.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Text(
-                    "No upcoming games scheduled",
-                    style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
-                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
                 )
-              else
+              else if (topUpcoming.isNotEmpty)
                 ...topUpcoming.map((game) => ListTile(
                       key: Key('drawer-upcoming-${game.id}'),
+                      contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
                       dense: true,
                       leading: const Icon(Icons.event, size: 18, color: Colors.orange),
                       title: Text(
@@ -331,7 +368,7 @@ class MainScaffold extends State<HomePage> {
                         builder: (context, snapshot) {
                           final timeText = snapshot.data ?? "Loading...";
                           return Text(
-                            "${game.course.name} - $timeText",
+                            timeText,
                             style: const TextStyle(fontSize: 11),
                           );
                         },
@@ -342,55 +379,6 @@ class MainScaffold extends State<HomePage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => GameStartScreen(unstartedGame: game),
-                          ),
-                        );
-                      },
-                    )),
-              const Divider(),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                child: Text(
-                  "Recent Games",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              if (topRecent.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Text(
-                    "No recent games played",
-                    style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
-                  ),
-                )
-              else
-                ...topRecent.map((game) => ListTile(
-                      key: Key('drawer-recent-${game.id}'),
-                      dense: true,
-                      leading: const Icon(Icons.emoji_events, size: 18, color: Colors.amber),
-                      title: Text(
-                        game.name,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                      ),
-                      subtitle: FutureBuilder<String>(
-                        future: Utilities.formatStartTime(game.completedTime ?? game.scheduledTime),
-                        builder: (context, snapshot) {
-                          final timeText = snapshot.data ?? "Loading...";
-                          return Text(
-                            "${game.course.name} - $timeText",
-                            style: const TextStyle(fontSize: 11),
-                          );
-                        },
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PastGameDetailsScreen(passedGame: game),
                           ),
                         );
                       },

@@ -169,12 +169,62 @@ void main() {
     expect(find.text('Past Games'), findsOneWidget);
     expect(find.text('Scheduled Games'), findsOneWidget);
     expect(find.text('Courses'), findsNothing);
+    
+    // Verify the presence of the locked preview for guests
+    expect(find.text('🔒 Sign up to schedule future rounds.'), findsOneWidget);
 
-    // Tap Scheduled Games and verify we navigate to LoginScreen
-    await tester.tap(find.text('Scheduled Games'));
+    // Tap the locked preview and verify we navigate to LoginScreen
+    await tester.ensureVisible(find.byKey(const Key('drawer-locked-preview')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('drawer-locked-preview')));
     await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
     // Let any pending login screen animations or timers complete
+    await tester.pump(const Duration(seconds: 5));
+    
+    // We should test guest intercept on past games in another test since we navigated away.
+  });
+
+  testWidgets('guest intercept on past games navigates to LoginScreen', (tester) async {
+    final course = Course(
+      id: 'c1',
+      name: 'Hub Course',
+      numberOfHoles: 1,
+      parStrokes: {1: 3},
+    );
+    final recentGameWithCompleted = Game(
+      id: 'recent_1',
+      name: 'Recent 1',
+      course: course,
+      players: [PlayerGameInfo(playerId: 'p1', gameId: 'recent_1', scores: [1])],
+      startTime: DateTime.now().subtract(const Duration(days: 2)),
+      scheduledTime: DateTime.now().subtract(const Duration(days: 2)),
+      completedTime: DateTime.now().subtract(const Duration(days: 1)),
+      status: 'completed',
+    );
+    SharedPreferences.setMockInitialValues({
+      'recent_1': jsonEncode(recentGameWithCompleted.toJson()),
+    });
+
+    await tester.pumpWidget(createMyApp());
+    await tester.pumpAndSettle();
+    
+    final ScaffoldState state = tester.firstState(find.byType(Scaffold));
+    state.openDrawer();
+    await tester.pumpAndSettle();
+
+    final recentGameFinder = find.byKey(const Key('drawer-recent-recent_1'));
+    await tester.ensureVisible(recentGameFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(recentGameFinder);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify it intercepted and went to login screen
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Save this history to the cloud.'), findsOneWidget); // SnackBar
+
+    // Let the SnackBar and LoginScreen animations finish so the test environment cleans up properly
     await tester.pump(const Duration(seconds: 5));
   });
 
@@ -565,7 +615,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Test Upcoming game tap (lines 321-344)
-    await tester.tap(find.byKey(const Key('drawer-upcoming-upcoming_game')));
+    final upcomingKey = find.byKey(const Key('drawer-upcoming-upcoming_game'));
+    await tester.ensureVisible(upcomingKey);
+    await tester.pumpAndSettle();
+    await tester.tap(upcomingKey);
     await tester.pumpAndSettle();
     expect(find.byType(GameStartScreen), findsOneWidget);
     Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
@@ -575,11 +628,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Test Recent game tap (lines 370-393)
-    // Test Recent game tap (lines 370-393)
     final recentGameFinder = find.byKey(const Key('drawer-recent-recent_1'));
-    final listTile = tester.widget<ListTile>(recentGameFinder);
-    Player.players = [player]; // Ensure player exists in state
-    listTile.onTap!();
+    await tester.ensureVisible(recentGameFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(recentGameFinder);
     await tester.pumpAndSettle();
     expect(find.byType(PastGameDetailsScreen), findsOneWidget);
   });
