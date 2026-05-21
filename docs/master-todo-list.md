@@ -133,21 +133,25 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [x] **Conversion Call-to-Action:** Intercept taps on the locked "Start Time" section to show an informational message (e.g., "Upgrade to Premium to schedule games for the future!") with a link to the signup/subscription screen.
 *  [x] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
 
-##### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
+###### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
 
 *  [ ] **Activity Fetch Logic:** Implement helper methods in `Game` or `main.dart` to retrieve:
     *  Up to 5 "unstarted_game" records scheduled for the future, ordered by `scheduled_time` ascending.
     *  Up to 5 "completed" records, ordered by `completed_time` descending.
-*  [ ] **Scheduled Games Section:**
-    *  Add a "Scheduled Games" header `ListTile` that navigates to the full list.
+*  [ ] **Scheduled Games Section (Auth/Premium):**
+    *  Show the "Scheduled Games" header ListTile that navigates to the full list.
     *  Inject up to 5 sub-items (indented or smaller text) showing "Game Name - Date".
     *  Tapping a sub-item navigates directly to `GameStartScreen` for that specific game.
+*  [ ] **Scheduled Games Section (Guest / Locked Preview):**
+    *  Keep the "Scheduled Games" header visible.
+    *  Instead of fetching games, display a single, locked sub-item: "🔒 Sign up to schedule future rounds."
+    *  Tapping this sub-item routes the guest directly to the `LoginScreen`.
 *  [ ] **Recent History Section:**
-    *  Add a "Past Games" header `ListTile` that navigates to `PastGamesScreen`.
-    *  Inject up to 5 sub-items showing "Course Name - Score/Result".
+    *  Add a "Past Games" header ListTile that navigates to `PastGamesScreen`.
+    *  Inject up to 5 sub-items showing "Course Name - Score/Result" (for both Guests and Auth users to view local/synced data).
     *  Tapping a sub-item navigates directly to `PastGameDetailsScreen`.
-*  [ ] **Guest UX Intercept:** 
-    *  For Guests: If local data exists, show it. If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
+*  [ ] **Guest UX Intercept (Past Games):**
+    *  For Guests: If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
 *  [ ] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
 
 ---
