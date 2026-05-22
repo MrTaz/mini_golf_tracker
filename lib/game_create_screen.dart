@@ -67,7 +67,12 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   }
   // ─────────────────────────────────────────────────────────────────────────
 
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   Future<void> _selectCourse() async {
+    _dismissKeyboard();
     HapticFeedback.selectionClick();
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
@@ -84,6 +89,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   }
 
   Future<void> _selectPlayers() async {
+    _dismissKeyboard();
     HapticFeedback.selectionClick();
     final List<Player>? selectedPlayers = await Navigator.push<List<Player>?>(
       context,
@@ -221,6 +227,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   }
 
   Future<void> _createGame() async {
+    _dismissKeyboard();
     if (UserProvider().loggedInUser == null) {
       _scheduledTime = DateTime.now();
     }
@@ -277,6 +284,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Create Game'),
       ),

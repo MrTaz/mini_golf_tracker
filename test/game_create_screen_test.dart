@@ -374,6 +374,34 @@ void main() {
     expect(find.text('Windy Hills'), findsOneWidget);
   });
 
+  testWidgets('tapping Course selection card dismisses game name focus',
+      (tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navKey,
+      home: const GameCreateScreen(),
+    ));
+    await tester.pump();
+
+    await tester.tap(find.byType(TextFormField));
+    await tester.pump();
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isTrue,
+    );
+
+    await tester.tap(find.text('Select a course'));
+    await tester.pump();
+
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isFalse,
+    );
+
+    navKey.currentState!.pop(_fakeCourse());
+    await tester.pumpAndSettle();
+  });
+
   // ─── 5. Player selection guard logic ─────────────────────────────────────
 
   testWidgets('handlePlayersSelectionResult with non-empty list updates count',
@@ -431,6 +459,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2 players selected'), findsOneWidget);
+  });
+
+  testWidgets('tapping Create Game dismisses game name focus', (tester) async {
+    await pumpCreateScreen(tester);
+
+    await tester.tap(find.byType(TextFormField));
+    await tester.pump();
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isTrue,
+    );
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pump();
+
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isFalse,
+    );
+    expect(find.text('Please enter a game name'), findsOneWidget);
   });
 
   // ─── 6. Gated scheduling dialog (guest) ──────────────────────────────────
