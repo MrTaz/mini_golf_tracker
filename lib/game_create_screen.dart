@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -67,6 +68,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   // ─────────────────────────────────────────────────────────────────────────
 
   Future<void> _selectCourse() async {
+    HapticFeedback.selectionClick();
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
       MaterialPageRoute(
@@ -82,6 +84,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   }
 
   Future<void> _selectPlayers() async {
+    HapticFeedback.selectionClick();
     final List<Player>? selectedPlayers = await Navigator.push<List<Player>?>(
       context,
       MaterialPageRoute(
@@ -94,6 +97,91 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         _selectedPlayers = selectedPlayers;
       });
     }
+  }
+
+  Widget _buildSelectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool hasSelection,
+  }) {
+    final Color activeColor = Colors.green.shade700;
+    final Color borderColor = hasSelection ? activeColor : Colors.grey.shade300;
+    return Semantics(
+      button: true,
+      label: '$title, $subtitle',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+          decoration: BoxDecoration(
+            color: hasSelection ? Colors.green.shade50 : Colors.white,
+            borderRadius: BorderRadius.circular(16.0),
+            border: Border.all(
+              color: borderColor,
+              width: hasSelection ? 2.5 : 1.5,
+            ),
+            boxShadow: hasSelection
+                ? [
+                    BoxShadow(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 26.0,
+                color: hasSelection ? activeColor : Colors.grey.shade500,
+              ),
+              const SizedBox(width: 12.0),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.bold,
+                        color: hasSelection
+                            ? Colors.green.shade800
+                            : Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4.0),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: hasSelection
+                            ? Colors.green.shade900
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showGatedSchedulingDialog() {
@@ -184,6 +272,8 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isGuest = UserProvider().loggedInUser == null;
+    final String playerSelectionText =
+        '${_selectedPlayers.length} ${_selectedPlayers.length == 1 ? 'player' : 'players'} selected';
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
@@ -197,6 +287,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
           child: Form(
             key: _formKey,
             child: ListView(
+              padding: const EdgeInsets.only(bottom: 184.0),
               children: [
                 TextFormField(
                   controller: _nameController,
@@ -207,20 +298,6 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 16.0),
-                ListTile(
-                  title: const Text('Course'),
-                  subtitle: Text(_selectedCourse?.name ?? 'Select a course'),
-                  onTap: _selectCourse,
-                ),
-                const SizedBox(height: 16.0),
-                ListTile(
-                  title: const Text('Players'),
-                  subtitle: Text(
-                    '${_selectedPlayers.length} ${_selectedPlayers.length == 1 ? 'player' : 'players'} selected',
-                  ),
-                  onTap: _selectPlayers,
                 ),
                 const SizedBox(height: 16.0),
                 ListTile(
@@ -247,14 +324,17 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                             context: context,
                             initialDate: _scheduledTime,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
 
                           if (selectedTime != null) {
                             if (!context.mounted) return;
-                            final TimeOfDay? selectedTimeOfDay = await showTimePicker(
+                            final TimeOfDay? selectedTimeOfDay =
+                                await showTimePicker(
                               context: context,
-                              initialTime: TimeOfDay.fromDateTime(_scheduledTime),
+                              initialTime:
+                                  TimeOfDay.fromDateTime(_scheduledTime),
                             );
 
                             if (selectedTimeOfDay != null) {
@@ -273,16 +353,66 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                           }
                         },
                 ),
-                const SizedBox(height: 16.0),
-                ElevatedButton(
-                  onPressed: _createGame,
-                  child: const Text('Create Game'),
-                ),
               ],
             ),
           ),
         ),
       ]),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSelectionCard(
+                        title: 'Course',
+                        subtitle: _selectedCourse?.name ?? 'Select a course',
+                        icon: Icons.flag_rounded,
+                        onTap: _selectCourse,
+                        hasSelection: _selectedCourse != null,
+                      ),
+                    ),
+                    const SizedBox(width: 12.0),
+                    Expanded(
+                      child: _buildSelectionCard(
+                        title: 'Players',
+                        subtitle: playerSelectionText,
+                        icon: Icons.groups_rounded,
+                        onTap: _selectPlayers,
+                        hasSelection: _selectedPlayers.isNotEmpty,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _createGame,
+                    child: const Text('Create Game'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

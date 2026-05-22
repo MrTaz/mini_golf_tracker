@@ -109,6 +109,55 @@ void main() {
     expect(find.byIcon(Icons.lock), findsOneWidget);
   });
 
+  testWidgets('course and player actions render as Material 3 selection cards',
+      (tester) async {
+    await pumpCreateScreen(tester);
+
+    expect(
+      find.ancestor(of: find.text('Course'), matching: find.byType(ListTile)),
+      findsNothing,
+    );
+    expect(
+      find.ancestor(of: find.text('Players'), matching: find.byType(ListTile)),
+      findsNothing,
+    );
+    expect(find.byType(AnimatedContainer), findsNWidgets(2));
+
+    final courseCard = tester.widget<AnimatedContainer>(
+      find.ancestor(
+        of: find.text('Course'),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    final decoration = courseCard.decoration! as BoxDecoration;
+
+    expect(courseCard.duration, const Duration(milliseconds: 250));
+    expect(decoration.borderRadius, BorderRadius.circular(16.0));
+    expect(decoration.boxShadow, isNotEmpty);
+  });
+
+  testWidgets('selected cards use highlighted Material 3 styling',
+      (tester) async {
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    await tester.pump();
+
+    final courseCard = tester.widget<AnimatedContainer>(
+      find.ancestor(
+        of: find.text('Windy Hills'),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    final decoration = courseCard.decoration! as BoxDecoration;
+
+    expect(decoration.color, Colors.green.shade50);
+    expect(decoration.border, isA<Border>());
+  });
+
   testWidgets('renders edit icon for Start Time when user is authenticated',
       (tester) async {
     UserProvider().loggedInUser = _authPlayer();
@@ -153,8 +202,7 @@ void main() {
 
   // ─── 2. Form validation ──────────────────────────────────────────────────
 
-  testWidgets('shows validation error when game name is empty',
-      (tester) async {
+  testWidgets('shows validation error when game name is empty', (tester) async {
     await pumpCreateScreen(tester);
     await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
     await tester.pump();
@@ -259,8 +307,7 @@ void main() {
     expect(find.text('Game created successfully'), findsOneWidget);
   });
 
-  testWidgets(
-      'guest user: scheduledTime is reset to now before creating game',
+  testWidgets('guest user: scheduledTime is reset to now before creating game',
       (tester) async {
     final state = await pushAndGetState(tester);
     state.setSelectedCourseForTesting(_fakeCourse());
@@ -306,8 +353,7 @@ void main() {
     expect(find.text('Select a course'), findsOneWidget);
   });
 
-  testWidgets(
-      'tapping Course ListTile triggers _selectCourse navigation',
+  testWidgets('tapping Course selection card triggers _selectCourse navigation',
       (tester) async {
     // Use navigatorKey so we can pop immediately after the push starts,
     // verifying the navigation path is exercised without building CoursesScreen.
@@ -353,7 +399,8 @@ void main() {
     expect(find.text('0 players selected'), findsOneWidget);
   });
 
-  testWidgets('handlePlayersSelectionResult with empty list keeps old selection',
+  testWidgets(
+      'handlePlayersSelectionResult with empty list keeps old selection',
       (tester) async {
     await pumpCreateScreen(tester);
     final state =
@@ -364,7 +411,7 @@ void main() {
   });
 
   testWidgets(
-      'tapping Players ListTile triggers _selectPlayers navigation',
+      'tapping Players selection card triggers _selectPlayers navigation',
       (tester) async {
     final navKey = GlobalKey<NavigatorState>();
     await tester.pumpWidget(MaterialApp(
