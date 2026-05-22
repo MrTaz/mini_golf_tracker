@@ -98,11 +98,15 @@ void main() {
       final p = state.clickedPlayer.first;
       try {
         state.handlePlayerClick(p);
-      } catch (e) {}
+      } catch (e) {
+        // Expected
+      }
       await tester.pumpAndSettle();
       try {
         state.handlePlayerClick(p);
-      } catch (e) {}
+      } catch (e) {
+        // Expected
+      }
       await tester.pumpAndSettle();
     }
     
@@ -114,7 +118,9 @@ void main() {
     // Cover the missing player game info exception
     try {
       state.handlePlayerClick(Player(id: 'nonexistent', playerName: 'Unknown', nickname: 'Unknown', ownerId: '', totalScore: 0));
-    } catch (e) {}
+    } catch (e) {
+      // Expected exception
+    }
     
     // Cover CourseListItem empty callbacks
     final courseListItemWidgets = tester.widgetList<CourseListItem>(find.byType(CourseListItem));
@@ -143,9 +149,7 @@ void main() {
 
     // Press save changes inside PlayerForm directly to avoid validation blocks
     final playerForm = tester.widget<PlayerForm>(find.byType(PlayerForm));
-    if (playerForm.onSaveChanges != null) {
-      playerForm.onSaveChanges!();
-    }
+    playerForm.onSaveChanges();
     await tester.pumpAndSettle();
   });
 
