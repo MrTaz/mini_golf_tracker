@@ -19,12 +19,31 @@ You must follow this strict iterative loop for every task until completion:
 *   **DRY Principle:** Abstract repetitive logic into utilities or base classes. This applies equally to both application code and test code.
 
 # Testing Requirements & Established Mocks
-*   **100% Unit Test Coverage (HARD REQUIREMENT):** Every file you create or modify MUST have 100% test coverage. 
-    *   You may NOT simply assume coverage is 100% because the tests pass.
-    *   You MUST run `flutter test --coverage`.
-    *   You MUST programmatically verify your coverage by running this exact command in the terminal (replace `TARGET_FILE.dart` with the name of the file you modified):
-        `dart run -e "import 'dart:io'; void main() { var lines = File('coverage/lcov.info').readAsLinesSync(); bool inTarget = false; List<String> uncovered = []; for (var line in lines) { if (line.startsWith('SF:') && line.contains('TARGET_FILE.dart')) inTarget = true; else if (line == 'end_of_record') inTarget = false; else if (inTarget && line.startsWith('DA:') && line.endsWith(',0')) uncovered.add(line.split(':')[1].split(',')); } print(uncovered.isEmpty ? '100% COVERAGE' : 'UNCOVERED LINES: \$uncovered'); }"`
-    *   If the script outputs ANY uncovered lines, you must write additional tests to cover them BEFORE outputting your Completion Report.
+*   **100% Unit Test Coverage (HARD REQUIREMENT):**  Every file you create or modify MUST have 100% test coverage.
+    *  You may NOT simply assume coverage is 100% because the tests pass.
+    *  You MUST run `flutter test --coverage`.
+    *  You MUST programmatically verify your coverage by creating a temporary script named `check_coverage.dart` in the project root with the following code (replacing `TARGET_FILE.dart` with your modified file):
+       ```dart
+       import 'dart:io';
+       void main() {
+         var lines = File('coverage/lcov.info').readAsLinesSync();
+         bool inTarget = false;
+         List<String> uncovered = [];
+         for (var line in lines) {
+           if (line.startsWith('SF:') && line.contains('TARGET_FILE.dart')) {
+             inTarget = true;
+           } else if (line == 'end_of_record') {
+             inTarget = false;
+           } else if (inTarget && line.startsWith('DA:') && line.endsWith(',0')) {
+             uncovered.add(line.split(':')[3].split(','));
+           }
+         }
+         print(uncovered.isEmpty ? '100% COVERAGE' : 'UNCOVERED LINES: $uncovered');
+       }
+       ```
+    *  Run the script using `dart run check_coverage.dart`.
+    *  Delete the `check_coverage.dart` file immediately after verification to keep the workspace clean and prevent static analysis warnings.
+    *  If the script outputs ANY uncovered lines, you must write additional tests to cover them BEFORE outputting your Completion Report.
 *   **Use Existing Mocking Patterns:** Do not invent new ways to mock Firebase or local storage. You must use the established patterns in the codebase:
     *   **Firestore:** Use `FakeFirebaseFirestore` and inject it via `DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore)`.
     *   **Auth:** Use `MockFirebaseAuth` and inject it via `UserProvider().setAuthInstanceForTesting(mockAuth)`.
