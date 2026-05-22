@@ -1,5 +1,5 @@
 class ContactIdentity {
-  const ContactIdentity._();
+  const ContactIdentity._(); // coverage:ignore-line
 
   static String? normalizeEmail(String? email) {
     final normalized = email?.trim().toLowerCase();

@@ -10,9 +10,10 @@ void main() {
       );
     });
 
-    test('returns null for empty values', () {
-      expect(ContactIdentity.normalizeEmail('   '), isNull);
+    test('returns null for null and empty values', () {
       expect(ContactIdentity.normalizeEmail(null), isNull);
+      expect(ContactIdentity.normalizeEmail(''), isNull);
+      expect(ContactIdentity.normalizeEmail('   '), isNull);
     });
   });
 
@@ -31,9 +32,25 @@ void main() {
       );
     });
 
-    test('returns null for empty values', () {
-      expect(ContactIdentity.normalizePhoneNumber('---'), isNull);
+    test('returns null for null and empty values', () {
       expect(ContactIdentity.normalizePhoneNumber(null), isNull);
+      expect(ContactIdentity.normalizePhoneNumber('---'), isNull);
+    });
+  });
+
+  group('ContactIdentity reservation IDs', () {
+    test('formats reservation IDs for normalized email values', () {
+      expect(
+        ContactIdentity.reservationIdForEmail('player@example.com'),
+        'email_player@example.com',
+      );
+    });
+
+    test('formats reservation IDs for normalized phone number values', () {
+      expect(
+        ContactIdentity.reservationIdForPhoneNumber('+15551234567'),
+        'phone_+15551234567',
+      );
     });
   });
 }
