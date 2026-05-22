@@ -14,9 +14,11 @@ class PlayerListItem extends StatefulWidget {
       this.onPlayerSelected,
       this.isSelected = false,
       this.listOrderNumber,
-      this.onRemove});
+      this.onRemove,
+      this.showDragHandle = false});
 
   final bool? creatingGame;
+  final bool showDragHandle;
   final bool isSelected;
   final int? listOrderNumber;
   final ValueChanged<String>? onChanged;
@@ -125,9 +127,9 @@ class PlayerListItemState extends State<PlayerListItem> {
         child: CircleAvatar(
             backgroundColor: Colors.teal,
             child: widget.player.email == null || widget.player.email!.isEmpty
-                ? Text(widget.player.nickname.isEmpty
-                    ? '?'
-                    : widget.player.nickname[0].toUpperCase())
+                ? (widget.player.nickname.isEmpty
+                    ? Image.asset('assets/images/avatars_3d_avatar_28.png')
+                    : Text(widget.player.nickname[0].toUpperCase()))
                 : ClipOval(
                     child: GravatarImageView(email: widget.player.email!))));
   }
@@ -166,6 +168,7 @@ class PlayerListItemState extends State<PlayerListItem> {
               // }
             },
           ),
+        if (widget.showDragHandle) const Icon(Icons.drag_handle),
       ],
     );
   }

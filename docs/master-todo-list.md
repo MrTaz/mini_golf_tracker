@@ -26,7 +26,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ## Phase 1 — Immediate Stability, Guest Experience & UI Modernization
 
-##### 1.1 Harden Database Error Handling
+### 1.1 Harden Database Error Handling
 *  [x] Wrap `UserProvider.initialize` `authStateChanges` listener in a try-catch block to prevent `DatabaseConnectionError` crashes on startup.
 *  [x] Harden `ClaimAccountScreen._refreshClaim()` with a generic catch block to gracefully handle database/network failures without crashing.
 *  [x] Implement comprehensive try-catch blocks in GameCardWidget and CoursesScreen to intercept DatabaseConnectionError.
@@ -69,7 +69,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 - [ ] Add `"Clear All"` to the `AppBar` of `PlayersScreen`.
 - [ ] Reset the `selectedPlayers` list instantly when clearing selections.
 
-##### 1.5 Unified Smart Navigation Drawer
+### 1.5 Unified Smart Navigation Drawer
 
 *  [x] Refactor `_buildDrawerList` in `main.dart` to provide a consistent menu for both Guests and Auth users.
 *  [x] **Dynamic Header:** 
@@ -121,7 +121,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 - [ ] Display a non-blocking `SnackBar` or status icon if the timeout triggers.
 - [ ] Do not fail silently on location timeout.
 
-##### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
+### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
 
 *  [x] **Global Active Game Auto-Launch:** Update `HomePage._updateState()` in `main.dart` to check for an active local game via `Game.getLocallySavedGames(gameStatusTypes: ["started"])`.
 *  [x] If a "started" game exists for **ANY user (Guest or Auth)**, immediately set the body to `GameInprogressScreen` to ensure the round persists across app restarts.
@@ -133,42 +133,42 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [x] **Conversion Call-to-Action:** Intercept taps on the locked "Start Time" section to show an informational message (e.g., "Upgrade to Premium to schedule games for the future!") with a link to the signup/subscription screen.
 *  [x] Only allow authenticated users to persist games with an `unstarted_game` status into the future.
 
-###### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
+### 1.9 Drawer Activity Previews (Scheduled & Recent Games)
 
-*  [ ] **Activity Fetch Logic:** Implement helper methods in `Game` or `main.dart` to retrieve:
+*  [x] **Activity Fetch Logic:** Implement helper methods in `Game` or `main.dart` to retrieve:
     *  Up to 5 "unstarted_game" records scheduled for the future, ordered by `scheduled_time` ascending.
     *  Up to 5 "completed" records, ordered by `completed_time` descending.
-*  [ ] **Scheduled Games Section (Auth/Premium):**
+*  [x] **Scheduled Games Section (Auth/Premium):**
     *  Show the "Scheduled Games" header ListTile that navigates to the full list.
     *  Inject up to 5 sub-items (indented or smaller text) showing "Game Name - Date".
     *  Tapping a sub-item navigates directly to `GameStartScreen` for that specific game.
-*  [ ] **Scheduled Games Section (Guest / Locked Preview):**
+*  [x] **Scheduled Games Section (Guest / Locked Preview):**
     *  Keep the "Scheduled Games" header visible.
     *  Instead of fetching games, display a single, locked sub-item: "🔒 Sign up to schedule future rounds."
     *  Tapping this sub-item routes the guest directly to the `LoginScreen`.
-*  [ ] **Recent History Section:**
+*  [x] **Recent History Section:**
     *  Add a "Past Games" header ListTile that navigates to `PastGamesScreen`.
     *  Inject up to 5 sub-items showing "Course Name - Score/Result" (for both Guests and Auth users to view local/synced data).
     *  Tapping a sub-item navigates directly to `PastGameDetailsScreen`.
-*  [ ] **Guest UX Intercept (Past Games):**
+*  [x] **Guest UX Intercept (Past Games):**
     *  For Guests: If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
-*  [ ] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
+*  [x] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
 
-###### 1.10 Guest UX Hardening & Navigation Fixes
+### 1.10 Guest UX Hardening & Navigation Fixes
 
 *  [ ] **Past Game Details Default State:** In `PastGameDetailsScreen.initState`, pre-populate the `clickedPlayer` and `clickedPlayerScores` lists with all the players from `widget.passedGame`. This ensures the `PlayerScoreDataTable` is fully visible upon opening rather than rendering an empty grey box.
 *  [ ] **Conditional AppBars for Guests:** In `PastGamesScreen` and `PlayersScreen`, dynamically render the `appBar` property based on authentication status.
 *  [ ] If `UserProvider().loggedInUser == null` (Guest), return a standard `AppBar` with a title ("Friends" or "Past Games") so the `Navigator.push` automatically provides a back navigation arrow.
 *  [ ] If Authenticated, keep `appBar: null` so the screens continue to rely seamlessly on the `BottomNavigationBar` within the `DashboardScreen`.
 
-###### 1.11 Game Start Screen UX & Logic Fixes
+### 1.11 Game Start Screen UX & Logic Fixes
 
 *  [ ] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
 *  [ ] **Default Avatar Unification:** In `PlayerListItem._buildPlayerProfileCircleIcon`, replace the fallback `Text('?')` logic with the standard `assets/images/avatars_3d_avatar_28.png` image for users without a Gravatar.
 *  [ ] **Explicit Drag Handles:** In `GameStartScreen._buildPlayerOrderSection`, add an `Icons.drag_handle` to the right side of the `PlayerListItem` to make reordering visually obvious and instantly draggable without a long-press.
 *  [ ] **Course Selection Redesign:** Redesign `_buildSelectCourseCard()` in `GameStartScreen` to match the "Add players" button layout. Remove the confusing `Icons.edit` pencil icon from the course tile. Instead, add a `Row` at the bottom of the card with `mainAxisAlignment: MainAxisAlignment.end` containing an `ElevatedButton` that says "Select course" (or "Change course") which triggers the `_selectCourse()` action.
 
-###### 1.12 Course Creation & Map Enhancements
+### 1.12 Course Creation & Map Enhancements
 
 *  [ ] **Course Model Update:** Add a `locationName` (Business Name) field to the `Course` model, distinct from the `name` (Course Name). Update `toJson`, `fromJson`, and `fromMap`.
 *  [ ] **Hide Raw GPS:** In `AddEditCourseScreen` and `CoursesScreen` detail views, remove the display of raw latitude and longitude coordinates.
@@ -176,13 +176,28 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [ ] **Fix Course Dropdown Overflow:** In `CourseListItem`, replace the rigid `GridView.builder` for par values with a responsive `Wrap` or dynamic grid to eliminate the "BOTTOM OVERFLOWED" Flutter UI error.
 *  [ ] **Enhanced Details:** Display the "Total Par" and the new "Location Name" inside the `CourseListItem` dropdown details.
 
-###### 1.13 Game In-Progress UI & Logic Overhaul
+### 1.13 Game In-Progress UI & Logic Overhaul
 
+*  [ ] **Guest Drawer Navigation Fix:** In `main.dart`'s `_buildDrawerList`, add a "Home" `ListTile` (with an `Icons.home` icon) that resets the body to `HomeScreen()`. Add a dedicated "Sign In / Sign Up" `ListTile` (with an `Icons.login` icon) that explicitly routes to the `LoginScreen`.
+*  [ ] **Guest Drawer Avatar Unification & Tap:** In `main.dart`'s `_buildDrawerList`, replace the `Icon(Icons.person)` in the guest's `UserAccountsDrawerHeader` with `Image.asset('assets/images/avatars_3d_avatar_28.png')` inside a `ClipOval`. Wrap the avatar in a `GestureDetector` that routes to the `LoginScreen`.
+*  [ ] **In-Game Conversion Hook:** Conditionally render a freemium banner directly below the Course Card in `GameInprogressScreen` if `UserProvider().loggedInUser == null`. The banner should read *"Playing as a Guest. Sign up to save your score to the cloud!"* and route the user to the `LoginScreen` when tapped.
+*  [ ] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
+    *  **"Pause Game":** Navigates back to `HomeScreen` (putting the game on hold).
+    *  **"End Game Early":** Calls `_handleGameCompletion()` to finalize the game with current scores.
+    *  **"Abandon Game":** Calls `deleteSavedGame` and navigates back to `HomeScreen`.
 *  [ ] **Avatar Unification:** Apply the standard `assets/images/avatars_3d_avatar_28.png` fallback to the player list in `GameInprogressScreen`.
 *  [ ] **Fix Score Default Bug:** In `_buildPlayerCard`, change the fallback logic so unrecorded scores start at `0` instead of `1`.
 *  [ ] **UI Rescaling:** Redesign the score row in `_buildPlayerCard`. Reduce the size of the +/- buttons and give the "Current score" text more horizontal space so it is easily readable.
 *  [ ] **Bidirectional Hole Navigation:** Add a "Previous Hole" button next to the "Next Hole" button. Allow users to navigate freely between holes regardless of whether all scores are entered.
 *  [ ] **Skipped/Dropped Players Rule:** Implement logic where if the scorekeeper navigates to the next hole leaving a player's score at `0`, that player is automatically assigned a Max Score of `6` for that hole (which can be edited if they navigate back). Add a visual "Skip/Drop" toggle for players.
+
+### 1.14 Gameplay Rules & Scoring Edge Cases
+
+*  [ ] **Handle Multiple Winners (Ties):** Refactor `Game.getWinner()` in `game.dart` to return a `List<PlayerGameInfo> getWinners()` to account for ties.
+*  [ ] **Winner UI Updates:** Update `PastGameListItem` and `PastGamesListView` to handle and display multiple winners (e.g., "Winners: Alice, Bob" instead of "Winner: Alice").
+*  [ ] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
+*  [ ] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
+*  [ ] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
 
 ---
 
@@ -312,12 +327,12 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Validate every player claim against the `player_contacts` source of truth.
 - [ ] Prevent hijacking of reserved identities.
 
-##### 3.6 Firestore Composite Indexes
+### 3.6 Firestore Composite Indexes
 *  [ ] Update `firestore.indexes.json` to define necessary composite indexes.
 *  [ ] Add a composite index for the `games` collection to support querying by `creator_id` while ordering by `scheduled_time` (required for `Game.fetchGamesForCurrentUser`).
 *  [ ] Add a composite index for the `games` collection querying by `status` and ordering by scheduled_time.
 
-##### 3.7 Creator Score Oversight & Approval
+### 3.7 Creator Score Oversight & Approval
 
 *  [ ] Implement a "Creator Override" permission system for active games.
 *  [ ] If a non-creator participant updates a score on their device, flag the score as "Pending Approval" on the Game Creator's screen.
@@ -327,7 +342,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ## Phase 4 — Advanced Testing, E2E Validation & Emulator Support
 
-##### 4.1 Firebase Local Emulator Suite Setup
+### 4.1 Firebase Local Emulator Suite Setup
 *  [ ] Set up Firebase Local Emulator Suite (Auth and Firestore) in the project environment.
 *  [ ] Update `DatabaseConnection.initialize()` to conditionally call `FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080)` when running in debug or emulator mode.
 *  [ ] Update `UserProvider.initialize()` to conditionally call `FirebaseAuth.instance.useAuthEmulator('localhost', 9099)`.
@@ -418,7 +433,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
   - `pendingVerification`
   - `claimed`
 
-##### 5.4 Account Merge Workflow
+### 5.4 Account Merge Workflow
 
 *  [ ] Build account merge UI and backend.
 *  [ ] Implement a Cloud Function trigger or backend logic to detect contact collisions during `resolveCanonicalPlayer`.
@@ -431,7 +446,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] Ensure player records only merge after the challenged contact owner explicitly approves the merge through the link.
 *  [ ] Write tests for merge approval.
 
-##### 5.5 Firestore Security Rules (`firestore.rules`)
+### 5.5 Firestore Security Rules (`firestore.rules`)
 *  [ ] Overwrite the current default `firestore.rules` configuration with strict schema enforcement.
 *  [ ] `match /players/{playerId}`: Prevent `claimed_by_uid` hijacking (cannot overwrite if already claimed by a different UID).
 *  [ ] `match /player_contacts/{contactId}`: Restrict visibility and mutation strictly to the owner.
@@ -450,7 +465,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Use `SwitchListTile` for the PII sharing preference.
 - [ ] Respect `pii_sharing_prefs` in the UI.
 
-##### 5.7 Social Login Account Linking & Detection
+### 5.7 Social Login Account Linking & Detection
 
 *  [ ] Implement backend logic to allow linking multiple social login providers (e.g., Google, Facebook, Snapchat, Instagram) to a single canonical `Player` account.
 *  [ ] Update the `LoginScreen` and authentication flow to preemptively detect if a newly authenticated social login email or phone matches an existing canonical player record.
@@ -499,7 +514,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] Use a `const bool` to ensure this logic is completely removed from production builds.
 - [ ] Optimize production performance.
 
-##### 7.3 Architectural Refactoring & Clean Architecture
+### 7.3 Architectural Refactoring & Clean Architecture
 
 *  [ ] **Directory Reorganization:** Migrate the flat `lib/` file structure into logical domain folders (e.g., `/models`, `/screens`, `/widgets`, `/services`, `/utils`).
 *  [ ] **Update Imports:** Fix all internal imports across the application and test suites to align with the new directory structure.
@@ -507,9 +522,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] **Service Layer Creation:** Create dedicated repository classes (e.g., `GameRepository`, `PlayerRepository`, `CourseRepository`) to handle all data access operations.
 *  [ ] **Enforce Separation of Concerns:** Ensure UI components and models strictly call repository methods rather than interacting with `FirebaseFirestore.instance` or `SharedPreferences.getInstance()` directly.
 
+### 7.4 Code Cleanup & Dead Code Removal
+
+*  [ ] **Clean up PastGameDetailsScreen:** Remove the lingering commented-out `getPlayersList` widget method.
+*  [ ] **Clean up PlayerForm:** Remove the commented-out `SharedPreferences` auth-load logic in `loadCurrentUser` since we now rely exclusively on `UserProvider`.
+*  [ ] **Clean up PastGameListItem:** Remove the commented-out `TextStyle(fontSize: 8.0)` block inside the subtitle.
+
 ---
 
-#### Phase 8 — Premium Features & Monetization (Future)
+## Phase 8 — Premium Features & Monetization (Future)
 
 *  [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
 *  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
@@ -889,7 +910,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 # Appendix C — Required Test Plan
 
-#### Unit Tests
+## Unit Tests
 
 **Fully Covered Files (100% Line Coverage):**
 *  [x] `add_edit_course_screen.dart`

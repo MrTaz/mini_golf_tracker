@@ -117,7 +117,7 @@ Game _threePlayerGame() => Game(
 
 // Finder helpers
 Finder get _editCourseIconButton =>
-    find.ancestor(of: find.byIcon(Icons.edit), matching: find.byType(IconButton));
+    find.widgetWithText(ElevatedButton, 'Change course');
 
 Finder get _scheduleIconButton =>
     find.ancestor(of: find.byIcon(Icons.schedule), matching: find.byType(IconButton));

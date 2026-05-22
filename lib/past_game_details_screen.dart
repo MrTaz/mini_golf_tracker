@@ -6,6 +6,7 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/player_score_data_table_card.dart';
 import 'package:mini_golf_tracker/players_card_widget.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameDetailsScreen extends StatefulWidget {
@@ -46,6 +47,17 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
   void initState() {
     super.initState();
     sortedPlayerScores = widget.passedGame.getSortedPlayerScores();
+    clickedPlayerScores = List.from(sortedPlayerScores);
+    for (var info in sortedPlayerScores) {
+      Player? player = Player.empty().getPlayerFriendById(info.playerId);
+      if (player?.id == '' && UserProvider().loggedInUser?.id == info.playerId) {
+        player = UserProvider().loggedInUser;
+      }
+      if (player != null) {
+        clickedPlayer.add(player);
+      }
+    }
+
     Utilities.debugPrintWithCallerInfo(
         "Passed in game: ${widget.passedGame.toJson()}");
     confettiController.addListener(_confettiListener);
@@ -54,11 +66,13 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
 
   void handlePlayerClick(Player player) {
     setState(() {
-      _scrollController.animateTo(
-        100,
-        curve: Curves.fastOutSlowIn,
-        duration: const Duration(milliseconds: 500),
-      );
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          100,
+          curve: Curves.fastOutSlowIn,
+          duration: const Duration(milliseconds: 500),
+        );
+      }
       if (clickedPlayer.contains(player)) {
         clickedPlayer.remove(player);
         clickedPlayerScores.remove(_getPlayerGameInfo(player.id));
@@ -171,8 +185,6 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
                   ]),
                 ],
               );
-            } else if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
             } else {
               return const CircularProgressIndicator();
             }

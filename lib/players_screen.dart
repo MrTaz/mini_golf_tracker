@@ -122,11 +122,11 @@ class PlayersScreenState extends State<PlayersScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
-      appBar: (widget.creatingGame!)
+      appBar: (widget.creatingGame == true)
           ? AppBar(
               title: const Text('Select Players'),
             )
-          : null,
+          : (loggedInUser == null ? AppBar(title: const Text('Friends')) : null),
       body: Stack(
         children: [
           Utilities.backdropImageContinerWidget(),

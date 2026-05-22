@@ -46,13 +46,9 @@ class PastGameListItemState extends State<PastGameListItem> {
                         widget.pastGame.completedTime!),
                     builder:
                         (BuildContext context, AsyncSnapshot<String> snapshot) {
-                      String timeText;
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        timeText = "Loading...";
-                      } else if (snapshot.hasData) {
+                      String timeText = "Loading...";
+                      if (snapshot.hasData) {
                         timeText = "Played ${snapshot.data}";
-                      } else {
-                        timeText = ""; // Or handle error
                       }
                       return Text(
                         "${widget.pastGame.name} - $timeText",
@@ -71,7 +67,7 @@ class PastGameListItemState extends State<PastGameListItem> {
                         fontStyle: FontStyle.italic),
                   ),
             subtitle: Text(
-              'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, Winner: ${loggedInUser!.getPlayerFriendById(widget.pastGame.getWinner().playerId)!.nickname}',
+              'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, Winner: ${Player.empty().getPlayerFriendById(widget.pastGame.getWinner().playerId)?.nickname ?? "Unknown"}',
               // style: const TextStyle(
               //   fontSize: 8.0
               // )

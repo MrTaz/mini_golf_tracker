@@ -422,6 +422,7 @@ class GameStartScreenState extends State<GameStartScreen> {
         isSelected: isSelected,
         listOrderNumber: playerIndex + 1,
         onRemove: () => _removePlayer(playerIndex),
+        showDragHandle: true,
       ),
     );
   }
@@ -454,12 +455,18 @@ class GameStartScreenState extends State<GameStartScreen> {
               ),
               ListTile(
                 title: Text(course?.name ?? 'Select Course'),
-                subtitle: Text(
-                    course?.numberOfHoles.toString() ?? 'No course selected'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _selectCourse,
-                ),
+                subtitle: Text(course != null
+                    ? '${course.numberOfHoles} holes - Total Par: ${course.parStrokes.values.fold<int>(0, (a, b) => a + b)}'
+                    : 'No course selected'),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: _selectCourse,
+                    child: const Text('Change course'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -495,8 +502,11 @@ class GameStartScreenState extends State<GameStartScreen> {
                       children: _playersInfo.asMap().entries.map((entry) {
                         final playerInfo = entry.value;
                         final playerIndex = entry.key;
-                        final player = Player.empty()
+                        Player? player = Player.empty()
                             .getPlayerFriendById(playerInfo.playerId);
+                        if (player?.id == '' && UserProvider().loggedInUser?.id == playerInfo.playerId) {
+                          player = UserProvider().loggedInUser;
+                        }
                         return _buildPlayerListItem(player!, playerIndex, playerInfo.playerId);
                       }).toList(),
                       onReorder: (int oldIndex, int newIndex) {

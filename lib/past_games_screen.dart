@@ -55,7 +55,7 @@ class PastGameScreenState extends State<PastGamesScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: false,
-      appBar: null,
+      appBar: UserProvider().loggedInUser == null ? AppBar(title: const Text('Past Games')) : null,
       body: Stack(children: [
         Utilities.backdropImageContinerWidget(),
         SingleChildScrollView(

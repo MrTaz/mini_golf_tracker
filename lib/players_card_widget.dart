@@ -33,7 +33,7 @@ class PlayersCardState extends State<PlayersCard> {
   @override
   void initState() {
     super.initState();
-    playerFriends = loggedInUser!.getAllPlayerFriends();
+    playerFriends = loggedInUser?.getAllPlayerFriends() ?? Player.players;
     sortedPlayers = widget.sortedPlayerIds != null &&
             widget.sortedPlayerIds!.isNotEmpty
         ? (widget.sortedPlayerIds!
