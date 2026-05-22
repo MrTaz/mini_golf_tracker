@@ -178,21 +178,21 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ### 1.13 Game In-Progress UI & Logic Overhaul
 
-*  [ ] **Auto-Resume Guest Profile Hydration:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, add `await Player.loadLocalGuestPlayers();` before the `setState` to ensure guest names and avatars load immediately on app startup.
-*  [ ] **Drawer Active Game Routing Fix:** Update the drawer's "Active Game" button so it does not use `Navigator.push`. If the user has an active game, it should use `changeBodyCallback` to set the body to `GameInprogressScreen`, preventing nested routes and unwanted back arrows.
-*  [ ] **Guest Drawer Navigation Fix:** In `main.dart`'s `_buildDrawerList`, add a "Home" `ListTile` (with an `Icons.home` icon) that resets the body to `HomeScreen()`. Add a dedicated "Sign In / Sign Up" `ListTile` (with an `Icons.login` icon) that explicitly routes to the `LoginScreen`.
-*  [ ] **DRY Avatar Abstraction:** Create a new `PlayerAvatarWidget` to serve as the single source of truth for avatar rendering. It should encapsulate the `CircleAvatar`, `GravatarImageView`, and the unified `assets/images/avatars_3d_avatar_28.png` fallback logic.
-*  [ ] **Avatar Unification & Implementation:** Refactor `PlayerListItem`, `PlayerProfileWidget`, the mid-game player list in `GameInprogressScreen`, and the `UserAccountsDrawerHeader` in `main.dart` to strictly use the new `PlayerAvatarWidget`. For the guest drawer, wrap the new widget in a `GestureDetector` that routes to the `LoginScreen`.
-*  [ ] **In-Game Conversion Hook:** Conditionally render a freemium banner directly below the Course Card in `GameInprogressScreen` if `UserProvider().loggedInUser == null`. The banner should read *"Playing as a Guest. Sign up to save your score to the cloud!"* and route the user to the `LoginScreen` when tapped.
-*  [ ] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
+*  [x] **Auto-Resume Guest Profile Hydration:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, add `await Player.loadLocalGuestPlayers();` before the `setState` to ensure guest names and avatars load immediately on app startup.
+*  [x] **Drawer Active Game Routing Fix:** Update the drawer's "Active Game" button so it does not use `Navigator.push`. If the user has an active game, it should use `changeBodyCallback` to set the body to `GameInprogressScreen`, preventing nested routes and unwanted back arrows.
+*  [x] **Guest Drawer Navigation Fix:** In `main.dart`'s `_buildDrawerList`, add a "Home" `ListTile` (with an `Icons.home` icon) that resets the body to `HomeScreen()`. Add a dedicated "Sign In / Sign Up" `ListTile` (with an `Icons.login` icon) that explicitly routes to the `LoginScreen`.
+*  [x] **DRY Avatar Abstraction:** Create a new `PlayerAvatarWidget` to serve as the single source of truth for avatar rendering. It should encapsulate the `CircleAvatar`, `GravatarImageView`, and the unified `assets/images/avatars_3d_avatar_28.png` fallback logic.
+*  [x] **Avatar Unification & Implementation:** Refactor `PlayerListItem`, `PlayerProfileWidget`, the mid-game player list in `GameInprogressScreen`, and the `UserAccountsDrawerHeader` in `main.dart` to strictly use the new `PlayerAvatarWidget`. For the guest drawer, wrap the new widget in a `GestureDetector` that routes to the `LoginScreen`.
+*  [x] **In-Game Conversion Hook:** Conditionally render a freemium banner directly below the Course Card in `GameInprogressScreen` if `UserProvider().loggedInUser == null`. The banner should read *"Playing as a Guest. Sign up to save your score to the cloud!"* and route the user to the `LoginScreen` when tapped.
+*  [x] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
     *  **"Pause Game":** Navigates back to `HomeScreen` (putting the game on hold).
     *  **"End Game Early":** Displays a confirmation `AlertDialog` warning that the game will be finalized and cannot be reopened. The dialog must include three actions: **"Cancel"**, **"Pause Game instead"** (navigates to HomeScreen), and **"End Game"** (calls `_handleGameCompletion()`).
     *  **"Abandon Game":** Displays a strict confirmation `AlertDialog` warning the user of permanent data loss. If confirmed, calls `deleteSavedGame` and navigates back to `HomeScreen`.
-*  [ ] **Persistent Score Saving (Fix Progress Loss):** In `game_inprogress_screen.dart`, add `await Game.saveLocalGame(widget.currentGame);` to the `_updateGame()` method. Ensure `_updateGame()` is triggered every time a player's score is adjusted so progress is not lost on restart.
-*  [ ] **Fix Score Default Bug:** In `_buildPlayerCard`, change the fallback logic so unrecorded scores start at `0` instead of `1`.
-*  [ ] **UI Rescaling:** Redesign the score row in `_buildPlayerCard`. Reduce the size of the +/- buttons and give the "Current score" text more horizontal space so it is easily readable.
-*  [ ] **Bidirectional Hole Navigation:** Add a "Previous Hole" button next to the "Next Hole" button. Allow users to navigate freely between holes regardless of whether all scores are entered.
-*  [ ] **Skipped/Dropped Players Rule:** Implement logic where if the scorekeeper navigates to the next hole leaving a player's score at `0`, that player is automatically assigned a Max Score of `6` for that hole (which can be edited if they navigate back). Add a visual "Skip/Drop" toggle for players.
+*  [x] **Persistent Score Saving (Fix Progress Loss):** In `game_inprogress_screen.dart`, add `await Game.saveLocalGame(widget.currentGame);` to the `_updateGame()` method. Ensure `_updateGame()` is triggered every time a player's score is adjusted so progress is not lost on restart.
+*  [x] **Fix Score Default Bug:** In `_buildPlayerCard`, change the fallback logic so unrecorded scores start at `0` instead of `1`.
+*  [x] **UI Rescaling:** Redesign the score row in `_buildPlayerCard`. Reduce the size of the +/- buttons and give the "Current score" text more horizontal space so it is easily readable.
+*  [x] **Bidirectional Hole Navigation:** Add a "Previous Hole" button next to the "Next Hole" button. Allow users to navigate freely between holes regardless of whether all scores are entered.
+*  [x] **Skipped/Dropped Players Rule:** Implement logic where if the scorekeeper navigates to the next hole leaving a player's score at `0`, that player is automatically assigned a Max Score of `6` for that hole (which can be edited if they navigate back). Add a visual "Skip/Drop" toggle for players.
 
 ### 1.14 Gameplay Rules & Scoring Edge Cases
 
@@ -945,11 +945,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `asset_bouncy_animation.dart`
 *  [x] `asset_golf_ball_path.dart`
 *  [x] `claim_account_screen.dart`
+*  [x] `contact_identity.dart`
 *  [x] `courses_screen.dart`
 *  [x] `dashboard_screen.dart`
 *  [x] `database_connection_error.dart`
 *  [x] `game_card_widget.dart`
 *  [x] `game_create_screen.dart`
+*  [x] `game_inprogress_screen.dart`
 *  [x] `game_start_screen.dart`
 *  [x] `main.dart`
 *  [x] `map_picker_screen.dart`
@@ -957,8 +959,10 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `past_game_list_item.dart`
 *  [x] `past_games_screen.dart`
 *  [x] `player.dart`
+*  [x] `player_avatar_widget.dart`
 *  [x] `player_create_screen.dart`
 *  [x] `player_game_info.dart`
+*  [x] `player_profile_widget.dart`
 *  [x] `players_card_widget.dart`
 *  [x] `players_list_screen.dart`
 *  [x] `players_screen.dart`
@@ -970,7 +974,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] PlayerForm quick-play validation bypass.
 *  [x] ContactIdentity.normalizeEmail.
 *  [x] ContactIdentity.normalizePhoneNumber.
-*  [ ] ContactIdentity null boundary cases and reservationId methods (Needs 100% coverage).
+*  [x] ContactIdentity null boundary cases and reservationId methods (Needs 100% coverage).
 *  [ ] Player.updateUnclaimedPlayer contact reservation checks.
 *  [ ] Player.resolveCanonicalPlayer split-identity rejection.
 *  [ ] Player.canVerifiedAuthUserClaimPlayer double-claim prevention.
