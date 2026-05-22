@@ -23,6 +23,7 @@ import 'package:mini_golf_tracker/claim_account_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/dashboard_screen.dart';
+import 'package:mini_golf_tracker/player_avatar_widget.dart';
 import 'package:mini_golf_tracker/past_games_screen.dart';
 import 'package:mini_golf_tracker/scheduled_games_screen.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
@@ -160,8 +161,7 @@ void main() {
     // Open standard Scaffold drawer
     final ScaffoldState state = tester.firstState(find.byType(Scaffold));
     state.openDrawer();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
 
     // Verify guest drawer items
     expect(find.text('Guest Profile'), findsOneWidget);
@@ -172,6 +172,34 @@ void main() {
     
     // Verify the presence of the locked preview for guests
     expect(find.text('🔒 Sign up to schedule future rounds.'), findsOneWidget);
+
+    // Test tapping Guest Profile picture navigates to LoginScreen
+    await tester.tap(find.descendant(of: find.byType(UserAccountsDrawerHeader), matching: find.byType(PlayerAvatarWidget)));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(LoginScreen))).pop();
+    await tester.pumpAndSettle();
+
+    state.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test tapping Home changes body to HomeScreen
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    state.openDrawer();
+    await tester.pumpAndSettle();
+
+    // Test tapping Sign In / Sign Up navigates to LoginScreen
+    await tester.tap(find.text('Sign In / Sign Up'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(LoginScreen))).pop();
+    await tester.pumpAndSettle();
+
+    state.openDrawer();
+    await tester.pumpAndSettle();
 
     // Tap the locked preview and verify we navigate to LoginScreen
     await tester.ensureVisible(find.byKey(const Key('drawer-locked-preview')));
@@ -579,7 +607,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Open drawer
-    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+    final mainScaffoldState = tester.state<MainScaffold>(find.byType(HomePage));
+    final scaffoldState = tester.firstState<ScaffoldState>(find.byType(Scaffold));
     scaffoldState.openDrawer();
     await tester.pumpAndSettle();
 
@@ -587,7 +616,7 @@ void main() {
     await tester.tap(find.byKey(const Key('drawer-current-game')));
     await tester.pumpAndSettle();
     expect(find.byType(GameInprogressScreen), findsOneWidget);
-    Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
+    mainScaffoldState.changeBodyCallback(const HomeScreen());
     await tester.pumpAndSettle();
 
     scaffoldState.openDrawer();

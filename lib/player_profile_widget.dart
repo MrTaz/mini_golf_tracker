@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:transparent_image/transparent_image.dart';
 
-import 'gravatar_image_view.dart';
 import 'player.dart';
 import 'main.dart';
+import 'player_avatar_widget.dart';
 
 class PlayerProfileWidget extends StatefulWidget {
   const PlayerProfileWidget(
@@ -80,16 +80,7 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FittedBox(
-              child: CircleAvatar(
-                  backgroundColor: Colors.teal,
-                  child: widget.player.email == null ||
-                          widget.player.email!.isEmpty
-                      ? Text(widget.player.nickname.isEmpty
-                          ? '?'
-                          : widget.player.nickname[0].toUpperCase())
-                      : ClipOval(
-                          child:
-                              GravatarImageView(email: widget.player.email!)))),
+              child: PlayerAvatarWidget(player: widget.player)),
           const SizedBox(
             height: 10.0,
           ),

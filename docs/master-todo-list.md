@@ -156,17 +156,17 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ### 1.10 Guest UX Hardening & Navigation Fixes
 
-*  [ ] **Past Game Details Default State:** In `PastGameDetailsScreen.initState`, pre-populate the `clickedPlayer` and `clickedPlayerScores` lists with all the players from `widget.passedGame`. This ensures the `PlayerScoreDataTable` is fully visible upon opening rather than rendering an empty grey box.
-*  [ ] **Conditional AppBars for Guests:** In `PastGamesScreen` and `PlayersScreen`, dynamically render the `appBar` property based on authentication status.
-*  [ ] If `UserProvider().loggedInUser == null` (Guest), return a standard `AppBar` with a title ("Friends" or "Past Games") so the `Navigator.push` automatically provides a back navigation arrow.
-*  [ ] If Authenticated, keep `appBar: null` so the screens continue to rely seamlessly on the `BottomNavigationBar` within the `DashboardScreen`.
+*  [x] **Past Game Details Default State:** In `PastGameDetailsScreen.initState`, pre-populate the `clickedPlayer` and `clickedPlayerScores` lists with all the players from `widget.passedGame`. This ensures the `PlayerScoreDataTable` is fully visible upon opening rather than rendering an empty grey box.
+*  [x] **Conditional AppBars for Guests:** In `PastGamesScreen` and `PlayersScreen`, dynamically render the `appBar` property based on authentication status.
+*  [x] If `UserProvider().loggedInUser == null` (Guest), return a standard `AppBar` with a title ("Friends" or "Past Games") so the `Navigator.push` automatically provides a back navigation arrow.
+*  [x] If Authenticated, keep `appBar: null` so the screens continue to rely seamlessly on the `BottomNavigationBar` within the `DashboardScreen`.
 
 ### 1.11 Game Start Screen UX & Logic Fixes
 
-*  [ ] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
-*  [ ] **Default Avatar Unification:** In `PlayerListItem._buildPlayerProfileCircleIcon`, replace the fallback `Text('?')` logic with the standard `assets/images/avatars_3d_avatar_28.png` image for users without a Gravatar.
-*  [ ] **Explicit Drag Handles:** In `GameStartScreen._buildPlayerOrderSection`, add an `Icons.drag_handle` to the right side of the `PlayerListItem` to make reordering visually obvious and instantly draggable without a long-press.
-*  [ ] **Course Selection Redesign:** Redesign `_buildSelectCourseCard()` in `GameStartScreen` to match the "Add players" button layout. Remove the confusing `Icons.edit` pencil icon from the course tile. Instead, add a `Row` at the bottom of the card with `mainAxisAlignment: MainAxisAlignment.end` containing an `ElevatedButton` that says "Select course" (or "Change course") which triggers the `_selectCourse()` action.
+*  [x] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
+*  [x] **Default Avatar Unification:** In `PlayerListItem._buildPlayerProfileCircleIcon`, replace the fallback `Text('?')` logic with the standard `assets/images/avatars_3d_avatar_28.png` image for users without a Gravatar.
+*  [x] **Explicit Drag Handles:** In `GameStartScreen._buildPlayerOrderSection`, add an `Icons.drag_handle` to the right side of the `PlayerListItem` to make reordering visually obvious and instantly draggable without a long-press.
+*  [x] **Course Selection Redesign:** Redesign `_buildSelectCourseCard()` in `GameStartScreen` to match the "Add players" button layout. Remove the confusing `Icons.edit` pencil icon from the course tile. Instead, add a `Row` at the bottom of the card with `mainAxisAlignment: MainAxisAlignment.end` containing an `ElevatedButton` that says "Select course" (or "Change course") which triggers the `_selectCourse()` action.
 
 ### 1.12 Course Creation & Map Enhancements
 
@@ -178,14 +178,17 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ### 1.13 Game In-Progress UI & Logic Overhaul
 
+*  [ ] **Auto-Resume Guest Profile Hydration:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, add `await Player.loadLocalGuestPlayers();` before the `setState` to ensure guest names and avatars load immediately on app startup.
+*  [ ] **Drawer Active Game Routing Fix:** Update the drawer's "Active Game" button so it does not use `Navigator.push`. If the user has an active game, it should use `changeBodyCallback` to set the body to `GameInprogressScreen`, preventing nested routes and unwanted back arrows.
 *  [ ] **Guest Drawer Navigation Fix:** In `main.dart`'s `_buildDrawerList`, add a "Home" `ListTile` (with an `Icons.home` icon) that resets the body to `HomeScreen()`. Add a dedicated "Sign In / Sign Up" `ListTile` (with an `Icons.login` icon) that explicitly routes to the `LoginScreen`.
-*  [ ] **Guest Drawer Avatar Unification & Tap:** In `main.dart`'s `_buildDrawerList`, replace the `Icon(Icons.person)` in the guest's `UserAccountsDrawerHeader` with `Image.asset('assets/images/avatars_3d_avatar_28.png')` inside a `ClipOval`. Wrap the avatar in a `GestureDetector` that routes to the `LoginScreen`.
+*  [ ] **DRY Avatar Abstraction:** Create a new `PlayerAvatarWidget` to serve as the single source of truth for avatar rendering. It should encapsulate the `CircleAvatar`, `GravatarImageView`, and the unified `assets/images/avatars_3d_avatar_28.png` fallback logic.
+*  [ ] **Avatar Unification & Implementation:** Refactor `PlayerListItem`, `PlayerProfileWidget`, the mid-game player list in `GameInprogressScreen`, and the `UserAccountsDrawerHeader` in `main.dart` to strictly use the new `PlayerAvatarWidget`. For the guest drawer, wrap the new widget in a `GestureDetector` that routes to the `LoginScreen`.
 *  [ ] **In-Game Conversion Hook:** Conditionally render a freemium banner directly below the Course Card in `GameInprogressScreen` if `UserProvider().loggedInUser == null`. The banner should read *"Playing as a Guest. Sign up to save your score to the cloud!"* and route the user to the `LoginScreen` when tapped.
 *  [ ] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
     *  **"Pause Game":** Navigates back to `HomeScreen` (putting the game on hold).
-    *  **"End Game Early":** Calls `_handleGameCompletion()` to finalize the game with current scores.
-    *  **"Abandon Game":** Calls `deleteSavedGame` and navigates back to `HomeScreen`.
-*  [ ] **Avatar Unification:** Apply the standard `assets/images/avatars_3d_avatar_28.png` fallback to the player list in `GameInprogressScreen`.
+    *  **"End Game Early":** Displays a confirmation `AlertDialog` warning that the game will be finalized and cannot be reopened. The dialog must include three actions: **"Cancel"**, **"Pause Game instead"** (navigates to HomeScreen), and **"End Game"** (calls `_handleGameCompletion()`).
+    *  **"Abandon Game":** Displays a strict confirmation `AlertDialog` warning the user of permanent data loss. If confirmed, calls `deleteSavedGame` and navigates back to `HomeScreen`.
+*  [ ] **Persistent Score Saving (Fix Progress Loss):** In `game_inprogress_screen.dart`, add `await Game.saveLocalGame(widget.currentGame);` to the `_updateGame()` method. Ensure `_updateGame()` is triggered every time a player's score is adjusted so progress is not lost on restart.
 *  [ ] **Fix Score Default Bug:** In `_buildPlayerCard`, change the fallback logic so unrecorded scores start at `0` instead of `1`.
 *  [ ] **UI Rescaling:** Redesign the score row in `_buildPlayerCard`. Reduce the size of the +/- buttons and give the "Current score" text more horizontal space so it is easily readable.
 *  [ ] **Bidirectional Hole Navigation:** Add a "Previous Hole" button next to the "Next Hole" button. Allow users to navigate freely between holes regardless of whether all scores are entered.
@@ -198,6 +201,31 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 *  [ ] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
 *  [ ] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
 *  [ ] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
+
+### 1.15 Friends List & Player Form Polish
+
+*  [ ] **Remove UUID from Header:** In `player_form_widget.dart`, update the edit mode header to simply read "Edit Player Attributes" without concatenating `widget.player!.id`.
+*  [ ] **Remove Status Field:** In `player_form_widget.dart`, remove the `_statusController` and its associated `TextFormField` from the UI.
+*  [ ] **Dynamic Edit/Cancel Icon:** In `player_list_item.dart`, update the edit icon logic in `_buildTrailingIcons()`. If `isDropdownOpen` is true, display `Icons.close` (to indicate cancel); otherwise, display `Icons.edit`.
+*  [ ] **Expandable Player Details:** Update `PlayerListItem` so that if `creatingGame` is false, tapping the ListTile expands a read-only view of the player's saved details (Email, Phone, Total Score), satisfying the PII privacy requirements from Phase 5.6.
+
+### 1.16 Auto-Resume Race Conditions & Concurrency Fixes
+
+*  [ ] **Multiple Active Games Warning:** In `GameCreateScreen._createGame` and `GameStartScreen._startGame`, check if a game with status `"started"` already exists. If so, display an `AlertDialog` warning the user: *"You already have a game in progress. Starting a new game will put your current game on hold."* requiring them to tap "Continue" to proceed.
+*  [ ] **Auto-Resume Sorting Fix:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, sort the retrieved `activeGames` by `scheduledTime` descending before calling `.first!` to ensure the app reliably auto-resumes the most recently created active game instead of a random one.
+*  [ ] **Auth-Only Scheduling Conflict Detection:** For authenticated users in `GameStartScreen._scheduleGame` and `GameCreateScreen._createGame`, fetch all existing `"unstarted_game"` records. If the newly selected `scheduledTime` falls within 2 hours of an existing scheduled game where the current user is a participant, display a warning `AlertDialog`: *"Scheduling Conflict: You already have a game scheduled near this time. Do you want to double-book?"* requiring explicit confirmation to proceed.
+
+### 1.17 In-Game Educational Tooltips & Lifecycle Hooks
+
+*  [ ] **App Lifecycle Observer:** In `GameInprogressScreenState`, mix in `WidgetsBindingObserver` and implement `didChangeAppLifecycleState`. Detect when the app transitions to `AppLifecycleState.resumed`.
+*  [ ] **Dynamic Idle Interaction Timer:** Wrap the root `Scaffold` of `GameInprogressScreen` in a `Listener` to detect user touches. Implement a `Timer` that resets on every touch. The timer's duration should be dynamically calculated based on the active player count (e.g., `widget.currentGame.players.length * 3` minutes) to accommodate larger groups safely.
+*  [ ] **Pause Reminder Coach Mark:** Create a dismissible, highly visible chat bubble or tooltip pointing to the AppBar's `PopupMenuButton` with the text: *"Need a break? You can safely pause your game here!"* 
+*  [ ] **Trigger Logic:** Display the Pause Reminder Coach Mark automatically if the user resumes the app from the background OR if the dynamic idle timer fires. Ensure the bubble disappears as soon as the user taps anywhere on the screen.
+
+### 1.18 Silent Pace of Play Data Collection
+
+*  [ ] **Model Expansion:** Update the `PlayerGameInfo` model in `player_game_info.dart` to include a `List<String>? scoreTimestamps` field to hold ISO-8601 timestamp strings. Update the `toJson` and `fromJson` methods to safely parse this new list so it is entirely backwards compatible with existing local storage.
+*  [ ] **Timestamp Injection:** Update `Game.recordScore()` (and any mid-game `setState` scoring logic in `game_inprogress_screen.dart`) to automatically capture `DateTime.now().toIso8601String()` and append it to the player's `scoreTimestamps` array whenever a score is locked in.
 
 ---
 
@@ -536,8 +564,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
 *  [ ] **Subscription Logic:** Plan a `UserProvider` attribute for `isPremium` to manage feature access.
 *  [ ] **Scheduling Paywall:** Enforce the rule that only users with `isPremium == true` can persist games with a `scheduled_time` in the future.
-*  [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
-*  [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
+*  [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
+*  [ ] **Premium Pace of Play Analytics:** Build a premium post-game summary UI that parses the historical `scoreTimestamps` data to calculate total game duration, average time per hole, and individual player pace statistics.
 
 ---
 
@@ -925,17 +953,24 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [x] `game_start_screen.dart`
 *  [x] `main.dart`
 *  [x] `map_picker_screen.dart`
+*  [x] `past_game_details_screen.dart`
+*  [x] `past_game_list_item.dart`
+*  [x] `past_games_screen.dart`
 *  [x] `player.dart`
 *  [x] `player_create_screen.dart`
 *  [x] `player_game_info.dart`
+*  [x] `players_card_widget.dart`
+*  [x] `players_list_screen.dart`
+*  [x] `players_screen.dart`
 *  [x] `scheduled_games_screen.dart`
 *  [x] `userprovider.dart`
 
 **Pending Specific Behavioral Tests:**
 *  [ ] Player.createPlayer nickname-only creation.
 *  [ ] PlayerForm quick-play validation bypass.
-*  [ ] ContactIdentity.normalizeEmail.
-*  [ ] ContactIdentity.normalizePhoneNumber.
+*  [x] ContactIdentity.normalizeEmail.
+*  [x] ContactIdentity.normalizePhoneNumber.
+*  [ ] ContactIdentity null boundary cases and reservationId methods (Needs 100% coverage).
 *  [ ] Player.updateUnclaimedPlayer contact reservation checks.
 *  [ ] Player.resolveCanonicalPlayer split-identity rejection.
 *  [ ] Player.canVerifiedAuthUserClaimPlayer double-claim prevention.
@@ -962,8 +997,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] `GameInprogressScreen` responds to stream updates.
 - [ ] `GameInprogressScreen` avoids out-of-bounds errors.
 - [ ] `GameInprogressScreen` avoids state errors.
-- [ ] `CoursesScreen` renders `"Fairway Unreachable"` error state.
-- [ ] `CoursesScreen` retry callback works.
+- [x] `CoursesScreen` renders `"Fairway Unreachable"` error state.
+- [x] `CoursesScreen` retry callback works.
 - [ ] `_showAddressCaptureBottomSheet` validates empty street.
 - [ ] `_showAddressCaptureBottomSheet` validates empty city.
 - [ ] `"Add Second Course Anyway"` flow works.

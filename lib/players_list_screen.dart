@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 
-import 'gravatar_image_view.dart';
 import 'player.dart';
 import 'player_form_widget.dart';
+import 'player_avatar_widget.dart';
 
 class PlayerListItem extends StatefulWidget {
   const PlayerListItem(
@@ -123,15 +123,7 @@ class PlayerListItemState extends State<PlayerListItem> {
   }
 
   Widget _buildPlayerProfileCircleIcon() {
-    return FittedBox(
-        child: CircleAvatar(
-            backgroundColor: Colors.teal,
-            child: widget.player.email == null || widget.player.email!.isEmpty
-                ? (widget.player.nickname.isEmpty
-                    ? Image.asset('assets/images/avatars_3d_avatar_28.png')
-                    : Text(widget.player.nickname[0].toUpperCase()))
-                : ClipOval(
-                    child: GravatarImageView(email: widget.player.email!))));
+    return FittedBox(child: PlayerAvatarWidget(player: widget.player));
   }
 
   Widget _buildTrailingIcons() {

@@ -8,6 +8,8 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/gravatar_image_view.dart';
+import 'package:mini_golf_tracker/player_avatar_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -140,13 +142,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    // 1. Check user avatar location branch (lines 135-137) is covered because player.avatarImageLocation is non-null & non-empty.
-
-    final avatarFinder = find.byType(CircleAvatar);
-    expect(avatarFinder, findsOneWidget);
-    final CircleAvatar avatar = tester.widget(avatarFinder);
-    expect(avatar.backgroundImage, isA<NetworkImage>());
-    expect((avatar.backgroundImage as NetworkImage).url, 'http://example.com/avatar.png');
+    // 1. Check user avatar renders through the shared PlayerAvatarWidget email branch.
+    expect(find.byType(PlayerAvatarWidget), findsOneWidget);
+    expect(find.byType(CircleAvatar), findsOneWidget);
+    final gravatar = tester.widget<GravatarImageView>(
+      find.byType(GravatarImageView),
+    );
+    expect(gravatar.email, 'test@example.com');
 
     // 2. Cover notifyListeners / _onUserChanged (lines 121-123)
     UserProvider().loggedInUser = player;

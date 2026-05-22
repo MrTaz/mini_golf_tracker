@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
+import 'package:mini_golf_tracker/main.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/past_game_details_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
@@ -59,6 +61,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
         .replaceRange(0, widget.currentGame.players.length, _playersInfo);
 
     // Save the updated currentGame to SharedPreferences
+    await Game.saveLocalGame(widget.currentGame);
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String currentGameJson = jsonEncode(widget.currentGame);
     await prefs.setString(widget.currentGame.id, currentGameJson);
@@ -104,9 +107,6 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     );
   }
 
-  bool _checkAllPlayersScoredCurrentHole() {
-    return _playersInfo.every((pgi) => pgi.scores.length >= currentHole);
-  }
 
   void _setScoreForCurrentHole(PlayerGameInfo playerGameInfo, int score) {
     while (playerGameInfo.scores.length < currentHole - 1) {
@@ -118,6 +118,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     } else {
       playerGameInfo.scores[currentHole - 1] = score;
     }
+    _updateGame();
   }
 
   void _resetAllPlayersTotalScores() {
@@ -153,6 +154,11 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
 
   void _handleNextHoleButton() {
     setState(() {
+      for (var pgi in _playersInfo) {
+        if (pgi.scores.length < currentHole || pgi.scores[currentHole - 1] == 0) {
+          _setScoreForCurrentHole(pgi, 6);
+        }
+      }
       _resetAllPlayersTotalScores();
       _updateAllPlayersTotalScoresFromPreviousHoles();
       _setAllPlayersPlaces();
@@ -163,6 +169,11 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
 
   void _handleGameCompletion() {
     setState(() {
+      for (var pgi in _playersInfo) {
+        if (pgi.scores.length < currentHole || pgi.scores[currentHole - 1] == 0) {
+          _setScoreForCurrentHole(pgi, 6);
+        }
+      }
       _resetAllPlayersTotalScores();
       _updateAllPlayersTotalScoresFromPreviousHoles();
       _setAllPlayersPlaces();
@@ -181,25 +192,28 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SizedBox(width: 50),
+          if (currentHole > 1)
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  currentHole--;
+                  currentHolePar = widget.currentGame.course.getParValue(currentHole);
+                });
+              },
+              child: const FittedBox(fit: BoxFit.fitWidth, child: Text('Prev Hole')),
+            )
+          else
+            const SizedBox(width: 50),
           Text('Current Hole # $currentHole (Par: $currentHolePar)'),
           ElevatedButton(
             onPressed: () async {
               if (!gameCompleted) {
-                if (_checkAllPlayersScoredCurrentHole()) {
-                  if (currentHole != widget.currentGame.course.numberOfHoles) {
-                    _handleNextHoleButton();
-                  } else {
-                    _handleGameCompletion();
-                  }
-                  _updateGame();
+                if (currentHole != widget.currentGame.course.numberOfHoles) {
+                  _handleNextHoleButton();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            'Please record a score for all players before moving to the next hole.')),
-                  );
+                  _handleGameCompletion();
                 }
+                _updateGame();
               } else {
                 await Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) {
@@ -264,7 +278,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Expanded(
-                        flex: 1,
+                        flex: 3,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -304,7 +318,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                         ),
                       ),
                       Expanded(
-                        flex: 2,
+                        flex: 4,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -320,21 +334,17 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     foregroundColor: Colors.white,
                                     shadowColor: Colors.greenAccent,
                                     elevation: 3,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(32.0)),
-                                    minimumSize: const Size(40, 40),
+                                    shape: const CircleBorder(),
+                                    minimumSize: const Size(32, 32),
+                                    padding: EdgeInsets.zero,
                                   ),
                                   onPressed: () {
                                     setState(() {
                                       if (playerScore > 1) {
-                                        playerScoreDropDownIndex =
-                                            (playerScoreDropDownIndex == 0)
-                                                ? playerScoreDropDownIndex
-                                                : playerScoreDropDownIndex - 1;
                                         playerScore--;
-                                        _setScoreForCurrentHole(
-                                            pgi, playerScore);
+                                        _setScoreForCurrentHole(pgi, playerScore);
+                                      } else if (playerScore == 0) {
+                                        _setScoreForCurrentHole(pgi, 1);
                                       }
                                     });
                                   },
@@ -342,7 +352,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 DropdownButton<int>(
-                                  value: playerScoreDropDownIndex,
+                                  value: playerScore > 0 ? playerScore - 1 : null,
+                                  hint: const Text('-'),
                                   items: List.generate(6, (index) {
                                     return DropdownMenuItem<int>(
                                       value: index,
@@ -351,11 +362,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                   }),
                                   onChanged: (value) {
                                     setState(() {
-                                      if (playerScore < 7 && playerScore > 0) {
-                                        playerScoreDropDownIndex = value!;
+                                      if (value != null) {
                                         playerScore = value + 1;
-                                        _setScoreForCurrentHole(
-                                            pgi, playerScore);
+                                        _setScoreForCurrentHole(pgi, playerScore);
                                       }
                                     });
                                   },
@@ -367,18 +376,17 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     foregroundColor: Colors.white,
                                     shadowColor: Colors.greenAccent,
                                     elevation: 3,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(32.0)),
-                                    minimumSize: const Size(40, 40),
+                                    shape: const CircleBorder(),
+                                    minimumSize: const Size(32, 32),
+                                    padding: EdgeInsets.zero,
                                   ),
                                   onPressed: () {
                                     setState(() {
-                                      if (playerScore < 6) {
-                                        playerScoreDropDownIndex++;
+                                      if (playerScore == 0) {
+                                        _setScoreForCurrentHole(pgi, 2);
+                                      } else if (playerScore < 6) {
                                         playerScore++;
-                                        _setScoreForCurrentHole(
-                                            pgi, playerScore);
+                                        _setScoreForCurrentHole(pgi, playerScore);
                                       }
                                     });
                                   },
@@ -386,6 +394,20 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                 ),
                               ],
                             ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text("Skip/Drop", style: TextStyle(fontSize: 10)),
+                                Switch(
+                                  value: playerScore == 6,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _setScoreForCurrentHole(pgi, val ? 6 : 1);
+                                    });
+                                  },
+                                ),
+                              ],
+                            )
                           ],
                         ),
                       ),
@@ -412,9 +434,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
           PlayerGameInfo pgi = _playersInfo[index];
           int playerScore = pgi.scores.length >= currentHole
               ? pgi.scores[currentHole - 1]
-              : 1;
+              : 0;
           int playerScoreDropDownIndex =
-              (playerScore == 1) ? 0 : playerScore - 1;
+              (playerScore <= 1) ? 0 : playerScore - 1;
           return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
         },
       ),
@@ -435,6 +457,93 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
             extendBodyBehindAppBar: false,
             appBar: AppBar(
               title: Text('Let\'s Play! ${widget.currentGame.name}'),
+              actions: [
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'pause') {
+                      _updateGame();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                        (route) => false,
+                      );
+                    } else if (value == 'end') {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("End Game Early?"),
+                          content: const Text("Scores will be finalized and cannot be reopened."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                _updateGame();
+                                Navigator.pop(context);
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text("Pause Game instead"),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _handleGameCompletion();
+                                _updateGame();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PastGameDetailsScreen(passedGame: widget.currentGame),
+                                  ),
+                                );
+                              },
+                              child: const Text("End Game"),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (value == 'abandon') {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Abandon Game?"),
+                          content: const Text("Strict data-loss warning. All progress will be lost."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                await prefs.remove(widget.currentGame.id);
+                                if (!context.mounted) return;
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text("Abandon Game"),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'pause', child: Text("Pause Game")),
+                    const PopupMenuItem(value: 'end', child: Text("End Game Early")),
+                    const PopupMenuItem(value: 'abandon', child: Text("Abandon Game")),
+                  ],
+                ),
+              ],
             ),
             body: Stack(children: [
               Utilities.backdropImageContinerWidget(),
@@ -446,6 +555,27 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                     child: Column(
                       children: [
                         _buildCourseCard(),
+                        if (loggedInUser == null)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              padding: const EdgeInsets.all(8.0),
+                              color: Colors.amber[100],
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.amber),
+                                  SizedBox(width: 8),
+                                  Expanded(child: Text("Playing as a Guest. Sign up to save your score to the cloud!")),
+                                ],
+                              ),
+                            ),
+                          ),
                         _buildCurrentHoleWidget(),
                         _buildPlayerCards(),
                       ],

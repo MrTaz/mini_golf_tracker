@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/courses_screen.dart';
@@ -12,6 +11,7 @@ import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
+import 'package:mini_golf_tracker/player_avatar_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -132,10 +132,6 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
       return const Center(child: Text("Please log in"));
     }
 
-    final avatarUrl = (loggedInUser.avatarImageLocation != null &&
-            loggedInUser.avatarImageLocation!.isNotEmpty)
-        ? loggedInUser.avatarImageLocation!
-        : Gravatar(loggedInUser.email ?? "").imageUrl(size: 60);
 
     return FutureBuilder(
         future: Future.wait([
@@ -163,10 +159,9 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
                                 padding: const EdgeInsets.all(12.0),
                                 child: Row(
                                   children: [
-                                    CircleAvatar(
+                                    PlayerAvatarWidget(
+                                      player: loggedInUser,
                                       radius: 30,
-                                      backgroundImage: NetworkImage(avatarUrl),
-                                      backgroundColor: Colors.teal,
                                     ),
                                     const SizedBox(width: 15),
                                     Column(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
@@ -11,6 +10,8 @@ import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/player_avatar_widget.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/game_create_screen.dart';
@@ -54,7 +55,8 @@ class MyApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final bool skipAutoResume;
+  const HomePage({super.key, this.skipAutoResume = false});
 
   @override
   MainScaffold createState() => MainScaffold();
@@ -66,10 +68,6 @@ class MainScaffold extends State<HomePage> {
   static bool skipPrecacheForTesting = false;
 
   Widget body = const HomeScreen();
-  Image profileImage = Image.asset(
-    "assets/images/avatars_3d_avatar_28.png",
-    width: 120,
-  );
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -113,7 +111,7 @@ class MainScaffold extends State<HomePage> {
     final user = UserProvider().loggedInUser;
     if (user != null) {
       body = const DashboardScreen();
-      changeProfileImage();
+
     } else if (UserProvider().pendingClaimPlayer != null) {
       body = const ClaimAccountScreen();
     } else {
@@ -122,9 +120,11 @@ class MainScaffold extends State<HomePage> {
   }
 
   void _checkAndAutoResumeActiveGame() async {
+    if (widget.skipAutoResume) return;
     final activeGames = await Game.getLocallySavedGames(gameStatusTypes: ['started']);
     if (activeGames.isNotEmpty && activeGames.first != null) {
       if (mounted && UserProvider().pendingClaimPlayer == null) {
+        await Player.loadLocalGuestPlayers();
         setState(() {
           body = GameInprogressScreen(currentGame: activeGames.first!);
         });
@@ -144,22 +144,6 @@ class MainScaffold extends State<HomePage> {
     await UserProvider().logout();
   }
 
-  void changeProfileImage() async {
-    final loggedInUser = UserProvider().loggedInUser;
-    if (!mounted || loggedInUser == null) {
-      return;
-    }
-    setState(() {
-      if (loggedInUser.avatarImageLocation != null &&
-          loggedInUser.avatarImageLocation!.isNotEmpty) {
-        profileImage = Image.network(loggedInUser.avatarImageLocation!);
-      } else {
-        final gravatarImgUrl =
-            Gravatar(loggedInUser.email ?? "").imageUrl(size: 120);
-        profileImage = Image.network(gravatarImgUrl);
-      }
-    });
-  }
 
   List<Widget> _buildDrawerList(BuildContext context) {
     final user = UserProvider().loggedInUser;
@@ -168,13 +152,44 @@ class MainScaffold extends State<HomePage> {
       list.addAll(_buildUserAccounts(context));
     } else {
       list.add(
-        const UserAccountsDrawerHeader(
-          accountName: Text("Guest Profile"),
+        UserAccountsDrawerHeader(
+          accountName: const Text("Guest Profile"),
           accountEmail: null,
-          currentAccountPicture: CircleAvatar(
-            backgroundColor: Colors.teal,
-            child: Icon(Icons.person, color: Colors.white),
+          currentAccountPicture: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            child: PlayerAvatarWidget(
+              player: Player.empty()..nickname = 'Guest'..ownerId = 'guest',
+            ),
           ),
+        ),
+      );
+      list.add(
+        ListTile(
+          leading: const Icon(Icons.home, color: Colors.teal),
+          title: const Text("Home"),
+          onTap: () {
+            Navigator.pop(context);
+            changeBodyCallback(const HomeScreen());
+          },
+        ),
+      );
+      list.add(
+        ListTile(
+          leading: const Icon(Icons.login, color: Colors.teal),
+          title: const Text("Sign In / Sign Up"),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          },
         ),
       );
     }
@@ -226,12 +241,7 @@ class MainScaffold extends State<HomePage> {
                 onTap: () {
                   Navigator.pop(context);
                   if (hasActive) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GameInprogressScreen(currentGame: activeGames.first),
-                      ),
-                    );
+                    changeBodyCallback(GameInprogressScreen(currentGame: activeGames.first));
                   } else {
                     Navigator.push(
                       context,
@@ -410,9 +420,7 @@ class MainScaffold extends State<HomePage> {
             )
           ]),
           accountEmail: Text(loggedInPlayer?.email ?? ""),
-          currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.teal,
-              child: ClipOval(child: profileImage)),
+          currentAccountPicture: PlayerAvatarWidget(player: loggedInPlayer!),
           otherAccountsPictures: <Widget>[
             GestureDetector(
               onTap: () => logout(),
