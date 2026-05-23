@@ -575,6 +575,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 *  [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
 *  [ ] **Premium Pace of Play Analytics:** Build a premium post-game summary UI that parses the historical `scoreTimestamps` data to calculate total game duration, average time per hole, and individual player pace statistics.
 
+#### Phase 9 — CI/CD & Deployment
+
+##### 9.1 iOS Firebase App Distribution
+
+*  [ ] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
+*  [ ] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
+*  [ ] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using either standard GitHub Action steps or Fastlane Match) to successfully archive and sign the iOS `.ipa`.
+*  [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
+
 ---
 
 # Part B — Detailed Engineering Appendix

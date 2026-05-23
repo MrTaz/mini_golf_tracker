@@ -38,13 +38,21 @@ class PlayerCreateScreenState extends State<PlayerCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: PlayerForm(
-        player: newPlayer,
-        allowEditing: true,
-        onSaveChanges: savePlayer,
-        editingOrAdding: "Add",
+    return Card(
+      elevation: 0,
+      color: Colors.teal.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24.0),
+      ),
+      margin: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: PlayerForm(
+          player: newPlayer,
+          allowEditing: true,
+          onSaveChanges: savePlayer,
+          editingOrAdding: "Add",
+        ),
       ),
     );
   }

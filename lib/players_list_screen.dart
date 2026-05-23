@@ -76,6 +76,11 @@ class PlayerListItemState extends State<PlayerListItem> {
 
   Widget _buildPlayerListItem() {
     return Card(
+      elevation: 0,
+      color: Colors.teal.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24.0),
+      ),
       child: Column(
         children: [
           // orderNumberText,

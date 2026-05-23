@@ -6,6 +6,8 @@ import 'player_create_screen.dart';
 import 'player_game_info.dart';
 import 'players_list_screen.dart';
 import 'utilities.dart';
+import 'asset_bouncy_animation.dart';
+import 'asset_golf_ball_path.dart';
 
 class PlayersScreen extends StatefulWidget {
   const PlayersScreen(
@@ -24,6 +26,7 @@ class PlayersScreenState extends State<PlayersScreen> {
   final List<Player> selectedPlayers = [];
   bool showCloseButton = false;
   bool showNewPlayerForm = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -32,11 +35,17 @@ class PlayersScreenState extends State<PlayersScreen> {
   }
 
   Future<void> _loadPlayers() async {
+    setState(() {
+      _isLoading = true;
+    });
     if (loggedInUser == null) {
       await Player.loadLocalGuestPlayers();
     }
     if (!mounted) return;
-    setState(_initializePlayers);
+    setState(() {
+      _initializePlayers();
+      _isLoading = false;
+    });
   }
 
   void fabPressed() {
@@ -130,36 +139,111 @@ class PlayersScreenState extends State<PlayersScreen> {
       body: Stack(
         children: [
           Utilities.backdropImageContinerWidget(),
-          SingleChildScrollView(
-            child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: showNewPlayerForm
-                    ? PlayerCreateScreen(
-                        players: players, onSavePlayer: savePlayer)
-                    : Column(
-                        children: <Widget>[
-                          ListView.builder(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(0.8),
-                            itemCount: players.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              bool isSelected =
-                                  selectedPlayers.contains(players[index]);
-                              return _buildPlayerListItem(index, isSelected);
-                            },
+          if (_isLoading)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(24.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 20.0,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.teal.shade700.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 120,
+                      child: Center(
+                        child: BouncyAnimation(
+                          duration: const Duration(seconds: 1),
+                          lift: 50,
+                          ratio: 0.25,
+                          child: CustomPaint(
+                            painter: GolfBallPainter(),
+                            child: const SizedBox(width: 60, height: 60),
                           ),
-                          (widget.creatingGame!)
-                              ? ElevatedButton(
-                                  onPressed: _addPlayers,
-                                  child: const Text(
-                                      'Add selected players to game.'),
-                                )
-                              : const SizedBox(height: 16.0),
-                        ],
-                      )),
-          )
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                    Text(
+                      'Gathering Players...',
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal.shade800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24.0),
+                    SizedBox(
+                      width: 140,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Colors.teal.shade100,
+                        color: Colors.teal.shade700,
+                        borderRadius: BorderRadius.circular(24.0),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SingleChildScrollView(
+              child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: showNewPlayerForm
+                      ? PlayerCreateScreen(
+                          players: players, onSavePlayer: savePlayer)
+                      : Column(
+                          children: <Widget>[
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(0.8),
+                              itemCount: players.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                bool isSelected =
+                                    selectedPlayers.contains(players[index]);
+                                return _buildPlayerListItem(index, isSelected);
+                              },
+                            ),
+                            const SizedBox(height: 16.0),
+                          ],
+                        )),
+            )
         ],
       ),
+      bottomNavigationBar: (widget.creatingGame! && !showNewPlayerForm && !_isLoading)
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: _addPlayers,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal.shade700,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24.0),
+                    ),
+                  ),
+                  child: const Text('Add selected players to game.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            )
+          : null,
       floatingActionButton: FloatingActionButton(
         onPressed: showCloseButton ? closePlayerCreateScreen : fabPressed,
         child: showCloseButton
