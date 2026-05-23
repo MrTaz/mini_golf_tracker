@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:mini_golf_tracker/course.dart';
+import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:mini_golf_tracker/map_picker_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddEditCourseScreen extends StatefulWidget {
   final Course? course;
@@ -398,7 +402,8 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 _latitude = locations.first.latitude;
                                 _longitude = locations.first.longitude;
                               });
-                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -824,6 +829,25 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
       } catch (e) {
         Utilities.debugPrintWithCallerInfo(
             "Error saving course to database: $e");
+        if (e is DatabaseConnectionError && widget.course == null) {
+          final localCourse = Course(
+            id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+            name: savedCourse.name,
+            numberOfHoles: savedCourse.numberOfHoles,
+            parStrokes: savedCourse.parStrokes,
+            latitude: savedCourse.latitude,
+            longitude: savedCourse.longitude,
+            address: savedCourse.address,
+          );
+          final prefs = await SharedPreferences.getInstance();
+          final cachedCourses = prefs.getStringList('courses') ?? [];
+          cachedCourses.add(jsonEncode(localCourse.toJson()));
+          await prefs.setStringList('courses', cachedCourses);
+          if (mounted) {
+            Navigator.of(context).pop(localCourse);
+          }
+          return;
+        }
         if (mounted) {
           _showDuplicateCourseDialog();
         }

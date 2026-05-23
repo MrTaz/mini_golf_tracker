@@ -799,4 +799,36 @@ void main() {
     // Clean up
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
   });
+
+  testWidgets('saves new course locally when database write is unavailable',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final failingFirestore = ExceptionThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(failingFirestore);
+
+    await tester.pumpWidget(createScreen());
+
+    await tester.tap(find.text('9 Holes'));
+    await tester.pump();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'Offline Course');
+
+    await tester.tap(find.text('Create Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final prefs = await SharedPreferences.getInstance();
+    final cachedCourses = prefs.getStringList('courses') ?? [];
+
+    expect(cachedCourses, hasLength(1));
+    expect(cachedCourses.single, contains('Offline Course'));
+    expect(find.byType(AddEditCourseScreen), findsNothing);
+
+    DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+  });
 }

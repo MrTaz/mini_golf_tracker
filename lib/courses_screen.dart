@@ -214,7 +214,8 @@ class CoursesScreenState extends State<CoursesScreen> {
           "Exception when loading courses from DB: ${exception.toString()}. Falling back to local cache.");
       if (mounted) {
         setState(() {
-          _connectionError = "Unable to load courses. Please check your connection.";
+          _connectionError =
+              "Unable to load courses. Please check your connection.";
         });
       }
       try {
@@ -231,13 +232,14 @@ class CoursesScreenState extends State<CoursesScreen> {
               .map((String courseJson) =>
                   Course.fromJson(jsonDecode(courseJson)))
               .toList();
-          
+
           if (mounted) {
             setState(() {
               courses = loadedCourses;
               _hasMore = false; // Disable pagination on local cache fallback
               _isLoading = false;
-              _connectionError = null; // Clear connection error since we have cached data
+              _connectionError =
+                  null; // Clear connection error since we have cached data
             });
             _sortCoursesByProximity();
           }
@@ -246,6 +248,9 @@ class CoursesScreenState extends State<CoursesScreen> {
           if (mounted) {
             setState(() {
               _isLoading = false;
+              if (widget.creatingGame == true) {
+                _connectionError = null;
+              }
             });
           }
           return [];

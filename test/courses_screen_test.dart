@@ -391,6 +391,21 @@ void main() {
   });
 
   testWidgets(
+      'creating game with DB failure and empty cache shows empty course state',
+      (tester) async {
+    final throwingFirestore = ThrowingFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(throwingFirestore);
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(createCoursesScreen(creatingGame: true));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
+    expect(find.text('No Courses Yet'), findsOneWidget);
+    expect(find.text('Add New Course'), findsOneWidget);
+  });
+
+  testWidgets(
       'falls back to local cache when DB fetch fails and cache is not empty',
       (tester) async {
     // 1. Set up local cache in SharedPreferences and set throwing firestore
@@ -568,8 +583,7 @@ void main() {
     expect(find.text('Close'), findsNothing);
   });
 
-  testWidgets(
-      'handles second page fetch failure without appending courses',
+  testWidgets('handles second page fetch failure without appending courses',
       (tester) async {
     mockGeolocator.serviceEnabled = false;
 
@@ -739,16 +753,14 @@ void main() {
     final listFinder = find.byType(ListView);
     await tester.drag(listFinder, const Offset(0, -3000));
     await tester.pump();
-    
+
     // The CircularProgressIndicator should be visible at the bottom of the list
     // while loading the next page.
     expect(find.byType(CircularProgressIndicator), findsWidgets);
 
     await tester.pump(const Duration(milliseconds: 100));
 
-    for (var attempt = 0;
-        attempt < 20 && state.courses.length < 8;
-        attempt++) {
+    for (var attempt = 0; attempt < 20 && state.courses.length < 8; attempt++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
