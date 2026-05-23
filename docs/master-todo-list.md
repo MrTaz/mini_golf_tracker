@@ -37,13 +37,13 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ### 1.2 Modernize Game Creation UI
 
-- [ ] Redesign `GameCreateScreen` to match the design language of `AddEditCourseScreen`.
-- [ ] Replace standard `ListTile` widgets for course and player selection with custom `_buildSelectionCard` helpers.
-- [ ] Use `AnimatedContainer` and `BoxDecoration` patterns from `AddEditCourseScreen._buildHoleCountCard`.
-- [ ] Provide haptic-like visual feedback, elevation styling, and consistent border radius.
-- [ ] Use a consistent border radius of `16.0` for `GameCreateScreen` selection cards.
-- [ ] Move `"Select Players"` and `"Select Course"` triggers out of the `ListView`.
-- [ ] Place selection actions in a bottom sticky action bar or `FloatingActionButton` for better one-handed accessibility.
+- [x] Redesign `GameCreateScreen` to match the design language of `AddEditCourseScreen`.
+- [x] Replace standard `ListTile` widgets for course and player selection with custom `_buildSelectionCard` helpers.
+- [x] Use `AnimatedContainer` and `BoxDecoration` patterns from `AddEditCourseScreen._buildHoleCountCard`.
+- [x] Provide haptic-like visual feedback, elevation styling, and consistent border radius.
+- [x] Use a consistent border radius of `16.0` for `GameCreateScreen` selection cards.
+- [x] Move `"Select Players"` and `"Select Course"` triggers out of the `ListView`.
+- [x] Place selection actions in a bottom sticky action bar or `FloatingActionButton` for better one-handed accessibility.
 
 ### 1.3 Modernize Player Creation and Selection UI
 
@@ -226,6 +226,14 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 *  [ ] **Model Expansion:** Update the `PlayerGameInfo` model in `player_game_info.dart` to include a `List<String>? scoreTimestamps` field to hold ISO-8601 timestamp strings. Update the `toJson` and `fromJson` methods to safely parse this new list so it is entirely backwards compatible with existing local storage.
 *  [ ] **Timestamp Injection:** Update `Game.recordScore()` (and any mid-game `setState` scoring logic in `game_inprogress_screen.dart`) to automatically capture `DateTime.now().toIso8601String()` and append it to the player's `scoreTimestamps` array whenever a score is locked in.
+
+##### 1.19 Post-1.2 Bug Fixes & UX Polish
+
+*  [x] **Score Increment Fix:** In `GameInprogressScreen` (or the underlying scoring logic), fix the `+` button behavior so that tapping it when a player's score is `0` correctly increments the score to `1` instead of jumping to `2`.
+*  [x] **Avatar Fallback Fix:** In `PlayerAvatarWidget` (`player_avatar_widget.dart`), remove the `Text(player.nickname.toUpperCase())` fallback entirely. Ensure that any player without a valid Gravatar strictly displays the `assets/images/avatars_3d_avatar_28.png` image to eliminate the green initial circles.
+*  [x] **Reusable App Drawer:** Extract the side menu logic (`_buildDrawerList`, `_buildUserAccounts`, etc.) out of `main.dart` and into a standalone, reusable `AppDrawer` widget (e.g., `lib/app_drawer_widget.dart`).
+*  [x] **Guest Menu Bar Access:** Add the newly abstracted `AppDrawer` widget to the `Scaffold` of `PastGameDetailsScreen` (and any other standalone screens) so guests can always access the side menu, even on pushed routes.
+*  [x] **Drawer State Desync:** Fix the state management in `HomePage` (`main.dart`) or the new `AppDrawer` so that when the user returns to the home screen from creating or playing a game, the drawer's "Active Game" FutureBuilder is immediately refreshed without needing to click other menu items first.
 
 ---
 
@@ -942,6 +950,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 **Fully Covered Files (100% Line Coverage):**
 *  [x] `add_edit_course_screen.dart`
+*  [x] `app_drawer_widget.dart`
 *  [x] `asset_bouncy_animation.dart`
 *  [x] `asset_golf_ball_path.dart`
 *  [x] `claim_account_screen.dart`
@@ -994,7 +1003,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [ ] `PlayersScreen` preserves selected players across rebuilds.
 - [ ] `PlayersScreen` receives `currentlySelectedPlayers`.
 - [ ] `PlayersScreen` clears all selected players.
-- [ ] `GameCreateScreen` receives returned selected players.
+- [x] `GameCreateScreen` receives returned selected players.
 - [ ] `PlayerListItem` hides PII by default.
 - [ ] `PlayerListItem` reveals PII on expansion.
 - [ ] `PlayerForm` shows PII sharing toggle.
@@ -1011,6 +1020,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ## Integration / E2E Tests
 
+- [x] Activity Hub game create and active game resume flow passes (integration_test/activity_hub_game_create_flow_test.dart).
+- [x] Active game score increment and guest shared drawer access flows pass (integration_test/phase_1_19_drawer_score_flow_test.dart).
+- [x] Offline course selection fallback flow passes (integration_test/course_selection_fallback_test.dart).
 - [ ] Firebase Local Emulator Suite is configured.
 - [ ] Remote game exists with canonical player.
 - [ ] Guest creates local game with matching contact.
@@ -1044,7 +1056,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 # Appendix D — Final Definition of Done
 
 - [ ] The 4-step identity convergence regression scenario passes in the automated test suite.
-- [ ] Selected players and selected courses persist across all `GameCreateScreen` navigation sub-flows.
+- [x] Selected players and selected courses persist across all `GameCreateScreen` navigation sub-flows.
 - [ ] Contact normalization is applied through `ContactIdentity` before every relevant database write.
 - [ ] Legacy JSON storage is repaired.
 - [ ] Guest/local records migrate only through explicit user-approved import flows.
