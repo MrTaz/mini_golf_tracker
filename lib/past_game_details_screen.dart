@@ -1,5 +1,6 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:mini_golf_tracker/app_drawer_widget.dart';
 import 'package:mini_golf_tracker/course_list_item_widget.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/player.dart';
@@ -50,7 +51,8 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
     clickedPlayerScores = List.from(sortedPlayerScores);
     for (var info in sortedPlayerScores) {
       Player? player = Player.empty().getPlayerFriendById(info.playerId);
-      if (player?.id == '' && UserProvider().loggedInUser?.id == info.playerId) {
+      if (player?.id == '' &&
+          UserProvider().loggedInUser?.id == info.playerId) {
         player = UserProvider().loggedInUser;
       }
       if (player != null) {
@@ -111,6 +113,7 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
     return Scaffold(
         backgroundColor: Colors.white,
         extendBodyBehindAppBar: false,
+        drawer: const AppDrawer(),
         appBar: AppBar(
           title: Text(
               "${widget.passedGame.course.name} on ${widget.passedGame.startTime!}"),

@@ -395,9 +395,9 @@ void main() {
 
     // Change score for player 1 to 2
     final addIcon = find.byIcon(Icons.add);
-    await tester.tap(addIcon.first); // increments from 0 to 2
+    await tester.tap(addIcon.first); // increments from 0 to 1
     await tester.pumpAndSettle();
-    await tester.tap(addIcon.first); // increments from 2 to 3
+    await tester.tap(addIcon.first); // increments from 1 to 2
     await tester.pumpAndSettle();
 
     // Player 2 leaves score at 0.
@@ -413,9 +413,9 @@ void main() {
 
     expect(find.byType(PastGameDetailsScreen), findsOneWidget);
 
-    // Player 1 had 3 on hole 1 (first add=2, second add=3), and 0 on hole 2 → 3 + 6 = 9
+    // Player 1 had 2 on hole 1, and 0 on hole 2 → 2 + 6 = 8
     // Player 2 had 0 on hole 1, and 0 on hole 2 → 6 + 6 = 12
-    expect(game.players[0].totalScore, 9);
+    expect(game.players[0].totalScore, 8);
     expect(game.players[1].totalScore, 12);
   });
 

@@ -14,9 +14,7 @@ class PlayerAvatarWidget extends StatelessWidget {
       backgroundColor: Colors.teal,
       radius: radius,
       child: player.email == null || player.email!.isEmpty
-          ? (player.nickname.isEmpty
-              ? Image.asset('assets/images/avatars_3d_avatar_28.png')
-              : Text(player.nickname[0].toUpperCase()))
+          ? Image.asset('assets/images/avatars_3d_avatar_28.png')
           : ClipOval(child: GravatarImageView(email: player.email!)),
     );
   }

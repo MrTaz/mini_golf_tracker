@@ -107,7 +107,6 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
     );
   }
 
-
   void _setScoreForCurrentHole(PlayerGameInfo playerGameInfo, int score) {
     while (playerGameInfo.scores.length < currentHole - 1) {
       playerGameInfo.scores.add(0);
@@ -155,7 +154,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   void _handleNextHoleButton() {
     setState(() {
       for (var pgi in _playersInfo) {
-        if (pgi.scores.length < currentHole || pgi.scores[currentHole - 1] == 0) {
+        if (pgi.scores.length < currentHole ||
+            pgi.scores[currentHole - 1] == 0) {
           _setScoreForCurrentHole(pgi, 6);
         }
       }
@@ -170,7 +170,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   void _handleGameCompletion() {
     setState(() {
       for (var pgi in _playersInfo) {
-        if (pgi.scores.length < currentHole || pgi.scores[currentHole - 1] == 0) {
+        if (pgi.scores.length < currentHole ||
+            pgi.scores[currentHole - 1] == 0) {
           _setScoreForCurrentHole(pgi, 6);
         }
       }
@@ -197,10 +198,12 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
               onPressed: () {
                 setState(() {
                   currentHole--;
-                  currentHolePar = widget.currentGame.course.getParValue(currentHole);
+                  currentHolePar =
+                      widget.currentGame.course.getParValue(currentHole);
                 });
               },
-              child: const FittedBox(fit: BoxFit.fitWidth, child: Text('Prev Hole')),
+              child: const FittedBox(
+                  fit: BoxFit.fitWidth, child: Text('Prev Hole')),
             )
           else
             const SizedBox(width: 50),
@@ -342,7 +345,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     setState(() {
                                       if (playerScore > 1) {
                                         playerScore--;
-                                        _setScoreForCurrentHole(pgi, playerScore);
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       } else if (playerScore == 0) {
                                         _setScoreForCurrentHole(pgi, 1);
                                       }
@@ -352,7 +356,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 DropdownButton<int>(
-                                  value: playerScore > 0 ? playerScore - 1 : null,
+                                  value:
+                                      playerScore > 0 ? playerScore - 1 : null,
                                   hint: const Text('-'),
                                   items: List.generate(6, (index) {
                                     return DropdownMenuItem<int>(
@@ -364,7 +369,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                     setState(() {
                                       if (value != null) {
                                         playerScore = value + 1;
-                                        _setScoreForCurrentHole(pgi, playerScore);
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       }
                                     });
                                   },
@@ -383,10 +389,11 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                   onPressed: () {
                                     setState(() {
                                       if (playerScore == 0) {
-                                        _setScoreForCurrentHole(pgi, 2);
+                                        _setScoreForCurrentHole(pgi, 1);
                                       } else if (playerScore < 6) {
                                         playerScore++;
-                                        _setScoreForCurrentHole(pgi, playerScore);
+                                        _setScoreForCurrentHole(
+                                            pgi, playerScore);
                                       }
                                     });
                                   },
@@ -397,7 +404,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Skip/Drop", style: TextStyle(fontSize: 10)),
+                                const Text("Skip/Drop",
+                                    style: TextStyle(fontSize: 10)),
                                 Switch(
                                   value: playerScore == 6,
                                   onChanged: (val) {
@@ -464,7 +472,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                       _updateGame();
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const HomePage(skipAutoResume: true)),
                         (route) => false,
                       );
                     } else if (value == 'end') {
@@ -472,7 +482,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text("End Game Early?"),
-                          content: const Text("Scores will be finalized and cannot be reopened."),
+                          content: const Text(
+                              "Scores will be finalized and cannot be reopened."),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
@@ -484,7 +495,9 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                 Navigator.pop(context);
                                 Navigator.pushAndRemoveUntil(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const HomePage(skipAutoResume: true)),
                                   (route) => false,
                                 );
                               },
@@ -498,7 +511,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => PastGameDetailsScreen(passedGame: widget.currentGame),
+                                    builder: (context) => PastGameDetailsScreen(
+                                        passedGame: widget.currentGame),
                                   ),
                                 );
                               },
@@ -512,7 +526,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text("Abandon Game?"),
-                          content: const Text("Strict data-loss warning. All progress will be lost."),
+                          content: const Text(
+                              "Strict data-loss warning. All progress will be lost."),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
@@ -521,12 +536,15 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                             TextButton(
                               onPressed: () async {
                                 Navigator.pop(context);
-                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
                                 await prefs.remove(widget.currentGame.id);
                                 if (!context.mounted) return;
                                 Navigator.pushAndRemoveUntil(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const HomePage(skipAutoResume: true)),
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const HomePage(skipAutoResume: true)),
                                   (route) => false,
                                 );
                               },
@@ -538,9 +556,12 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'pause', child: Text("Pause Game")),
-                    const PopupMenuItem(value: 'end', child: Text("End Game Early")),
-                    const PopupMenuItem(value: 'abandon', child: Text("Abandon Game")),
+                    const PopupMenuItem(
+                        value: 'pause', child: Text("Pause Game")),
+                    const PopupMenuItem(
+                        value: 'end', child: Text("End Game Early")),
+                    const PopupMenuItem(
+                        value: 'abandon', child: Text("Abandon Game")),
                   ],
                 ),
               ],
@@ -560,18 +581,22 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) => const LoginScreen()),
                               );
                             },
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 8.0, vertical: 4.0),
                               padding: const EdgeInsets.all(8.0),
                               color: Colors.amber[100],
                               child: const Row(
                                 children: [
                                   Icon(Icons.info_outline, color: Colors.amber),
                                   SizedBox(width: 8),
-                                  Expanded(child: Text("Playing as a Guest. Sign up to save your score to the cloud!")),
+                                  Expanded(
+                                      child: Text(
+                                          "Playing as a Guest. Sign up to save your score to the cloud!")),
                                 ],
                               ),
                             ),
