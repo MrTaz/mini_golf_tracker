@@ -21,7 +21,6 @@ import 'package:mini_golf_tracker/past_game_details_screen.dart';
 import 'package:mini_golf_tracker/scheduled_games_screen.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -111,7 +110,6 @@ class MainScaffold extends State<HomePage> {
     final user = UserProvider().loggedInUser;
     if (user != null) {
       body = const DashboardScreen();
-
     } else if (UserProvider().pendingClaimPlayer != null) {
       body = const ClaimAccountScreen();
     } else {
@@ -121,7 +119,8 @@ class MainScaffold extends State<HomePage> {
 
   void _checkAndAutoResumeActiveGame() async {
     if (widget.skipAutoResume) return;
-    final activeGames = await Game.getLocallySavedGames(gameStatusTypes: ['started']);
+    final activeGames =
+        await Game.getLocallySavedGames(gameStatusTypes: ['started']);
     if (activeGames.isNotEmpty && activeGames.first != null) {
       if (mounted && UserProvider().pendingClaimPlayer == null) {
         await Player.loadLocalGuestPlayers();
@@ -144,7 +143,6 @@ class MainScaffold extends State<HomePage> {
     await UserProvider().logout();
   }
 
-
   List<Widget> _buildDrawerList(BuildContext context) {
     final user = UserProvider().loggedInUser;
     List<Widget> list = [];
@@ -164,7 +162,9 @@ class MainScaffold extends State<HomePage> {
               );
             },
             child: PlayerAvatarWidget(
-              player: Player.empty()..nickname = 'Guest'..ownerId = 'guest',
+              player: Player.empty()
+                ..nickname = 'Guest'
+                ..ownerId = 'guest',
             ),
           ),
         ),
@@ -209,7 +209,8 @@ class MainScaffold extends State<HomePage> {
           final allGames = snapshot.data ?? [];
           final nonNullGames = allGames.whereType<Game>().toList();
 
-          final activeGames = nonNullGames.where((g) => g.status == 'started').toList();
+          final activeGames =
+              nonNullGames.where((g) => g.status == 'started').toList();
           final hasActive = activeGames.isNotEmpty;
 
           final upcomingGames = nonNullGames
@@ -218,14 +219,13 @@ class MainScaffold extends State<HomePage> {
             ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
           final topUpcoming = upcomingGames.take(5).toList();
 
-          final recentGames = nonNullGames
-              .where((g) => g.status == 'completed')
-              .toList()
-            ..sort((a, b) {
-              final aTime = a.completedTime ?? a.scheduledTime;
-              final bTime = b.completedTime ?? b.scheduledTime;
-              return bTime.compareTo(aTime);
-            });
+          final recentGames =
+              nonNullGames.where((g) => g.status == 'completed').toList()
+                ..sort((a, b) {
+                  final aTime = a.completedTime ?? a.scheduledTime;
+                  final bTime = b.completedTime ?? b.scheduledTime;
+                  return bTime.compareTo(aTime);
+                });
           final topRecent = recentGames.take(5).toList();
 
           return Column(
@@ -237,18 +237,23 @@ class MainScaffold extends State<HomePage> {
                   hasActive ? Icons.play_circle_filled : Icons.play_disabled,
                   color: hasActive ? Colors.green : Colors.grey,
                 ),
-                title: Text(hasActive ? "Resume Active Game" : "No current game"),
-                onTap: () {
+                title:
+                    Text(hasActive ? "Resume Active Game" : "No current game"),
+                onTap: () async {
                   Navigator.pop(context);
                   if (hasActive) {
-                    changeBodyCallback(GameInprogressScreen(currentGame: activeGames.first));
+                    changeBodyCallback(
+                        GameInprogressScreen(currentGame: activeGames.first));
                   } else {
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const GameCreateScreen(),
                       ),
                     );
+                    if (mounted) {
+                      setState(() {});
+                    }
                   }
                 },
               ),
@@ -260,7 +265,8 @@ class MainScaffold extends State<HomePage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PlayersScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const PlayersScreen()),
                   );
                 },
               ),
@@ -273,32 +279,41 @@ class MainScaffold extends State<HomePage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PastGamesScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const PastGamesScreen()),
                   );
                 },
               ),
               if (topRecent.isNotEmpty)
                 ...topRecent.map((game) => ListTile(
                       key: Key('drawer-recent-${game.id}'),
-                      contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
+                      contentPadding:
+                          const EdgeInsets.only(left: 40.0, right: 16.0),
                       dense: true,
-                      leading: const Icon(Icons.emoji_events, size: 18, color: Colors.amber),
+                      leading: const Icon(Icons.emoji_events,
+                          size: 18, color: Colors.amber),
                       title: Text(
                         game.course.name,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 13),
                       ),
                       subtitle: FutureBuilder<String>(
-                        future: Utilities.formatStartTime(game.completedTime ?? game.scheduledTime),
+                        future: Utilities.formatStartTime(
+                            game.completedTime ?? game.scheduledTime),
                         builder: (context, snapshot) {
                           final timeText = snapshot.data ?? "Loading...";
                           int? score;
                           if (user != null) {
-                            final playerInfo = game.players.where((p) => p.playerId == user.id).firstOrNull;
+                            final playerInfo = game.players
+                                .where((p) => p.playerId == user.id)
+                                .firstOrNull;
                             score = playerInfo?.totalScore;
                           }
                           // Wait, guest intercept logic requires intercepting guest clicks.
                           // Let's just put Score/Result here or just time text if score isn't easily available.
-                          final scoreText = score != null && score > 0 ? " - Score: $score" : "";
+                          final scoreText = score != null && score > 0
+                              ? " - Score: $score"
+                              : "";
                           return Text(
                             "$timeText$scoreText",
                             style: const TextStyle(fontSize: 11),
@@ -309,17 +324,21 @@ class MainScaffold extends State<HomePage> {
                         Navigator.pop(context);
                         if (user == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Save this history to the cloud.")),
+                            const SnackBar(
+                                content:
+                                    Text("Save this history to the cloud.")),
                           );
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
                           );
                         } else {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PastGameDetailsScreen(passedGame: game),
+                              builder: (context) =>
+                                  PastGameDetailsScreen(passedGame: game),
                             ),
                           );
                         }
@@ -335,12 +354,14 @@ class MainScaffold extends State<HomePage> {
                   if (user == null) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                     );
                   } else {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ScheduledGamesScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const ScheduledGamesScreen()),
                     );
                   }
                 },
@@ -348,7 +369,8 @@ class MainScaffold extends State<HomePage> {
               if (user == null)
                 ListTile(
                   key: const Key('drawer-locked-preview'),
-                  contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
+                  contentPadding:
+                      const EdgeInsets.only(left: 40.0, right: 16.0),
                   dense: true,
                   leading: const Icon(Icons.lock, size: 18, color: Colors.grey),
                   title: const Text(
@@ -359,19 +381,23 @@ class MainScaffold extends State<HomePage> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                     );
                   },
                 )
               else if (topUpcoming.isNotEmpty)
                 ...topUpcoming.map((game) => ListTile(
                       key: Key('drawer-upcoming-${game.id}'),
-                      contentPadding: const EdgeInsets.only(left: 40.0, right: 16.0),
+                      contentPadding:
+                          const EdgeInsets.only(left: 40.0, right: 16.0),
                       dense: true,
-                      leading: const Icon(Icons.event, size: 18, color: Colors.orange),
+                      leading: const Icon(Icons.event,
+                          size: 18, color: Colors.orange),
                       title: Text(
                         game.name,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 13),
                       ),
                       subtitle: FutureBuilder<String>(
                         future: Utilities.formatStartTime(game.scheduledTime),
@@ -388,7 +414,8 @@ class MainScaffold extends State<HomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => GameStartScreen(unstartedGame: game),
+                            builder: (context) =>
+                                GameStartScreen(unstartedGame: game),
                           ),
                         );
                       },

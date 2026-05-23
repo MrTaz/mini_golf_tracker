@@ -34,9 +34,11 @@ class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
   Future<bool> isLocationServiceEnabled() async => false;
   @override
-  Future<LocationPermission> checkPermission() async => LocationPermission.denied;
+  Future<LocationPermission> checkPermission() async =>
+      LocationPermission.denied;
   @override
-  Future<LocationPermission> requestPermission() async => LocationPermission.denied;
+  Future<LocationPermission> requestPermission() async =>
+      LocationPermission.denied;
 }
 
 class MockHttpOverrides extends HttpOverrides {
@@ -70,7 +72,7 @@ class MockHttpHeaders extends Fake implements HttpHeaders {
 class MockHttpClientResponse extends Fake implements HttpClientResponse {
   @override
   int get statusCode => 200;
-  
+
   @override
   int get contentLength => 0;
 
@@ -86,8 +88,53 @@ class MockHttpClientResponse extends Fake implements HttpClientResponse {
     bool? cancelOnError,
   }) {
     return Stream<List<int>>.fromIterable([
-      [71, 73, 70, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255, 33, 249, 4, 1, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 76, 1, 0, 59]
-    ]).listen(onData, onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+      [
+        71,
+        73,
+        70,
+        56,
+        57,
+        97,
+        1,
+        0,
+        1,
+        0,
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        255,
+        255,
+        255,
+        33,
+        249,
+        4,
+        1,
+        0,
+        0,
+        0,
+        0,
+        44,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        2,
+        2,
+        76,
+        1,
+        0,
+        59
+      ]
+    ]).listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }
 
@@ -102,18 +149,88 @@ class FakeAssetBundle extends CachingAssetBundle {
         "assets/images/rank1.png": ["assets/images/rank1.png"],
         "assets/images/rank2.png": ["assets/images/rank2.png"],
         "assets/images/rank3.png": ["assets/images/rank3.png"],
-        "assets/images/mini_golf_placeholder.png": ["assets/images/mini_golf_placeholder.png"],
-        "assets/images/loggedin_background_2.png": ["assets/images/loggedin_background_2.png"],
+        "assets/images/mini_golf_placeholder.png": [
+          "assets/images/mini_golf_placeholder.png"
+        ],
+        "assets/images/loggedin_background_2.png": [
+          "assets/images/loggedin_background_2.png"
+        ],
       };
-      return ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(manifest))));
+      return ByteData.sublistView(
+          Uint8List.fromList(utf8.encode(jsonEncode(manifest))));
     }
-    if (key.endsWith('.png') || key.endsWith('.jpg') || key.endsWith('.jpeg') || key.endsWith('.gif')) {
+    if (key.endsWith('.png') ||
+        key.endsWith('.jpg') ||
+        key.endsWith('.jpeg') ||
+        key.endsWith('.gif')) {
       return ByteData.sublistView(Uint8List.fromList(<int>[
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-        0x42, 0x60, 0x82,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
+        0x82,
       ]));
     }
     throw FlutterError('Asset not found: $key');
@@ -148,12 +265,13 @@ void main() {
     );
   }
 
-  testWidgets('renders HomePage guest shell drawer and navigates to LoginScreen', (tester) async {
+  testWidgets(
+      'renders HomePage guest shell drawer and navigates to LoginScreen',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(createMyApp());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-
 
     // Verify HomePage builds and has an AppBar with title
     expect(find.text('Mini Golf Tracker'), findsOneWidget);
@@ -169,12 +287,14 @@ void main() {
     expect(find.text('Past Games'), findsOneWidget);
     expect(find.text('Scheduled Games'), findsOneWidget);
     expect(find.text('Courses'), findsNothing);
-    
+
     // Verify the presence of the locked preview for guests
     expect(find.text('🔒 Sign up to schedule future rounds.'), findsOneWidget);
 
     // Test tapping Guest Profile picture navigates to LoginScreen
-    await tester.tap(find.descendant(of: find.byType(UserAccountsDrawerHeader), matching: find.byType(PlayerAvatarWidget)));
+    await tester.tap(find.descendant(
+        of: find.byType(UserAccountsDrawerHeader),
+        matching: find.byType(PlayerAvatarWidget)));
     await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
     Navigator.of(tester.element(find.byType(LoginScreen))).pop();
@@ -209,11 +329,12 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     // Let any pending login screen animations or timers complete
     await tester.pump(const Duration(seconds: 5));
-    
+
     // We should test guest intercept on past games in another test since we navigated away.
   });
 
-  testWidgets('guest intercept on past games navigates to LoginScreen', (tester) async {
+  testWidgets('guest intercept on past games navigates to LoginScreen',
+      (tester) async {
     final course = Course(
       id: 'c1',
       name: 'Hub Course',
@@ -224,7 +345,9 @@ void main() {
       id: 'recent_1',
       name: 'Recent 1',
       course: course,
-      players: [PlayerGameInfo(playerId: 'p1', gameId: 'recent_1', scores: [1])],
+      players: [
+        PlayerGameInfo(playerId: 'p1', gameId: 'recent_1', scores: [1])
+      ],
       startTime: DateTime.now().subtract(const Duration(days: 2)),
       scheduledTime: DateTime.now().subtract(const Duration(days: 2)),
       completedTime: DateTime.now().subtract(const Duration(days: 1)),
@@ -236,7 +359,7 @@ void main() {
 
     await tester.pumpWidget(createMyApp());
     await tester.pumpAndSettle();
-    
+
     final ScaffoldState state = tester.firstState(find.byType(Scaffold));
     state.openDrawer();
     await tester.pumpAndSettle();
@@ -250,7 +373,8 @@ void main() {
 
     // Verify it intercepted and went to login screen
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Save this history to the cloud.'), findsOneWidget); // SnackBar
+    expect(find.text('Save this history to the cloud.'),
+        findsOneWidget); // SnackBar
 
     // Let the SnackBar and LoginScreen animations finish so the test environment cleans up properly
     await tester.pump(const Duration(seconds: 5));
@@ -281,7 +405,8 @@ void main() {
     expect(find.text('jane@example.com'), findsOneWidget);
   });
 
-  testWidgets('auto-resumes active local game for guests upon startup', (tester) async {
+  testWidgets('auto-resumes active local game for guests upon startup',
+      (tester) async {
     final course = Course(
       id: 'c1',
       name: 'Startup Course',
@@ -309,10 +434,10 @@ void main() {
     });
 
     await tester.pumpWidget(createMyApp());
-    
+
     // Pump first frame
     await tester.pump();
-    
+
     // Now pump with a duration to let timers/microtasks and future builder complete
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -352,7 +477,8 @@ void main() {
     expect(find.byType(PlayersScreen), findsOneWidget);
   });
 
-  testWidgets('precache is run when skipPrecacheForTesting is false', (tester) async {
+  testWidgets('precache is run when skipPrecacheForTesting is false',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     MainScaffold.skipPrecacheForTesting = false;
     await tester.runAsync(() async {
@@ -373,7 +499,8 @@ void main() {
     MainScaffold.skipPrecacheForTesting = true;
   });
 
-  testWidgets('onUserChanged triggers setState when UserProvider updates', (tester) async {
+  testWidgets('onUserChanged triggers setState when UserProvider updates',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       DefaultAssetBundle(
@@ -403,7 +530,8 @@ void main() {
     expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
-  testWidgets('renders ClaimAccountScreen when pendingClaimPlayer is set', (tester) async {
+  testWidgets('renders ClaimAccountScreen when pendingClaimPlayer is set',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     final player = Player(
       id: 'p123',
@@ -427,7 +555,9 @@ void main() {
     expect(find.byType(ClaimAccountScreen), findsOneWidget);
   });
 
-  testWidgets('changeBodyCallback works and guest drawer items navigate to LoginScreen or respective screens', (tester) async {
+  testWidgets(
+      'changeBodyCallback works and guest drawer items navigate to LoginScreen or respective screens',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       DefaultAssetBundle(
@@ -460,7 +590,8 @@ void main() {
     expect(find.byType(PastGamesScreen), findsOneWidget);
 
     // Pop the PastGamesScreen to go back
-    final pastGamesState = tester.state<State<PastGamesScreen>>(find.byType(PastGamesScreen));
+    final pastGamesState =
+        tester.state<State<PastGamesScreen>>(find.byType(PastGamesScreen));
     Navigator.of(pastGamesState.context).pop();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -501,7 +632,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+    final ScaffoldState scaffoldState =
+        tester.firstState(find.byType(Scaffold));
     scaffoldState.openDrawer();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -512,7 +644,8 @@ void main() {
         matching: find.byType(GestureDetector),
       ),
     );
-    final logoutGestureDetector = gestureDetectors.firstWhere((gd) => gd.onTap != null);
+    final logoutGestureDetector =
+        gestureDetectors.firstWhere((gd) => gd.onTap != null);
     logoutGestureDetector.onTap!();
 
     await tester.pump();
@@ -522,12 +655,15 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('Activity Hub drawer navigates to Create Game when no active game', (tester) async {
+  testWidgets(
+      'Activity Hub drawer navigates to Create Game when no active game',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(createMyApp());
     await tester.pumpAndSettle();
-    
-    final ScaffoldState scaffoldState = tester.firstState(find.byType(Scaffold));
+
+    final ScaffoldState scaffoldState =
+        tester.firstState(find.byType(Scaffold));
     scaffoldState.openDrawer();
     await tester.pumpAndSettle();
 
@@ -537,7 +673,70 @@ void main() {
     expect(find.byType(GameCreateScreen), findsOneWidget);
   });
 
-  testWidgets('Activity Hub drawer interactions and game sorting', (tester) async {
+  testWidgets(
+      'Activity Hub refreshes active game after create flow returns from active screen',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(createMyApp());
+    await tester.pumpAndSettle();
+
+    final ScaffoldState scaffoldState =
+        tester.firstState(find.byType(Scaffold));
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    expect(find.text('No current game'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('drawer-current-game')));
+    await tester.pumpAndSettle();
+
+    final gameCreateState =
+        tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
+    gameCreateState.setSelectedCourseForTesting(Course(
+      id: 'created_course',
+      name: 'Created Course',
+      numberOfHoles: 9,
+      parStrokes: {for (var i = 1; i <= 9; i++) i: 3},
+    ));
+    gameCreateState.setSelectedPlayersForTesting([
+      Player(
+        id: 'p1',
+        playerName: 'Ava Guest',
+        nickname: 'Ava',
+        ownerId: 'guest',
+        totalScore: 0,
+      ),
+      Player(
+        id: 'p2',
+        playerName: 'Ben Guest',
+        nickname: 'Ben',
+        ownerId: 'guest',
+        totalScore: 0,
+      ),
+    ]);
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextFormField), 'Created Active Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
+    await tester.pumpAndSettle();
+
+    scaffoldState.openDrawer();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Resume Active Game'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('drawer-current-game')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+    expect(find.textContaining('Created Course'), findsOneWidget);
+  });
+
+  testWidgets('Activity Hub drawer interactions and game sorting',
+      (tester) async {
     mockAuth = MockFirebaseAuth(signedIn: true);
     UserProvider().setAuthInstanceForTesting(mockAuth);
 
@@ -553,7 +752,9 @@ void main() {
       id: 'active_game',
       name: 'Active Game',
       course: course,
-      players: [PlayerGameInfo(playerId: uid, gameId: 'active_game', scores: [1])],
+      players: [
+        PlayerGameInfo(playerId: uid, gameId: 'active_game', scores: [1])
+      ],
       scheduledTime: DateTime.now(),
       status: 'started',
     );
@@ -561,7 +762,9 @@ void main() {
       id: 'upcoming_game',
       name: 'Upcoming Game',
       course: course,
-      players: [PlayerGameInfo(playerId: uid, gameId: 'upcoming_game', scores: [1])],
+      players: [
+        PlayerGameInfo(playerId: uid, gameId: 'upcoming_game', scores: [1])
+      ],
       scheduledTime: DateTime.now().add(const Duration(days: 1)),
       status: 'unstarted_game',
     );
@@ -569,7 +772,10 @@ void main() {
       id: 'recent_1',
       name: 'Recent 1',
       course: course,
-      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_1', scores: [1], totalScore: 5)],
+      players: [
+        PlayerGameInfo(
+            playerId: uid, gameId: 'recent_1', scores: [1], totalScore: 5)
+      ],
       startTime: DateTime.now().subtract(const Duration(days: 2)),
       scheduledTime: DateTime.now().subtract(const Duration(days: 2)),
       completedTime: DateTime.now().subtract(const Duration(days: 1)),
@@ -579,7 +785,9 @@ void main() {
       id: 'recent_2',
       name: 'Recent 2',
       course: course,
-      players: [PlayerGameInfo(playerId: uid, gameId: 'recent_2', scores: [1])],
+      players: [
+        PlayerGameInfo(playerId: uid, gameId: 'recent_2', scores: [1])
+      ],
       startTime: DateTime.now().subtract(const Duration(days: 3)),
       scheduledTime: DateTime.now().subtract(const Duration(days: 3)),
       status: 'completed',
@@ -608,7 +816,8 @@ void main() {
 
     // Open drawer
     final mainScaffoldState = tester.state<MainScaffold>(find.byType(HomePage));
-    final scaffoldState = tester.firstState<ScaffoldState>(find.byType(Scaffold));
+    final scaffoldState =
+        tester.firstState<ScaffoldState>(find.byType(Scaffold));
     scaffoldState.openDrawer();
     await tester.pumpAndSettle();
 
@@ -659,7 +868,8 @@ void main() {
     final recentGameFinder = find.byKey(const Key('drawer-recent-recent_1'));
     await tester.ensureVisible(recentGameFinder);
     await tester.pumpAndSettle();
-    expect(find.textContaining(' - Score: 5'), findsOneWidget); // Verifies lines 287-291 coverage
+    expect(find.textContaining(' - Score: 5'),
+        findsOneWidget); // Verifies lines 287-291 coverage
     await tester.tap(recentGameFinder);
     await tester.pumpAndSettle();
     expect(find.byType(PastGameDetailsScreen), findsOneWidget);
