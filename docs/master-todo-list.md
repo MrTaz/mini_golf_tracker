@@ -47,27 +47,29 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 ### 1.3 Modernize Player Creation and Selection UI
 
-- [ ] Refactor `PlayerCreateScreen` and `PlayersScreen` to align with the Material 3 / Teal design language.
-- [ ] Use `Card` widgets with:
+- [x] Refactor `PlayerCreateScreen` and `PlayersScreen` to align with the Material 3 / Teal design language.
+- [x] Use `Card` widgets with:
   - `elevation: 0`
   - `shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0))`
   - `Colors.teal.shade50` background accents
-- [ ] Mirror the aesthetic of `_buildHoleCountCard`.
-- [ ] Reposition the `"Select Players"` button in `PlayersScreen` for better thumb reach and accessibility.
-- [ ] Implement `BouncyAnimation` for loading states during player fetch operations.
-- [ ] Use `LinearProgressIndicator` with `20.0` / `24.0` corner radius for async fetches.
-- [ ] Transform the basic `PlayerCreateScreen` form into a step-based or card-based UI aligned with `CoursesScreen` cards.
+- [x] Mirror the aesthetic of `_buildHoleCountCard`.
+- [x] Reposition the `"Select Players"` button in `PlayersScreen` for better thumb reach and accessibility.
+- [x] Implement `BouncyAnimation` for loading states during player fetch operations.
+- [x] Use `LinearProgressIndicator` with `20.0` / `24.0` corner radius for async fetches.
+- [x] Transform the basic `PlayerCreateScreen` form into a step-based or card-based UI aligned with `CoursesScreen` cards.
 
 ### 1.4 Fix Player Selection State
 
-- [ ] Ensure `selectedPlayers` in `PlayersScreen` persists through rebuilds.
-- [ ] Synchronize `selectedPlayers` correctly with parent `GameCreateScreenState`.
-- [ ] Modify `PlayersScreen` to accept a `List<Player> currentlySelectedPlayers` parameter.
-- [ ] Ensure `GameCreateScreen` passes its current selected-player state into `PlayersScreen`.
-- [ ] Ensure `GameCreateScreen` correctly handles the returned player list.
-- [ ] Add a `"Deselect All"` or `"Clear All"` action in `PlayersScreen`.
-- [ ] Add `"Clear All"` to the `AppBar` of `PlayersScreen`.
-- [ ] Reset the `selectedPlayers` list instantly when clearing selections.
+*  [ ] **State Injection Bug Fix:** In `GameCreateScreen._selectPlayers()`, remove the `&& selectedPlayers.isNotEmpty` condition so that empty lists (cleared players) are accepted and successfully overwrite the previous selection.
+*  [ ] **PlayerListItem State Sync Fix:** In `PlayerListItemState` (`player_list_item.dart`), implement `didUpdateWidget(covariant PlayerListItem oldWidget)` to update the local `isSelected` variable whenever `widget.isSelected` changes so the "Clear All" button visually unchecks the switches.
+*  [ ] **E2E Regression Test:** Write an integration test (`integration_test/player_selection_flow_test.dart`) that explicitly selects players, returns to the create screen, opens the player screen again, clears all players, and verifies the create screen correctly updates to 0 players.
+*  [x] Ensure selectedPlayers in PlayersScreen persists through rebuilds.
+*  [x] Synchronize selectedPlayers correctly with parent GameCreateScreenState.
+*  [x] Modify PlayersScreen to accept a List<dynamic> currentlySelectedPlayers parameter.
+*  [x] Ensure GameCreateScreen passes its current selected-player state into PlayersScreen.
+*  [x] Add a "Deselect All" or "Clear All" action in PlayersScreen.
+*  [x] Add "Clear All" to the AppBar of PlayersScreen.
+*  [x] Reset the selectedPlayers list instantly when clearing selections.
 
 ### 1.5 Unified Smart Navigation Drawer
 
@@ -1009,8 +1011,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ## Widget Tests
 
-- [ ] `PlayersScreen` preserves selected players across rebuilds.
-- [ ] `PlayersScreen` receives `currentlySelectedPlayers`.
+- [x] `PlayersScreen` preserves selected players across rebuilds.
+- [x] `PlayersScreen` receives `currentlySelectedPlayers`.
 - [ ] `PlayersScreen` clears all selected players.
 - [x] `GameCreateScreen` receives returned selected players.
 - [ ] `PlayerListItem` hides PII by default.
@@ -1032,6 +1034,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 - [x] Activity Hub game create and active game resume flow passes (integration_test/activity_hub_game_create_flow_test.dart).
 - [x] Active game score increment and guest shared drawer access flows pass (integration_test/phase_1_19_drawer_score_flow_test.dart).
 - [x] Offline course selection fallback flow passes (integration_test/course_selection_fallback_test.dart).
+- [ ] Player selection, deselection, and clear-all flow passes (integration_test/player_selection_flow_test.dart).
 - [ ] Firebase Local Emulator Suite is configured.
 - [ ] Remote game exists with canonical player.
 - [ ] Guest creates local game with matching contact.
