@@ -94,8 +94,9 @@ class GameCreateScreenState extends State<GameCreateScreen> {
     final List<Player>? selectedPlayers = await Navigator.push<List<Player>?>(
       context,
       MaterialPageRoute(
-          builder: (context) => const PlayersScreen(
+          builder: (context) => PlayersScreen(
                 creatingGame: true,
+                currentlySelectedPlayers: _selectedPlayers,
               )),
     );
     if (selectedPlayers != null && selectedPlayers.isNotEmpty) {

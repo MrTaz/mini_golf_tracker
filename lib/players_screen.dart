@@ -14,7 +14,7 @@ class PlayersScreen extends StatefulWidget {
       {super.key, this.creatingGame = false, this.currentlySelectedPlayers});
 
   final bool? creatingGame;
-  final List<PlayerGameInfo?>? currentlySelectedPlayers;
+  final List<dynamic>? currentlySelectedPlayers;
 
   @override
   PlayersScreenState createState() => PlayersScreenState();
@@ -76,6 +76,12 @@ class PlayersScreenState extends State<PlayersScreen> {
     Navigator.pop(context, selectedPlayers);
   }
 
+  void _clearAll() {
+    setState(() {
+      selectedPlayers.clear();
+    });
+  }
+
   void _handlePlayerSelection(Player player) {
     setState(() {
       if (selectedPlayers.contains(player)) {
@@ -92,20 +98,27 @@ class PlayersScreenState extends State<PlayersScreen> {
 
     if (widget.currentlySelectedPlayers != null &&
         widget.currentlySelectedPlayers!.isNotEmpty) {
-      Iterable<PlayerGameInfo> passedInSelectedPlayers = widget
-          .currentlySelectedPlayers!
-          .where((player) => player != null)
-          .cast<PlayerGameInfo>();
-
       players.addAll(availablePlayers);
-      for (PlayerGameInfo passedInSelectedPlayer in passedInSelectedPlayers) {
+      for (final passedInPlayer in widget.currentlySelectedPlayers!) {
+        if (passedInPlayer == null) continue;
+
         Player? lookedUpPlayer;
-        for (final player in availablePlayers) {
-          if (player.id == passedInSelectedPlayer.playerId) {
-            lookedUpPlayer = player;
-            break;
+        if (passedInPlayer is PlayerGameInfo) {
+          for (final player in availablePlayers) {
+            if (player.id == passedInPlayer.playerId) {
+              lookedUpPlayer = player;
+              break;
+            }
+          }
+        } else if (passedInPlayer is Player) {
+          for (final player in availablePlayers) {
+            if (player.id == passedInPlayer.id) {
+              lookedUpPlayer = player;
+              break;
+            }
           }
         }
+
         if (lookedUpPlayer != null &&
             !selectedPlayers.contains(lookedUpPlayer)) {
           selectedPlayers.add(lookedUpPlayer);
@@ -134,6 +147,12 @@ class PlayersScreenState extends State<PlayersScreen> {
       appBar: (widget.creatingGame == true)
           ? AppBar(
               title: const Text('Select Players'),
+              actions: [
+                TextButton(
+                  onPressed: _clearAll,
+                  child: const Text('Clear All'),
+                ),
+              ],
             )
           : (loggedInUser == null ? AppBar(title: const Text('Friends')) : null),
       body: Stack(
