@@ -80,4 +80,22 @@ void main() {
 
     expect(state.selectedPlayers.length, 0);
   });
+
+  testWidgets('PlayersScreen handles null and unrecognized types in currentlySelectedPlayers', (tester) async {
+    final List<dynamic> preSelected = [
+      null, 
+      Player.players[0], 
+      'some unexpected string',
+      PlayerGameInfo(playerId: 'p2', gameId: 'g1', scores: [])
+    ];
+
+    await tester.pumpWidget(MaterialApp(home: PlayersScreen(creatingGame: true, currentlySelectedPlayers: preSelected)));
+    await tester.pumpAndSettle();
+
+    final state = tester.state<PlayersScreenState>(find.byType(PlayersScreen));
+    expect(state.selectedPlayers.length, 2);
+    final selectedIds = state.selectedPlayers.map((p) => p.id).toList();
+    expect(selectedIds.contains('p1'), isTrue);
+    expect(selectedIds.contains('p2'), isTrue);
+  });
 }
