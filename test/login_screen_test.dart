@@ -512,6 +512,69 @@ void main() {
     expect(googleErrorResult, equals('Google Sign-In failed.'));
     userProvider.setAuthInstanceForTesting(mockAuth);
   });
+
+  testWidgets('LoginScreen covers unclaimed and cancelled auth branches',
+      (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+
+    userProvider.setAuthInstanceForTesting(EmailSignInFirebaseAuth(
+      uid: 'unclaimed-no-player-uid',
+      email: 'unclaimed-no-player@example.com',
+      emailVerified: false,
+    ));
+    final authNoPlayerResult = await state.authUser(LoginData(
+      name: 'unclaimed-no-player@example.com',
+      password: 'password123',
+    ));
+    expect(
+      authNoPlayerResult,
+      equals('Verify an email or phone number to claim your player history.'),
+    );
+
+    userProvider.setAuthInstanceForTesting(NonRetryableSocialFirebaseAuth());
+    final nonRetryableSocialResult = await state.handleSocialLogin(
+      'Ignored Provider',
+      'Ignored Player',
+      'non_retryable_social@example.com',
+    );
+    expect(nonRetryableSocialResult, contains('Sign-In failed:'));
+
+    final googleSignIn = GoogleSignIn();
+    TestGoogleSignInPlatform.cancelSignIn();
+    await tester.pumpWidget(
+      MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)),
+    );
+    await tester.pump();
+    final googleState =
+        tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final googleCancellationResult = await googleState.handleGoogleLogin();
+    expect(googleCancellationResult, isNull);
+
+    TestGoogleSignInPlatform.signInUser(
+      id: 'google-no-player-uid',
+      email: 'google-no-player@example.com',
+      idToken: 'mock-id-token',
+      accessToken: 'mock-access-token',
+    );
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'google-no-player-uid',
+      email: 'google-no-player@example.com',
+      emailVerified: false,
+    ));
+    final googleNoPlayerResult = await googleState.handleGoogleLogin();
+    expect(
+      googleNoPlayerResult,
+      equals('Verify an email or phone number to claim your player history.'),
+    );
+    await tester.pump(const Duration(seconds: 2));
+  });
 }
 
 class TestGoogleSignInPlatform extends GoogleSignInPlatform
@@ -666,6 +729,12 @@ class GoogleHappyFirebaseAuth implements FirebaseAuth {
   final String? phoneNumber;
 
   @override
+  User? get currentUser => null;
+
+  @override
+  Stream<User?> authStateChanges() => Stream<User?>.value(null);
+
+  @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     return CustomUserCredential(CustomUser(
       uid: uid,
@@ -673,6 +742,58 @@ class GoogleHappyFirebaseAuth implements FirebaseAuth {
       emailVerified: emailVerified,
       phoneNumber: phoneNumber,
     ));
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class EmailSignInFirebaseAuth implements FirebaseAuth {
+  EmailSignInFirebaseAuth({
+    required this.uid,
+    required this.email,
+    required this.emailVerified,
+  });
+
+  final String uid;
+  final String email;
+  final bool emailVerified;
+
+  @override
+  User? get currentUser => null;
+
+  @override
+  Stream<User?> authStateChanges() => Stream<User?>.value(null);
+
+  @override
+  Future<UserCredential> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    return CustomUserCredential(CustomUser(
+      uid: uid,
+      email: this.email,
+      emailVerified: emailVerified,
+    ));
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class NonRetryableSocialFirebaseAuth implements FirebaseAuth {
+  @override
+  User? get currentUser => null;
+
+  @override
+  Stream<User?> authStateChanges() => Stream<User?>.value(null);
+
+  @override
+  Future<UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) {
+    throw FirebaseAuthException(code: 'operation-not-allowed');
   }
 
   @override
