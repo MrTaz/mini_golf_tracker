@@ -736,8 +736,7 @@ void main() {
   // ─── 10. ReorderableListView (lines 493-501) ─────────────────────────────
 
   testWidgets(
-      'ReorderableListView onReorder: covers both branches '
-      '(oldIndex<newIndex and oldIndex>=newIndex) (lines 493-501)', (tester) async {
+      'ReorderableListView onReorderItem: moves items correctly', (tester) async {
     final game = _threePlayerGame();
 
     await tester.pumpWidget(MaterialApp(
@@ -747,8 +746,6 @@ void main() {
     final listView =
         tester.widget<ReorderableListView>(find.byType(ReorderableListView));
 
-    // Verify initial order: p1 at position 0, p2 at 1, p3 at 2
-    // Keys are "inkwellOrderTap" + playerId (no separator)
     final initialOrder = tester
         .widgetList<InkWell>(find.byType(InkWell))
         .where((w) => w.key != null && w.key.toString().contains('inkwellOrderTap'))
@@ -758,9 +755,7 @@ void main() {
     expect(initialOrder[1], contains('p2'));
     expect(initialOrder[2], contains('p3'));
 
-    // Branch 1: oldIndex(0) < newIndex(2) → newIndex adjusted to 1 inside onReorder
-    // p1 moves from index 0 to index 1 → result: [p2, p1, p3]
-    listView.onReorder(0, 2);
+    listView.onReorderItem!(0, 1);
     await tester.pumpAndSettle();
 
     final afterFirst = tester
@@ -772,9 +767,7 @@ void main() {
     expect(afterFirst[1], contains('p1'));
     expect(afterFirst[2], contains('p3'));
 
-    // Branch 2: oldIndex(2) >= newIndex(0) → no adjustment
-    // p3 moves from index 2 to index 0 → result: [p3, p2, p1]
-    listView.onReorder(2, 0);
+    listView.onReorderItem!(2, 0);
     await tester.pumpAndSettle();
 
     final afterSecond = tester

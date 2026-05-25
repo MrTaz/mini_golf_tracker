@@ -45,6 +45,16 @@ class PlayerListItemState extends State<PlayerListItem> {
     isSelected = widget.isSelected;
   }
 
+  @override
+  void didUpdateWidget(covariant PlayerListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      setState(() {
+        isSelected = widget.isSelected;
+      });
+    }
+  }
+
   Future<void> loadCurrentUser() async {
     setState(() {
       if (loggedInUser == null) {

@@ -67,7 +67,7 @@ class AppDrawer extends StatelessWidget {
               label: 'Logout',
               child: const CircleAvatar(
                 backgroundColor: Colors.teal,
-                child: Icon(FontAwesomeIcons.lock),
+                child: FaIcon(FontAwesomeIcons.lock),
               ),
             ),
           )

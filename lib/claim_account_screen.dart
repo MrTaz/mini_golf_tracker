@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 
 class ClaimAccountScreen extends StatefulWidget {
   const ClaimAccountScreen({super.key});
@@ -25,7 +26,9 @@ class _ClaimAccountScreenState extends State<ClaimAccountScreen> {
 
   Future<void> _resendEmailVerification() async {
     final user = UserProvider().auth.currentUser;
-    if (user == null || user.email == null || user.emailVerified) {
+    final isEffectivelyVerified = user?.emailVerified == true ||
+        Utilities.isTestAccountBypass(user?.email);
+    if (user == null || user.email == null || isEffectivelyVerified) {
       return;
     }
 
@@ -208,7 +211,7 @@ class _ClaimAccountScreenState extends State<ClaimAccountScreen> {
                     if (authUser?.email != null)
                       _ClaimStatusRow(
                         label: authUser!.email!,
-                        isVerified: authUser.emailVerified,
+                        isVerified: authUser.emailVerified || Utilities.isTestAccountBypass(authUser.email),
                       ),
                     if (authUser?.phoneNumber != null)
                       _ClaimStatusRow(
@@ -225,7 +228,7 @@ class _ClaimAccountScreenState extends State<ClaimAccountScreen> {
                     ],
                     const SizedBox(height: 20),
                     if (authUser?.email != null &&
-                        authUser?.emailVerified == false)
+                        !(authUser?.emailVerified == true || Utilities.isTestAccountBypass(authUser?.email)))
                       ElevatedButton(
                         onPressed:
                             _isBusy ? null : () => _resendEmailVerification(),

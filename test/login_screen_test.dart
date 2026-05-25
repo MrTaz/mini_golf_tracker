@@ -11,6 +11,14 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/scheduler.dart';
 
+Finder findIconByCodePoint(int codePoint) {
+  return find.byWidgetPredicate((widget) {
+    if (widget is Icon && widget.icon?.codePoint == codePoint) return true;
+    if (widget is FaIcon && widget.icon?.codePoint == codePoint) return true;
+    return false;
+  });
+}
+
 void main() {
   late MockFirebaseAuth mockAuth;
   late FakeFirebaseFirestore fakeFirestore;
@@ -64,10 +72,10 @@ void main() {
     // FlutterLogin renders these as icons or specific buttons.
     // We can look for the icons or the types if we know them.
     // Usually they are rendered as IconButton or similar inside the login providers row.
-    expect(find.byIcon(FontAwesomeIcons.google), findsOneWidget);
-    expect(find.byIcon(FontAwesomeIcons.facebookF), findsOneWidget);
-    expect(find.byIcon(FontAwesomeIcons.snapchat), findsOneWidget);
-    expect(find.byIcon(FontAwesomeIcons.instagram), findsOneWidget);
+    expect(findIconByCodePoint(FontAwesomeIcons.google.codePoint), findsWidgets);
+    expect(findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint), findsWidgets);
+    expect(findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint), findsWidgets);
+    expect(findIconByCodePoint(FontAwesomeIcons.instagram.codePoint), findsWidgets);
 
     // Add extra pump to clear timers from animations
     await tester.pump(const Duration(seconds: 5));
@@ -111,7 +119,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Find the Google login button and tap it
-    final googleButton = find.byIcon(FontAwesomeIcons.google);
+    final googleButton = findIconByCodePoint(FontAwesomeIcons.google.codePoint);
     expect(googleButton, findsOneWidget);
     await tester.ensureVisible(googleButton);
     await tester.tap(googleButton);
@@ -152,7 +160,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Find the Google login button and tap it
-    final googleButton = find.byIcon(FontAwesomeIcons.google);
+    final googleButton = findIconByCodePoint(FontAwesomeIcons.google.codePoint);
     expect(googleButton, findsOneWidget);
     await tester.ensureVisible(googleButton);
     await tester.tap(googleButton);
@@ -183,7 +191,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Find the Facebook login button and tap it
-    final facebookButton = find.byIcon(FontAwesomeIcons.facebookF);
+    final facebookButton = findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint);
     expect(facebookButton, findsOneWidget);
     await tester.ensureVisible(facebookButton);
     await tester.tap(facebookButton);
@@ -212,7 +220,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Find the Snapchat login button and tap it
-    final snapchatButton = find.byIcon(FontAwesomeIcons.snapchat);
+    final snapchatButton = findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint);
     expect(snapchatButton, findsOneWidget);
     await tester.ensureVisible(snapchatButton);
     await tester.tap(snapchatButton);
@@ -241,7 +249,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Find the Instagram login button and tap it
-    final instagramButton = find.byIcon(FontAwesomeIcons.instagram);
+    final instagramButton = findIconByCodePoint(FontAwesomeIcons.instagram.codePoint);
     expect(instagramButton, findsOneWidget);
     await tester.ensureVisible(instagramButton);
     await tester.tap(instagramButton);

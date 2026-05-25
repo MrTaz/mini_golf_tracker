@@ -9,6 +9,10 @@ class Utilities {
       (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.android);
 
+  static bool isTestAccountBypass(String? email) {
+    return kDebugMode && email == 'test@example.com';
+  }
+
   static Future<String> formatStartTime(DateTime startTime) async {
     final DateTime localDate = startTime.toLocal();
     final now = DateTime.now();
@@ -75,19 +79,22 @@ class Utilities {
     if (!Utilities.isMobile) {
       final stackTrace = StackTrace.current;
       final stackFrames = stackTrace.toString().split('\n');
-      final callerInfo = stackFrames[2]
-          .trim(); // Get the caller info from the third line of the stack trace
-      final callerInfoParts = callerInfo.split(' ');
+      String fileNameToShow = 'unknown';
+      String lineNumber = '0';
+      String columnNumber = '0';
 
-      final filePath = callerInfoParts[0].replaceFirst(
-          'packages/mini_golf_tracker/', ''); // Strip off the package prefix
-      final lineColumn = callerInfoParts[1].split(':');
-      final lineNumber = lineColumn[0];
-      final columnNumber = lineColumn[1];
-
-      final fileName = filePath.split('/').last;
-      final fileNameToShow =
-          fileName.length > 35 ? '${fileName.substring(0, 32)}...' : fileName;
+      final callerIndex = stackFrames.length <= 2 ? stackFrames.length - 1 : 2;
+      if (callerIndex >= 0 && stackFrames.length > callerIndex) {
+        final callerInfo = stackFrames[callerIndex].trim();
+        final match = RegExp(r'\(([^)]+):(\d+):(\d+)\)').firstMatch(callerInfo);
+        if (match != null) {
+          final fullPath = match.group(1) ?? 'unknown';
+          final fileName = fullPath.split('/').last;
+          fileNameToShow = fileName.length > 35 ? '${fileName.substring(0, 32)}...' : fileName;
+          lineNumber = match.group(2) ?? '0';
+          columnNumber = match.group(3) ?? '0';
+        }
+      }
 
       const maxFileNameLength = 35;
       final lineColumnPadding = maxFileNameLength - fileNameToShow.length;

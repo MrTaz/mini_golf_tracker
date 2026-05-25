@@ -1,3 +1,4 @@
+// ignore_for_file: non_const_argument_for_const_parameter
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -268,21 +269,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSignup: _signupUser,
                 showDebugButtons: (kDebugMode) ? true : false,
                 scrollable: true,
-                additionalSignupFields: const [
+                additionalSignupFields: [
                   UserFormField(
                       keyName: 'playerName',
                       displayName: 'First Name',
-                      icon: Icon(FontAwesomeIcons.userSecret),
+                      icon: Icon(IconData(
+                        FontAwesomeIcons.userSecret.codePoint,
+                        fontFamily: FontAwesomeIcons.userSecret.fontFamily,
+                        fontPackage: FontAwesomeIcons.userSecret.fontPackage,
+                      )),
                       userType: LoginUserType.name),
                   UserFormField(
                       keyName: 'nickname',
                       displayName: 'Display/Nick Name',
-                      icon: Icon(FontAwesomeIcons.userNinja),
+                      icon: Icon(IconData(
+                        FontAwesomeIcons.userNinja.codePoint,
+                        fontFamily: FontAwesomeIcons.userNinja.fontFamily,
+                        fontPackage: FontAwesomeIcons.userNinja.fontPackage,
+                      )),
                       userType: LoginUserType.name),
                   UserFormField(
                       keyName: 'phoneNumber',
                       displayName: 'Phone Number',
-                      icon: Icon(FontAwesomeIcons.mobile),
+                      icon: Icon(IconData(
+                        FontAwesomeIcons.mobile.codePoint,
+                        fontFamily: FontAwesomeIcons.mobile.fontFamily,
+                        fontPackage: FontAwesomeIcons.mobile.fontPackage,
+                      )),
                       userType: LoginUserType.phone),
                 ],
                 theme: LoginTheme(

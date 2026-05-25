@@ -99,7 +99,7 @@ class GameCreateScreenState extends State<GameCreateScreen> {
                 currentlySelectedPlayers: _selectedPlayers,
               )),
     );
-    if (selectedPlayers != null && selectedPlayers.isNotEmpty) {
+    if (selectedPlayers != null) {
       setState(() {
         _selectedPlayers = selectedPlayers;
       });
