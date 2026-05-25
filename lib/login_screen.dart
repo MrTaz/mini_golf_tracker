@@ -11,8 +11,9 @@ import 'package:mini_golf_tracker/utilities.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
-  final AuthCredential? mockGoogleCredential;
-  const LoginScreen({super.key, this.mockGoogleCredential});
+  final GoogleSignIn? googleSignIn;
+
+  const LoginScreen({super.key, this.googleSignIn});
 
   @override
   State<LoginScreen> createState() => LoginScreenState();
@@ -21,6 +22,13 @@ class LoginScreen extends StatefulWidget {
 class LoginScreenState extends State<LoginScreen> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
+  late final GoogleSignIn googleSignInInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    googleSignInInstance = widget.googleSignIn ?? GoogleSignIn();
+  }
 
   Duration get loginTime => const Duration(milliseconds: 50);
 
@@ -126,8 +134,10 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   @visibleForTesting
-  Future<String?> handleSocialLogin(String authProvider, String playerName, String email) async {
-    Utilities.debugPrintWithCallerInfo('Starting Social Sign-In Simulation: $email');
+  Future<String?> handleSocialLogin(
+      String authProvider, String playerName, String email) async {
+    Utilities.debugPrintWithCallerInfo(
+        'Starting Social Sign-In Simulation: $email');
     final auth = UserProvider().auth;
     try {
       try {
@@ -160,20 +170,20 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   @visibleForTesting
-  Future<String?> handleGoogleLogin({AuthCredential? mockCredential}) async {
+  Future<String?> handleGoogleLogin() async {
     try {
-      AuthCredential? credential = mockCredential ?? widget.mockGoogleCredential;
-      if (credential == null) {
-        // coverage:ignore-start
-        final GoogleSignInAccount googleUser =
-            await GoogleSignIn.instance.authenticate();
-        final GoogleSignInAuthentication googleAuth =
-            googleUser.authentication;
-        credential = GoogleAuthProvider.credential(
-          idToken: googleAuth.idToken,
-        );
-        // coverage:ignore-end
+      final GoogleSignInAccount? googleUser =
+          await googleSignInInstance.signIn();
+      if (googleUser == null) {
+        return null;
       }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
 
       final userCredential =
           await UserProvider().auth.signInWithCredential(credential);
