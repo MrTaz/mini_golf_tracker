@@ -8,21 +8,24 @@ import 'package:mini_golf_tracker/assets.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthCredential? mockGoogleCredential;
+  const LoginScreen({super.key, this.mockGoogleCredential});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
   Duration get loginTime => const Duration(milliseconds: 50);
 
-  Future<String?> _authUser(LoginData data) async {
+  @visibleForTesting
+  Future<String?> authUser(LoginData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Email: ${data.name}, Password: ${data.password}');
     try {
@@ -58,7 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  Future<String?> _signupUser(SignupData data) async {
+  @visibleForTesting
+  Future<String?> signupUser(SignupData data) async {
     Utilities.debugPrintWithCallerInfo(
         'Signup Name: ${data.name}, Password: ${data.password}, ${data.additionalSignupData.toString()}');
 
@@ -113,25 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<String?> _recoverPassword(String name) {
+  @visibleForTesting
+  Future<String?> recoverPassword(String name) async {
     Utilities.debugPrintWithCallerInfo('Name: $name');
     return Future.delayed(loginTime).then((_) {
       return null;
     });
   }
 
-  Future<String?> _simulateSocialLogin(
-      String name, String nickname, String email) async {
-    Utilities.debugPrintWithCallerInfo(
-        'Starting Social Sign-In Simulation: $email');
+  @visibleForTesting
+  Future<String?> handleSocialLogin(String authProvider, String playerName, String email) async {
+    Utilities.debugPrintWithCallerInfo('Starting Social Sign-In Simulation: $email');
+    final auth = UserProvider().auth;
     try {
-      // Sign into Firebase Auth under the hood using email/password
-      // so that the Auth State listener gets a valid authenticated session.
-      final auth = UserProvider().auth;
       try {
-        // Attempt to create the user account first to ensure the mock framework
-        // (firebase_auth_mocks) and real Firebase (emulator) set up the correct
-        // email field. If it already exists, fall back to signing in.
         await auth.createUserWithEmailAndPassword(
           email: email,
           password: 'mock_social_password_123',
@@ -147,15 +146,12 @@ class _LoginScreenState extends State<LoginScreen> {
           rethrow;
         }
       } catch (_) {
-        // Fallback for any other exceptions to ensure robustness
         await auth.signInWithEmailAndPassword(
           email: email,
           password: 'mock_social_password_123',
         );
       }
 
-      // Wait a brief moment for the auth state changes stream to process the login
-      // and sync/create the Firestore profile.
       await Future.delayed(const Duration(milliseconds: 150));
       return null;
     } catch (e) {
@@ -163,23 +159,60 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<String?> _handleGoogleLogin() async {
-    return _simulateSocialLogin(
-        "Google User", "Googler", "google_user@example.com");
+  @visibleForTesting
+  Future<String?> handleGoogleLogin({AuthCredential? mockCredential}) async {
+    try {
+      AuthCredential? credential = mockCredential ?? widget.mockGoogleCredential;
+      if (credential == null) {
+        // coverage:ignore-start
+        final GoogleSignInAccount googleUser =
+            await GoogleSignIn.instance.authenticate();
+        final GoogleSignInAuthentication googleAuth =
+            googleUser.authentication;
+        credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+        // coverage:ignore-end
+      }
+
+      final userCredential =
+          await UserProvider().auth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        final authUser = userCredential.user!;
+        final loggedInPlayer =
+            await Player.fetchPlayerForAuthUid(authUser.uid) ??
+                await Player.claimPlayerForVerifiedAuthUser(
+                  uid: authUser.uid,
+                  email: authUser.email,
+                  emailVerified: authUser.emailVerified,
+                  phoneNumber: authUser.phoneNumber,
+                );
+        if (loggedInPlayer != null) {
+          await UserProvider().login(loggedInPlayer);
+        } else {
+          return 'Verify an email or phone number to claim your player history.';
+        }
+      }
+      return null;
+    } catch (e) {
+      Utilities.debugPrintWithCallerInfo('Google Sign-In Error: $e');
+      return 'Google Sign-In failed.';
+    }
   }
 
   Future<String?> _handleFacebookLogin() async {
-    return _simulateSocialLogin(
+    return handleSocialLogin(
         "Facebook User", "FB-Player", "facebook_user@example.com");
   }
 
   Future<String?> _handleSnapchatLogin() async {
-    return _simulateSocialLogin(
+    return handleSocialLogin(
         "Snapchat User", "Snap-Player", "snapchat_user@example.com");
   }
 
   Future<String?> _handleInstagramLogin() async {
-    return _simulateSocialLogin(
+    return handleSocialLogin(
         "Instagram User", "Insta-Player", "instagram_user@example.com");
   }
 
@@ -265,37 +298,25 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Container(
               transform: Matrix4.translationValues(0, -100, 0.0),
               child: FlutterLogin(
-                onLogin: _authUser,
-                onSignup: _signupUser,
+                onLogin: authUser,
+                onSignup: signupUser,
                 showDebugButtons: (kDebugMode) ? true : false,
                 scrollable: true,
                 additionalSignupFields: [
                   UserFormField(
                       keyName: 'playerName',
                       displayName: 'First Name',
-                      icon: Icon(IconData(
-                        FontAwesomeIcons.userSecret.codePoint,
-                        fontFamily: FontAwesomeIcons.userSecret.fontFamily,
-                        fontPackage: FontAwesomeIcons.userSecret.fontPackage,
-                      )),
+                      icon: const FaIcon(FontAwesomeIcons.userSecret),
                       userType: LoginUserType.name),
                   UserFormField(
                       keyName: 'nickname',
                       displayName: 'Display/Nick Name',
-                      icon: Icon(IconData(
-                        FontAwesomeIcons.userNinja.codePoint,
-                        fontFamily: FontAwesomeIcons.userNinja.fontFamily,
-                        fontPackage: FontAwesomeIcons.userNinja.fontPackage,
-                      )),
+                      icon: const FaIcon(FontAwesomeIcons.userNinja),
                       userType: LoginUserType.name),
                   UserFormField(
                       keyName: 'phoneNumber',
                       displayName: 'Phone Number',
-                      icon: Icon(IconData(
-                        FontAwesomeIcons.mobile.codePoint,
-                        fontFamily: FontAwesomeIcons.mobile.fontFamily,
-                        fontPackage: FontAwesomeIcons.mobile.fontPackage,
-                      )),
+                      icon: const FaIcon(FontAwesomeIcons.mobile),
                       userType: LoginUserType.phone),
                 ],
                 theme: LoginTheme(
@@ -306,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 loginProviders: <LoginProvider>[
                   LoginProvider(
                     icon: FontAwesomeIcons.google,
-                    callback: _handleGoogleLogin,
+                    callback: handleGoogleLogin,
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.facebookF,
@@ -324,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSubmitAnimationCompleted: () {
                   Navigator.pushNamedAndRemoveUntil(context, "/", (_) => false);
                 },
-                onRecoverPassword: _recoverPassword,
+                onRecoverPassword: recoverPassword,
               ),
             ),
           )),
