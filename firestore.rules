@@ -93,7 +93,7 @@ service cloud.firestore {
     // Canonical contact reservations. The deterministic document ID is the
     // uniqueness boundary for normalized emails and phone numbers.
     match /player_contacts/{contactId} {
-      allow read: if isLoggedIn();
+      allow read: if true;
 
       allow create: if isLoggedIn()
         && request.resource.data.player_id is string

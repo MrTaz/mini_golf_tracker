@@ -27,7 +27,11 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    googleSignInInstance = widget.googleSignIn ?? GoogleSignIn();
+    googleSignInInstance = widget.googleSignIn ??
+        GoogleSignIn(
+          serverClientId:
+              '114725116317-hcrn2kms85skt1kb0q4c73sgrj9fkc3u.apps.googleusercontent.com',
+        );
   }
 
   Duration get loginTime => const Duration(milliseconds: 50);
