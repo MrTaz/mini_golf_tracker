@@ -61,9 +61,9 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.4 Fix Player Selection State
 
-* [ ] **State Injection Bug Fix:** In `GameCreateScreen._selectPlayers()`, remove the `&& selectedPlayers.isNotEmpty` condition so that empty lists (cleared players) are accepted and successfully overwrite the previous selection.
-* [ ] **PlayerListItem State Sync Fix:** In `PlayerListItemState` (`player_list_item.dart`), implement `didUpdateWidget(covariant PlayerListItem oldWidget)` to update the local `isSelected` variable whenever `widget.isSelected` changes so the "Clear All" button visually unchecks the switches.
-* [ ] **E2E Regression Test:** Write an integration test (`integration_test/player_selection_flow_test.dart`) that explicitly selects players, returns to the create screen, opens the player screen again, clears all players, and verifies the create screen correctly updates to 0 players.
+* [x] **State Injection Bug Fix:** In `GameCreateScreen._selectPlayers()`, remove the `&& selectedPlayers.isNotEmpty` condition so that empty lists (cleared players) are accepted and successfully overwrite the previous selection.
+* [x] **PlayerListItem State Sync Fix:** In `PlayerListItemState` (`player_list_item.dart`), implement `didUpdateWidget(covariant PlayerListItem oldWidget)` to update the local `isSelected` variable whenever `widget.isSelected` changes so the "Clear All" button visually unchecks the switches.
+* [x] **E2E Regression Test:** Write an integration test (`integration_test/player_selection_flow_test.dart`) that explicitly selects players, returns to the create screen, opens the player screen again, clears all players, and verifies the create screen correctly updates to 0 players.
 * [x] Ensure selectedPlayers in PlayersScreen persists through rebuilds.
 * [x] Synchronize selectedPlayers correctly with parent GameCreateScreenState.
 * [x] Modify PlayersScreen to accept a List\<dynamic> currentlySelectedPlayers parameter.
@@ -238,6 +238,17 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Reusable App Drawer:** Extract the side menu logic (`_buildDrawerList`, `_buildUserAccounts`, etc.) out of `main.dart` and into a standalone, reusable `AppDrawer` widget (e.g., `lib/app_drawer_widget.dart`).
 * [x] **Guest Menu Bar Access:** Add the newly abstracted `AppDrawer` widget to the `Scaffold` of `PastGameDetailsScreen` (and any other standalone screens) so guests can always access the side menu, even on pushed routes.
 * [x] **Drawer State Desync:** Fix the state management in `HomePage` (`main.dart`) or the new `AppDrawer` so that when the user returns to the home screen from creating or playing a game, the drawer's "Active Game" FutureBuilder is immediately refreshed without needing to click other menu items first.
+
+##### 1.20 Auth & Verification Blocker Fixes
+
+* [ ] **Test Account Bypass:** In `UserProvider` or `Player.canVerifiedAuthUserClaimPlayer`, implement a debug-only or specific email bypass (e.g., automatically treating `test@example.com` as verified) so developers and E2E tests can successfully log in and bypass the `ClaimAccountScreen`.
+* [ ] **Real Google Sign-In:** In `login_screen.dart`, completely remove the `_simulateSocialLogin` and `_handleGoogleLogin` mock methods. Implement the actual `GoogleSignIn` SDK flow to authenticate users using their real Google accounts.
+* [ ] **Auth E2E Tests:** Write a new integration test (`integration_test/auth_login_flow_test.dart`) that verifies the email/password login flow successfully bypasses verification for test accounts and successfully reaches the Dashboard.
+
+##### 1.21 Android KGP Migration (Tech Debt)
+
+* [ ] **Migrate `build.gradle.kts`:** Follow the official Flutter breaking-changes guide (<https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers>) to remove the explicit Kotlin Gradle Plugin from the Android app-level build file.
+* [ ] **Upgrade KGP Plugins:** Check the changelogs and bump the versions in `pubspec.yaml` for `google_sign_in_android`, `package_info_plus`, `shared_preferences_android`, and `url_launcher_android` to versions that support Built-in Kotlin.
 
 ---
 
@@ -994,6 +1005,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `players_screen.dart`
 * [x] `scheduled_games_screen.dart`
 * [x] `userprovider.dart`
+* [x] `utilities.dart`
 
 **Pending Specific Behavioral Tests:**
 
@@ -1020,7 +1032,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 * [x] `PlayersScreen` preserves selected players across rebuilds.
 * [x] `PlayersScreen` receives `currentlySelectedPlayers`.
-* [ ] `PlayersScreen` clears all selected players.
+* [x] `PlayersScreen` clears all selected players.
 * [x] `GameCreateScreen` receives returned selected players.
 * [ ] `PlayerListItem` hides PII by default.
 * [ ] `PlayerListItem` reveals PII on expansion.
@@ -1041,7 +1053,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Activity Hub game create and active game resume flow passes (integration_test/activity_hub_game_create_flow_test.dart).
 * [x] Active game score increment and guest shared drawer access flows pass (integration_test/phase_1_19_drawer_score_flow_test.dart).
 * [x] Offline course selection fallback flow passes (integration_test/course_selection_fallback_test.dart).
-* [ ] Player selection, deselection, and clear-all flow passes (integration_test/player_selection_flow_test.dart).
+* [ ] Authentication and test-account verification bypass flow passes (integration_test/auth_login_flow_test.dart).
+* [x] Player selection, deselection, and clear-all flow passes (integration_test/player_selection_flow_test.dart).
 * [ ] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
 * [ ] Guest creates local game with matching contact.
