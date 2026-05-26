@@ -502,12 +502,33 @@ class GameStartScreenState extends State<GameStartScreen> {
                       children: _playersInfo.asMap().entries.map((entry) {
                         final playerInfo = entry.value;
                         final playerIndex = entry.key;
-                        Player? player = Player.empty()
-                            .getPlayerFriendById(playerInfo.playerId);
-                        if (player?.id == '' && UserProvider().loggedInUser?.id == playerInfo.playerId) {
+                        final gamePlayerInfo = widget.unstartedGame!.players
+                            .firstWhere((player) =>
+                                player.playerId == playerInfo.playerId);
+                        Player? player;
+                        for (final availablePlayer in Player.players) {
+                          if (availablePlayer.id == gamePlayerInfo.playerId) {
+                            player = availablePlayer;
+                            break;
+                          }
+                        }
+                        player ??= UserProvider()
+                            .loggedInUser
+                            ?.getPlayerFriendById(gamePlayerInfo.playerId);
+                        if (player?.id == '' &&
+                            UserProvider().loggedInUser?.id ==
+                                gamePlayerInfo.playerId) {
                           player = UserProvider().loggedInUser;
                         }
-                        return _buildPlayerListItem(player!, playerIndex, playerInfo.playerId);
+                        player ??= Player(
+                          id: gamePlayerInfo.playerId,
+                          playerName: gamePlayerInfo.playerId,
+                          nickname: gamePlayerInfo.playerId,
+                          ownerId: UserProvider().loggedInUser?.id ?? 'guest',
+                          totalScore: gamePlayerInfo.totalScore,
+                        );
+                        return _buildPlayerListItem(
+                            player, playerIndex, gamePlayerInfo.playerId);
                       }).toList(),
                       onReorderItem: (int oldIndex, int newIndex) {
                         setState(() {
@@ -594,7 +615,8 @@ class GameStartScreenState extends State<GameStartScreen> {
                     isGuest ? Icons.lock_outline : Icons.schedule,
                     color: isGuest ? Colors.grey : null,
                   ),
-                  onPressed: isGuest ? _showGatedSchedulingDialog : _editStartTime,
+                  onPressed:
+                      isGuest ? _showGatedSchedulingDialog : _editStartTime,
                 ),
                 onTap: isGuest ? _showGatedSchedulingDialog : null,
               ),

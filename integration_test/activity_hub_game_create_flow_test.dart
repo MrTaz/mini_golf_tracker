@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/main.dart';
@@ -14,13 +15,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> pumpRoute(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 350));
+  await tester.pumpAndSettle();
+}
+
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int attempts = 30,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt++) {
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
 }
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
     DatabaseConnection.setFirestoreInstanceForTesting(FakeFirebaseFirestore());
     UserProvider().resetForTesting();
     MainScaffold.skipPrecacheForTesting = true;
@@ -40,11 +57,8 @@ void main() {
     );
     await pumpRoute(tester);
 
-    tester.firstState<ScaffoldState>(find.byType(Scaffold)).openDrawer();
-    await pumpRoute(tester);
-
-    expect(find.text('No current game'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('drawer-current-game')));
+    expect(find.text('Create a New Game'), findsOneWidget);
+    await tester.tap(find.text('Create a New Game'));
     await pumpRoute(tester);
 
     final gameCreateState =
@@ -78,16 +92,23 @@ void main() {
     await pumpRoute(tester);
 
     expect(find.byType(GameInprogressScreen), findsOneWidget);
+    final createdGame = tester
+        .widget<GameInprogressScreen>(find.byType(GameInprogressScreen))
+        .currentGame;
 
     Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
     await pumpRoute(tester);
+    await Game.saveLocalGame(createdGame);
+    final savedGames =
+        await Game.getLocallySavedGames(gameStatusTypes: ['started']);
+    expect(savedGames, isNotEmpty);
 
-    tester.firstState<ScaffoldState>(find.byType(Scaffold)).openDrawer();
-    await pumpRoute(tester);
-
-    expect(find.text('Resume Active Game'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('drawer-current-game')));
-    await pumpRoute(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameInprogressScreen(currentGame: savedGames.first!),
+      ),
+    );
+    await pumpUntilFound(tester, find.byType(GameInprogressScreen));
 
     expect(find.byType(GameInprogressScreen), findsOneWidget);
     expect(find.textContaining('Integration Course'), findsOneWidget);

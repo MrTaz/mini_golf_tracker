@@ -79,11 +79,11 @@ void main() {
     expect(
         findIconByCodePoint(FontAwesomeIcons.google.codePoint), findsWidgets);
     expect(findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint),
-        findsWidgets);
+        findsNothing);
     expect(
-        findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint), findsWidgets);
+        findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint), findsNothing);
     expect(findIconByCodePoint(FontAwesomeIcons.instagram.codePoint),
-        findsWidgets);
+        findsNothing);
 
     // Add extra pump to clear timers from animations
     await tester.pump(const Duration(seconds: 5));
@@ -112,7 +112,7 @@ void main() {
     expect(find.text('Logout'), findsOneWidget);
   });
 
-  testWidgets('Social login simulation flows - Google Sign-In coverage',
+  testWidgets('Google Sign-In provider logs in with Firebase credentials',
       (tester) async {
     final userProvider = UserProvider();
     userProvider.resetForTesting();
@@ -149,96 +149,6 @@ void main() {
 
     expect(userProvider.loggedInUser, isNotNull);
     expect(userProvider.loggedInUser!.email, 'google@example.com');
-    await tester.pump(const Duration(seconds: 2));
-  });
-
-  testWidgets('Social login simulation flows - Facebook Sign-In',
-      (tester) async {
-    final userProvider = UserProvider();
-    userProvider.resetForTesting();
-    userProvider.setAuthInstanceForTesting(mockAuth);
-    await userProvider.initialize();
-
-    await tester.pumpWidget(createLoginScreen());
-    await tester.pumpAndSettle();
-
-    // Force the 1-second Future.delayed to fire and complete the intro animation
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-
-    // Find the Facebook login button and tap it
-    final facebookButton =
-        findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint);
-    expect(facebookButton, findsOneWidget);
-    await tester.ensureVisible(facebookButton);
-    await tester.tap(facebookButton);
-
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
-
-    expect(userProvider.loggedInUser, isNotNull);
-    expect(userProvider.loggedInUser!.email, 'facebook_user@example.com');
-
-    await tester.pump(const Duration(seconds: 2));
-  });
-
-  testWidgets('Social login simulation flows - Snapchat Sign-In',
-      (tester) async {
-    final userProvider = UserProvider();
-    userProvider.resetForTesting();
-    userProvider.setAuthInstanceForTesting(mockAuth);
-    await userProvider.initialize();
-
-    await tester.pumpWidget(createLoginScreen());
-    await tester.pumpAndSettle();
-
-    // Force the 1-second Future.delayed to fire and complete the intro animation
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-
-    // Find the Snapchat login button and tap it
-    final snapchatButton =
-        findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint);
-    expect(snapchatButton, findsOneWidget);
-    await tester.ensureVisible(snapchatButton);
-    await tester.tap(snapchatButton);
-
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
-
-    expect(userProvider.loggedInUser, isNotNull);
-    expect(userProvider.loggedInUser!.email, 'snapchat_user@example.com');
-
-    await tester.pump(const Duration(seconds: 2));
-  });
-
-  testWidgets('Social login simulation flows - Instagram Sign-In',
-      (tester) async {
-    final userProvider = UserProvider();
-    userProvider.resetForTesting();
-    userProvider.setAuthInstanceForTesting(mockAuth);
-    await userProvider.initialize();
-
-    await tester.pumpWidget(createLoginScreen());
-    await tester.pumpAndSettle();
-
-    // Force the 1-second Future.delayed to fire and complete the intro animation
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-
-    // Find the Instagram login button and tap it
-    final instagramButton =
-        findIconByCodePoint(FontAwesomeIcons.instagram.codePoint);
-    expect(instagramButton, findsOneWidget);
-    await tester.ensureVisible(instagramButton);
-    await tester.tap(instagramButton);
-
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
-
-    expect(userProvider.loggedInUser, isNotNull);
-    expect(userProvider.loggedInUser!.email, 'instagram_user@example.com');
-
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -422,33 +332,6 @@ void main() {
     var recoverResult = await recoverResultFuture;
     expect(recoverResult, isNull);
 
-    // handleSocialLogin
-    // Happy path (creates new user successfully)
-    var socialResultFuture = state.handleSocialLogin(
-        'social_happy@example.com', 'Happy Social', 'social_happy@example.com');
-    await tester.pump(const Duration(milliseconds: 200));
-    var socialResult = await socialResultFuture;
-    expect(socialResult, isNull);
-
-    // Email already in use (falls back to sign in)
-    final alreadyInUseAuth = AlreadyInUseFirebaseAuth(mockAuth);
-    userProvider.setAuthInstanceForTesting(alreadyInUseAuth);
-    var socialResultExistingFuture = state.handleSocialLogin(
-        'social_happy@example.com', 'Happy Social', 'social_happy@example.com');
-    await tester.pump(const Duration(milliseconds: 200));
-    var socialResultExisting = await socialResultExistingFuture;
-    expect(socialResultExisting, isNull);
-    userProvider.setAuthInstanceForTesting(mockAuth);
-
-    // Generic Exception during sign-in
-    userProvider.setAuthInstanceForTesting(genericThrowingAuth);
-    var socialErrorFuture = state.handleSocialLogin(
-        'social_error@example.com', 'Error Social', 'social_error@example.com');
-    await tester.pump(const Duration(milliseconds: 200));
-    var socialError = await socialErrorFuture;
-    expect(socialError, contains('Sign-In failed:'));
-    userProvider.setAuthInstanceForTesting(mockAuth);
-
     // handleGoogleLogin
     final googleSignIn = GoogleSignIn();
     TestGoogleSignInPlatform.signInUser(
@@ -537,14 +420,6 @@ void main() {
       authNoPlayerResult,
       equals('Verify an email or phone number to claim your player history.'),
     );
-
-    userProvider.setAuthInstanceForTesting(NonRetryableSocialFirebaseAuth());
-    final nonRetryableSocialResult = await state.handleSocialLogin(
-      'Ignored Provider',
-      'Ignored Player',
-      'non_retryable_social@example.com',
-    );
-    expect(nonRetryableSocialResult, contains('Sign-In failed:'));
 
     final googleSignIn = GoogleSignIn();
     TestGoogleSignInPlatform.cancelSignIn();
@@ -775,46 +650,6 @@ class EmailSignInFirebaseAuth implements FirebaseAuth {
       email: this.email,
       emailVerified: emailVerified,
     ));
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class NonRetryableSocialFirebaseAuth implements FirebaseAuth {
-  @override
-  User? get currentUser => null;
-
-  @override
-  Stream<User?> authStateChanges() => Stream<User?>.value(null);
-
-  @override
-  Future<UserCredential> createUserWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) {
-    throw FirebaseAuthException(code: 'operation-not-allowed');
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class AlreadyInUseFirebaseAuth implements FirebaseAuth {
-  final FirebaseAuth delegate;
-  AlreadyInUseFirebaseAuth(this.delegate);
-
-  @override
-  Future<UserCredential> createUserWithEmailAndPassword(
-      {required String email, required String password}) {
-    throw FirebaseAuthException(code: 'email-already-exists');
-  }
-
-  @override
-  Future<UserCredential> signInWithEmailAndPassword(
-      {required String email, required String password}) {
-    return delegate.signInWithEmailAndPassword(
-        email: email, password: password);
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/game_card_widget.dart' as game_card;
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/main.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -536,9 +537,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                             TextButton(
                               onPressed: () async {
                                 Navigator.pop(context);
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.remove(widget.currentGame.id);
+                                await game_card.deleteSavedGame(
+                                    gameToDelete: widget.currentGame);
                                 if (!context.mounted) return;
                                 Navigator.pushAndRemoveUntil(
                                   context,

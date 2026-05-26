@@ -138,42 +138,6 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   @visibleForTesting
-  Future<String?> handleSocialLogin(
-      String authProvider, String playerName, String email) async {
-    Utilities.debugPrintWithCallerInfo(
-        'Starting Social Sign-In Simulation: $email');
-    final auth = UserProvider().auth;
-    try {
-      try {
-        await auth.createUserWithEmailAndPassword(
-          email: email,
-          password: 'mock_social_password_123',
-        );
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'email-already-in-use' ||
-            e.code == 'email-already-exists') {
-          await auth.signInWithEmailAndPassword(
-            email: email,
-            password: 'mock_social_password_123',
-          );
-        } else {
-          rethrow;
-        }
-      } catch (_) {
-        await auth.signInWithEmailAndPassword(
-          email: email,
-          password: 'mock_social_password_123',
-        );
-      }
-
-      await Future.delayed(const Duration(milliseconds: 150));
-      return null;
-    } catch (e) {
-      return "Sign-In failed: $e";
-    }
-  }
-
-  @visibleForTesting
   Future<String?> handleGoogleLogin() async {
     try {
       final GoogleSignInAccount? googleUser =
@@ -213,21 +177,6 @@ class LoginScreenState extends State<LoginScreen> {
       Utilities.debugPrintWithCallerInfo('Google Sign-In Error: $e');
       return 'Google Sign-In failed.';
     }
-  }
-
-  Future<String?> _handleFacebookLogin() async {
-    return handleSocialLogin(
-        "Facebook User", "FB-Player", "facebook_user@example.com");
-  }
-
-  Future<String?> _handleSnapchatLogin() async {
-    return handleSocialLogin(
-        "Snapchat User", "Snap-Player", "snapchat_user@example.com");
-  }
-
-  Future<String?> _handleInstagramLogin() async {
-    return handleSocialLogin(
-        "Instagram User", "Insta-Player", "instagram_user@example.com");
   }
 
   @override
@@ -342,18 +291,6 @@ class LoginScreenState extends State<LoginScreen> {
                   LoginProvider(
                     icon: FontAwesomeIcons.google,
                     callback: handleGoogleLogin,
-                  ),
-                  LoginProvider(
-                    icon: FontAwesomeIcons.facebookF,
-                    callback: _handleFacebookLogin,
-                  ),
-                  LoginProvider(
-                    icon: FontAwesomeIcons.snapchat,
-                    callback: _handleSnapchatLogin,
-                  ),
-                  LoginProvider(
-                    icon: FontAwesomeIcons.instagram,
-                    callback: _handleInstagramLogin,
                   ),
                 ],
                 onSubmitAnimationCompleted: () {
