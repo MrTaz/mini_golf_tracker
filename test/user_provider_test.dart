@@ -280,6 +280,38 @@ void main() {
       );
     });
 
+    test('auth state bypass claims matching test account before verification',
+        () async {
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(
+          uid: 'auth-user',
+          email: 'test@example.com',
+          isEmailVerified: false,
+        ),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+      await fakeFirestore.collection('players').doc('existing-player').set({
+        'player_name': 'Existing Player',
+        'nickname': 'Existing',
+        'owner_id': 'creator-1',
+        'email': 'test@example.com',
+        'normalized_email': 'test@example.com',
+        'total_score': 0,
+      });
+
+      await userProvider.initialize();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final claimedDoc = await fakeFirestore
+          .collection('players')
+          .doc('existing-player')
+          .get();
+      expect(userProvider.loggedInUser?.id, 'existing-player');
+      expect(userProvider.pendingClaimPlayer, isNull);
+      expect(claimedDoc.data()?['claimed_by_uid'], 'auth-user');
+    });
+
     test('matching unverified auth user enters pending claim state', () async {
       mockAuth = MockFirebaseAuth(verifyEmailAutomatically: false);
       userProvider.setAuthInstanceForTesting(mockAuth);
@@ -338,6 +370,32 @@ void main() {
       expect(userProvider.pendingClaimPlayer, isNull);
     });
 
+    test('refreshPendingClaim bypass claims matching test account', () async {
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(
+          uid: 'auth-user',
+          email: 'test@example.com',
+          isEmailVerified: false,
+        ),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+      await fakeFirestore.collection('players').doc('existing-player').set({
+        'player_name': 'Existing Player',
+        'nickname': 'Existing',
+        'owner_id': 'creator-1',
+        'email': 'test@example.com',
+        'normalized_email': 'test@example.com',
+        'total_score': 0,
+      });
+
+      final claimedPlayer = await userProvider.refreshPendingClaim();
+
+      expect(claimedPlayer?.id, 'existing-player');
+      expect(userProvider.loggedInUser?.id, 'existing-player');
+      expect(userProvider.pendingClaimPlayer, isNull);
+    });
+
     test('refreshPendingClaim preserves pending state before verification',
         () async {
       mockAuth = MockFirebaseAuth(
@@ -373,7 +431,9 @@ void main() {
       expect(result, isNull);
     });
 
-    test('Listen to auth state changes - error inside listener is caught and logged', () async {
+    test(
+        'Listen to auth state changes - error inside listener is caught and logged',
+        () async {
       mockAuth = MockFirebaseAuth(
         signedIn: true,
         mockUser: MockUser(uid: 'error-user', email: 'error@example.com'),
@@ -381,9 +441,9 @@ void main() {
       userProvider.setAuthInstanceForTesting(mockAuth);
 
       final docRef = fakeFirestore.collection('players').doc('error-user');
-      whenCalling(Invocation.method(#get, null))
-          .on(docRef)
-          .thenThrow(FirebaseException(plugin: 'cloud_firestore', message: 'Simulated error'));
+      whenCalling(Invocation.method(#get, null)).on(docRef).thenThrow(
+          FirebaseException(
+              plugin: 'cloud_firestore', message: 'Simulated error'));
 
       await userProvider.initialize();
       await Future.delayed(const Duration(milliseconds: 100));

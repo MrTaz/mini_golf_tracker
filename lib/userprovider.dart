@@ -121,7 +121,8 @@ class UserProvider extends ChangeNotifier {
               final claimedPlayer = await Player.claimPlayerForVerifiedAuthUser(
                 uid: user.uid,
                 email: user.email,
-                emailVerified: user.emailVerified,
+                emailVerified: user.emailVerified ||
+                    Utilities.isTestAccountBypass(user.email),
                 phoneNumber: user.phoneNumber,
               );
               if (claimedPlayer != null) {
@@ -186,7 +187,8 @@ class UserProvider extends ChangeNotifier {
     final claimedPlayer = await Player.claimPlayerForVerifiedAuthUser(
       uid: refreshedUser.uid,
       email: refreshedUser.email,
-      emailVerified: refreshedUser.emailVerified,
+      emailVerified: refreshedUser.emailVerified ||
+          Utilities.isTestAccountBypass(refreshedUser.email),
       phoneNumber: refreshedUser.phoneNumber,
     );
     if (claimedPlayer != null) {
