@@ -412,7 +412,7 @@ class Game {
     try {
       final creatorSnapshot = await DatabaseConnection.client
           .collection('games')
-          .where('creator_id', isEqualTo: currentUserId)
+          .where('participant_ids', arrayContains: currentUserId)
           .orderBy('scheduled_time', descending: false)
           .get();
 
@@ -486,6 +486,8 @@ class Game {
         'status': game.status,
         'creator_id': creator.id,
         'course': game.course.toJson(),
+        'participant_ids':
+            game.players.map((player) => player.playerId).toList(),
         'players': game.players.map((p) => p.toJson()).toList()
       };
 

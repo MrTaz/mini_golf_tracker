@@ -49,6 +49,7 @@ Map<String, dynamic> _firestoreGameDoc(String id, String creatorId) => {
       'id': id,
       'name': 'Stored Game',
       'creator_id': creatorId,
+      'participant_ids': [creatorId],
       'scheduled_time': '2024-01-15T00:00:00.000',
       'start_time': null,
       'completed_time': null,
@@ -1073,7 +1074,7 @@ void main() {
   });
 
   group('Game.fetchGamesForCurrentUser', () {
-    test('returns matching games', () async {
+    test('returns matching participant games', () async {
       await fakeFirestore
           .collection('games')
           .doc('fg1')
@@ -1681,6 +1682,24 @@ void main() {
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
+
+    test('rethrows generic write failures as Exception', () async {
+      final failFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(failFirestore);
+
+      final doc = failFirestore.collection('games').doc('generic-fail-game');
+      whenCalling(Invocation.method(#set, null))
+          .on(doc)
+          .thenThrow(Exception('simulated generic failure'));
+
+      final game = _makeGame(id: 'generic-fail-game');
+      await expectLater(
+        Game.saveGameToDatabase(game, _makeCreator()),
+        throwsException,
+      );
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
   });
 
   // NOTE: Course.fetchCourses FirebaseException path uses CollectionReference.get()
@@ -1767,6 +1786,7 @@ void main() {
       final now = DateTime.now();
       await badFirestore.collection('games').doc('bad-g1').set({
         'id': 'bad-g1', 'name': 'Bad Game', 'creator_id': 'user-xyz',
+        'participant_ids': ['user-xyz'],
         // intentionally omit 'course' so Game.fromJson throws
         'scheduled_time': now.toIso8601String(),
         'status': 'pending', 'players': [],
@@ -1790,6 +1810,7 @@ void main() {
         'id': 'gq-hp-1',
         'name': 'Fetched Game',
         'creator_id': 'user-abc',
+        'participant_ids': ['user-abc'],
         'course_id': 'c1',
         'course': {
           'id': 'c1',
@@ -1829,6 +1850,18 @@ void main() {
 
       expect(games, hasLength(1));
       expect(games.single.id, 'participant-game');
+
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    test('rethrows FirebaseException as DatabaseConnectionError', () async {
+      DatabaseConnection.setFirestoreInstanceForTesting(
+          MockQueryExceptionFirestore());
+
+      await expectLater(
+        Game.fetchGamesForCurrentUser('user-error'),
+        throwsA(isA<DatabaseConnectionError>()),
+      );
 
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     });
@@ -2451,6 +2484,9 @@ class MockExceptionCollectionReference extends Fake
 class MockExceptionQuery extends Fake implements Query<Map<String, dynamic>> {
   @override
   dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #orderBy) {
+      return this;
+    }
     if (invocation.memberName == #get) {
       throw FirebaseException(
         plugin: 'cloud_firestore',

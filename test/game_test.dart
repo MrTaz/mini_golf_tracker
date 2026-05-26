@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
+import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Helper to build a standard test game
 Game buildTestGame(
@@ -28,7 +32,29 @@ Game buildTestGame(
 PlayerGameInfo makePlayer(String playerId, String gameId) =>
     PlayerGameInfo(playerId: playerId, gameId: gameId, scores: []);
 
+Player buildCreator({String id = 'creator-1'}) => Player(
+      id: id,
+      playerName: 'Guest Scorekeeper',
+      nickname: 'Guest',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+
+Map<String, dynamic> buildFirestoreGameDocument({
+  required String id,
+  required List<PlayerGameInfo> players,
+}) {
+  final game = buildTestGame(id: id, players: players);
+  return {
+    ...game.toJson(),
+    'creator_id': 'guest',
+    'participant_ids': players.map((player) => player.playerId).toList(),
+  };
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Game constructor', () {
     test('creates game with required fields and defaults', () {
       final game = buildTestGame(id: 'g1');
@@ -141,6 +167,11 @@ void main() {
       final outsider = makePlayer('stranger', 'g1');
       expect(() => game.recordScore(outsider, 1, 3), throwsException);
     });
+
+    test('throws when player score map is missing', () {
+      game.scores.remove(player);
+      expect(() => game.recordScore(player, 1, 3), throwsException);
+    });
   });
 
   group('Game.calculateTotalScore', () {
@@ -225,6 +256,27 @@ void main() {
       final pos = game.getPlayerPosition(p2);
       expect(pos, 2);
     });
+
+    test('marks tied players with tied place text', () {
+      final p1 = PlayerGameInfo(
+        playerId: 'p1',
+        gameId: 'g1',
+        scores: [3, 3, 3],
+        totalScore: 9,
+      );
+      final p2 = PlayerGameInfo(
+        playerId: 'p2',
+        gameId: 'g1',
+        scores: [3, 3, 3],
+        totalScore: 9,
+      );
+      final game = buildTestGame(id: 'g1', players: [p1, p2]);
+
+      game.getPlayerPosition(p2);
+
+      expect(p1.place, '1st (tied)');
+      expect(p2.place, '1st (tied)');
+    });
   });
 
   group('Game._initializeScores (via constructor)', () {
@@ -285,5 +337,107 @@ void main() {
 
     // Note: RndX.generateRandomDates has a known type issue at runtime;
     // player score assertions rely on that path and are skipped here.
+  });
+
+  group('Game local storage parsing', () {
+    test('getLocallySavedGames skips string list values', () async {
+      SharedPreferences.setMockInitialValues({
+        'string_list': ['one', 'two'],
+      });
+
+      final games = await Game.getLocallySavedGames();
+
+      expect(games, isEmpty);
+    });
+  });
+
+  group('Game cloud persistence', () {
+    late FakeFirebaseFirestore fakeFirestore;
+
+    setUp(() {
+      fakeFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    tearDown(() {
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+    });
+
+    test('saveGameToDatabase writes participant_ids for every player',
+        () async {
+      final players = [
+        makePlayer('registered-player-1', 'cloud-game'),
+        makePlayer('registered-player-2', 'cloud-game'),
+      ];
+      final game = buildTestGame(id: 'cloud-game', players: players);
+
+      await Game.saveGameToDatabase(game, buildCreator());
+
+      final savedGame =
+          await fakeFirestore.collection('games').doc('cloud-game').get();
+      expect(savedGame.data()?['participant_ids'],
+          ['registered-player-1', 'registered-player-2']);
+    });
+
+    test('fetchGamesForCurrentUser queries by participant_ids', () async {
+      await fakeFirestore.collection('games').doc('visible-game').set(
+            buildFirestoreGameDocument(
+              id: 'visible-game',
+              players: [makePlayer('registered-player', 'visible-game')],
+            ),
+          );
+      await fakeFirestore.collection('games').doc('hidden-game').set(
+            buildFirestoreGameDocument(
+              id: 'hidden-game',
+              players: [makePlayer('other-player', 'hidden-game')],
+            ),
+          );
+
+      final games = await Game.fetchGamesForCurrentUser('registered-player');
+
+      expect(games, hasLength(1));
+      expect(games.single.id, 'visible-game');
+    });
+
+    test('fetchGamesForCurrentUser sorts participant games by scheduled time',
+        () async {
+      final laterGame = buildFirestoreGameDocument(
+        id: 'later-game',
+        players: [makePlayer('registered-player', 'later-game')],
+      );
+      laterGame['scheduled_time'] = DateTime(2024, 1, 16).toIso8601String();
+      final earlierGame = buildFirestoreGameDocument(
+        id: 'earlier-game',
+        players: [makePlayer('registered-player', 'earlier-game')],
+      );
+      earlierGame['scheduled_time'] = DateTime(2024, 1, 15).toIso8601String();
+      await fakeFirestore.collection('games').doc('later-game').set(laterGame);
+      await fakeFirestore
+          .collection('games')
+          .doc('earlier-game')
+          .set(earlierGame);
+
+      final games = await Game.fetchGamesForCurrentUser('registered-player');
+
+      expect(games.map((game) => game.id), ['earlier-game', 'later-game']);
+    });
+
+    test('initializeLocalGames catches fetch failures', () async {
+      await fakeFirestore.collection('games').doc('bad-game').set({
+        'id': 'bad-game',
+        'name': 'Bad Game',
+        'creator_id': 'registered-player',
+        'participant_ids': ['registered-player'],
+        'scheduled_time': DateTime(2024, 1, 15).toIso8601String(),
+        'status': 'completed',
+        'players': [],
+      });
+
+      await expectLater(
+        Game.initializeLocalGames(buildCreator(id: 'registered-player')),
+        completes,
+      );
+    });
   });
 }
