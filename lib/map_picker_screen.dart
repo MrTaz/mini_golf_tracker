@@ -23,7 +23,10 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   final MapController _mapController = MapController();
   LatLng? _selectedLocation;
   String _resolvedAddress = '';
+  String? _resolvedLocationName;
   bool _isResolvingAddress = false;
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
   bool _isLocatingUser = false;
 
   // Default coordinates to Chucksters in Hooksett, NH if no initial and GPS unavailable
@@ -148,11 +151,13 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         setState(() {
           _resolvedAddress =
               parts.isNotEmpty ? parts.join(', ') : 'Unknown location';
+          _resolvedLocationName = place.name;
           _isResolvingAddress = false;
         });
       } else {
         setState(() {
           _resolvedAddress = 'Coordinates selected, address not found';
+          _resolvedLocationName = null;
           _isResolvingAddress = false;
         });
       }
@@ -161,8 +166,59 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       Utilities.debugPrintWithCallerInfo("Reverse geocoding failed: $e");
       setState(() {
         _resolvedAddress = 'Coordinates selected (Reverse geocoding failed)';
+        _resolvedLocationName = null;
         _isResolvingAddress = false;
       });
+    }
+  }
+
+  Future<void> _searchAddress(String query) async {
+    if (query.trim().isEmpty) return;
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final locations = await geocoding.locationFromAddress(query);
+      if (!mounted) return;
+
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+        final newLatLng = LatLng(location.latitude, location.longitude);
+
+        setState(() {
+          _selectedLocation = newLatLng;
+          _isSearching = false;
+        });
+
+        _mapController.move(newLatLng, 15.0);
+        _reverseGeocode(newLatLng);
+      } else {
+        setState(() {
+          _isSearching = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Address not found: $query'),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Utilities.debugPrintWithCallerInfo("Search failed: $e");
+      setState(() {
+        _isSearching = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Search failed: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
   }
 
@@ -244,6 +300,56 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   ],
                 ),
             ],
+          ),
+
+          // Search Bar Overlay at Top
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 56.0,
+            left: 16.0,
+            right: 16.0,
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.grey),
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: const InputDecoration(
+                          hintText: 'Search address or location...',
+                          border: InputBorder.none,
+                        ),
+                        onSubmitted: (value) {
+                          _searchAddress(value);
+                        },
+                      ),
+                    ),
+                    if (_isSearching)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                        ),
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
 
           // Safe Area overlay at bottom for dynamic card
@@ -359,6 +465,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                                                     .startsWith('Tap')
                                             ? ''
                                             : _resolvedAddress,
+                                        'locationName': _resolvedLocationName,
                                         'latitude': _selectedLocation!.latitude,
                                         'longitude':
                                             _selectedLocation!.longitude,

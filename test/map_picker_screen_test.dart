@@ -394,4 +394,86 @@ void main() {
     // Allow the geolocator to finish
     await tester.pumpAndSettle(const Duration(seconds: 2));
   });
+
+  testWidgets('search bar submits and moves map successfully', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+
+    mockGeocoding.locationsResult = [
+      geocoding.Location(
+        latitude: 42.0,
+        longitude: -71.0,
+        timestamp: DateTime.now(),
+      )
+    ];
+    mockGeocoding.placemarksResult = [
+      geocoding.Placemark(
+        street: 'Search St',
+        locality: 'Search City',
+      )
+    ];
+
+    await tester.enterText(find.byType(TextField), 'Search City');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    // Map moved and reverse geocoded
+    expect(find.textContaining('Search St, Search City'), findsOneWidget);
+  });
+
+  testWidgets('search bar shows snackbar when no locations found', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+
+    mockGeocoding.locationsResult = []; // Empty result
+
+    await tester.enterText(find.byType(TextField), 'Bad Query');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Address not found: Bad Query'), findsOneWidget);
+  });
+
+  testWidgets('search bar shows snackbar when search throws exception', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+
+    mockGeocoding.exceptionToThrow = 'Geocoding failed';
+
+    await tester.enterText(find.byType(TextField), 'Error Query');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search failed: Geocoding failed'), findsOneWidget);
+  });
+
+  testWidgets('search bar clear button clears text', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+
+    await tester.enterText(find.byType(TextField), 'To be cleared');
+    expect(find.text('To be cleared'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.clear));
+    await tester.pump();
+
+    expect(find.text('To be cleared'), findsNothing);
+  });
+
+  testWidgets('search bar shows loading indicator during search', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+
+    mockGeocoding.delay = const Duration(seconds: 1);
+    mockGeocoding.locationsResult = [
+      geocoding.Location(
+        latitude: 42.0,
+        longitude: -71.0,
+        timestamp: DateTime.now(),
+      )
+    ];
+
+    await tester.enterText(find.byType(TextField), 'Search City');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsWidgets); // Should find it now
+
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+  });
 }

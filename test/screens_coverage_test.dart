@@ -211,5 +211,34 @@ void main() {
 
     Player.players = originalPlayers;
   });
+
+  testWidgets('Coverage for CourseListItem rendering locationName', (tester) async {
+    final course = Course(
+      id: 'c1',
+      name: 'Test Course',
+      numberOfHoles: 9,
+      parStrokes: {1: 3},
+      locationName: 'Awesome Location',
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CourseListItem(
+          course: course,
+          onDelete: () {},
+          onModify: () {},
+        ),
+      ),
+    ));
+
+    // Initially it is collapsed.
+    expect(find.text('Course: Test Course'), findsOneWidget);
+
+    // Expand it
+    await tester.tap(find.text('Course: Test Course'));
+    await tester.pumpAndSettle();
+
+    // Verify location name is shown inside the expanded tile
+    expect(find.text('Location: Awesome Location'), findsOneWidget);
+  });
 }
 

@@ -192,7 +192,6 @@ void main() {
     expect(find.text('Edit Course'), findsOneWidget);
     expect(find.text('Chucksters Case Course'), findsOneWidget);
     expect(find.text('53 Carter Hill Rd, Hooksett, NH'), findsOneWidget);
-    expect(find.text('Coordinates: 43.11100, -71.22200'), findsOneWidget);
 
     // Default par configuration for hole 2 is 2
     expect(find.text('Hole 2'), findsOneWidget);
@@ -215,7 +214,6 @@ void main() {
 
     // Resolved address should be set automatically
     expect(find.text('53 Carter Hill Rd, Hooksett, NH, 03106'), findsOneWidget);
-    expect(find.text('Coordinates: 43.12345, -71.54321'), findsOneWidget);
   });
 
   testWidgets('displays error inline when GPS fetching fails', (tester) async {
@@ -298,7 +296,6 @@ void main() {
 
     // Check main form has address and coordinates banner
     expect(find.text('100 Main St, Hooksett, NH, 03106'), findsOneWidget);
-    expect(find.text('Coordinates: 43.12345, -71.54321'), findsOneWidget);
   });
 
   testWidgets(
@@ -323,7 +320,7 @@ void main() {
     await tester.pumpWidget(createScreen());
 
     // Select 18 holes
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.pump();
 
     // Enter details for duplicate
@@ -335,7 +332,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Save Course
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(
         const Duration(milliseconds: 500)); // triggers conflict alert dialog
@@ -355,7 +352,7 @@ void main() {
         findsNothing); // Dialog dismissed, still on AddEditCourseScreen
 
     // Save again to trigger dialog
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -379,7 +376,7 @@ void main() {
     await tester.pumpWidget(createScreen());
 
     // Select 18 holes
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.pump();
 
     // Hole 1 stepper: find add/remove icons
@@ -422,11 +419,11 @@ void main() {
       'latitude': 42.123,
       'longitude': -71.123,
       'address': 'Test Address from Map',
+      'locationName': 'Test Map Location Name',
     });
     await tester.pumpAndSettle();
 
     expect(find.text('Test Address from Map'), findsOneWidget);
-    expect(find.text('Coordinates: 42.12300, -71.12300'), findsOneWidget);
   });
 
   testWidgets('grant permission fails from bottom sheet', (tester) async {
@@ -494,28 +491,13 @@ void main() {
     expect(find.text('Please select the number of holes.'), findsOneWidget);
   });
 
-  testWidgets('Clear coordinate button tapped', (tester) async {
-    final course = Course(
-      id: 'course-1',
-      name: 'Chucksters',
-      numberOfHoles: 9,
-      parStrokes: {1: 3},
-      latitude: 43.111,
-      longitude: -71.222,
-    );
-    await tester.pumpWidget(createScreen(course: course));
 
-    await tester.tap(find.byIcon(Icons.cancel_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Coordinates:'), findsNothing);
-  });
 
   testWidgets('Empty address coordinates geocode on save', (tester) async {
     await tester.pumpWidget(createScreen());
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Address (Optional)'),
         '53 Carter Hill Rd');
@@ -598,7 +580,7 @@ void main() {
     await tester.pumpWidget(createScreen());
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Address (Optional)'),
         '123 Exact St');
@@ -631,7 +613,7 @@ void main() {
     await tester.pumpWidget(createScreen());
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Course Name'), 'Exact Course');
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Address (Optional)'),
         '123 Exact St');
@@ -658,7 +640,7 @@ void main() {
     await tester.pumpWidget(createScreen());
     await tester.enterText(find.widgetWithText(TextFormField, 'Course Name'),
         'Geocode Fail Course');
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Address (Optional)'),
         'Some Valid Address');
@@ -745,7 +727,7 @@ void main() {
     await tester.pumpWidget(createScreen());
 
     // Select 18 holes
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.pump();
 
     await tester.enterText(
@@ -757,7 +739,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Save Course
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -780,7 +762,7 @@ void main() {
     await tester.pumpWidget(createScreen());
 
     // Select 18 holes
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.pump();
 
     await tester.enterText(
@@ -792,7 +774,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Save Course
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -818,7 +800,7 @@ void main() {
     await tester.enterText(
         find.widgetWithText(TextField, 'Course Name'), 'Offline Course');
 
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -843,7 +825,7 @@ void main() {
     await tester.pumpWidget(createScreen());
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Address (Optional)'),
         '53 Carter Hill');
@@ -877,7 +859,7 @@ void main() {
     });
 
     await tester.pumpWidget(createScreen());
-    await tester.tap(find.text('18 Holes'));
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
     await tester.pump();
 
     await tester.enterText(
@@ -902,7 +884,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    await tester.tap(find.text('Create Course'));
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 

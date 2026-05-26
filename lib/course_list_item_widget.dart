@@ -34,27 +34,30 @@ class CourseListItemState extends State<CourseListItem> {
                 title: Text('Number of Holes: ${widget.course.numberOfHoles}'),
               ),
               ListTile(
-                  title:
-                      const Text('Par Values:', style: TextStyle(fontSize: 16)),
+                  title: const Text('Par Values:', style: TextStyle(fontSize: 16)),
                   subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: widget.course.numberOfHoles,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 8.0,
-                            crossAxisSpacing: 8.0,
-                            childAspectRatio: 3.0,
+                        if (widget.course.locationName != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text('Location: ${widget.course.locationName}',
+                                style: const TextStyle(fontWeight: FontWeight.w500)),
                           ),
-                          itemBuilder: (context, index) {
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Text(
+                              'Total Par: ${widget.course.parStrokes.values.fold<int>(0, (sum, val) => sum + val)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Wrap(
+                          spacing: 16.0,
+                          runSpacing: 12.0,
+                          children: List.generate(widget.course.numberOfHoles, (index) {
                             final holeNumber = index + 1;
-                            final parValue =
-                                widget.course.getParValue(holeNumber);
+                            final parValue = widget.course.parStrokes[holeNumber] ?? 0;
                             return Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text('Hole $holeNumber',
                                     style: const TextStyle(fontSize: 12)),
@@ -63,7 +66,7 @@ class CourseListItemState extends State<CourseListItem> {
                                         fontWeight: FontWeight.bold)),
                               ],
                             );
-                          },
+                          }),
                         )
                       ]))
             ]),

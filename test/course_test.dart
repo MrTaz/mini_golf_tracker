@@ -9,11 +9,13 @@ void main() {
         name: 'Pine Valley',
         numberOfHoles: 18,
         parStrokes: {1: 3, 2: 4},
+        locationName: 'Pine Valley Golf Club',
       );
       expect(course.id, 'c1');
       expect(course.name, 'Pine Valley');
       expect(course.numberOfHoles, 18);
       expect(course.parStrokes, {1: 3, 2: 4});
+      expect(course.locationName, 'Pine Valley Golf Club');
     });
   });
 
@@ -24,6 +26,7 @@ void main() {
         'name': 'Test Course',
         'number_of_holes': 9,
         'par_strokes': {'1': 3, '2': 4, '3': 5},
+        'locationName': 'Test Location',
       };
       final course = Course.fromJson(json);
       expect(course.id, 'c1');
@@ -32,6 +35,7 @@ void main() {
       expect(course.parStrokes[1], 3);
       expect(course.parStrokes[2], 4);
       expect(course.parStrokes[3], 5);
+      expect(course.locationName, 'Test Location');
     });
 
     test('defaults id to empty string when missing', () {
@@ -72,12 +76,14 @@ void main() {
         'name': 'Map Course',
         'numberOfHoles': 18,
         'parStrokes': {'1': 3, '2': 4},
+        'locationName': 'Map Location',
       };
       final course = Course.fromMap(map);
       expect(course.id, 'c2');
       expect(course.name, 'Map Course');
       expect(course.numberOfHoles, 18);
       expect(course.parStrokes[1], 3);
+      expect(course.locationName, 'Map Location');
     });
 
     test('robustly parses from snake_case and non-standard types in map', () {
@@ -106,6 +112,7 @@ void main() {
         name: 'Valley Links',
         numberOfHoles: 18,
         parStrokes: {1: 3, 2: 4},
+        locationName: 'Valley Links Club',
       );
       final json = course.toJson();
       expect(json['id'], 'c1');
@@ -113,6 +120,7 @@ void main() {
       expect(json['number_of_holes'], 18);
       expect((json['par_strokes'] as Map)['1'], 3);
       expect((json['par_strokes'] as Map)['2'], 4);
+      expect(json['locationName'], 'Valley Links Club');
     });
 
     test('round-trip fromJson -> toJson preserves data', () {
@@ -121,6 +129,7 @@ void main() {
         'name': 'RT Course',
         'number_of_holes': 9,
         'par_strokes': {'1': 3, '2': 4, '3': 5},
+        'locationName': 'RT Location',
       };
       final course = Course.fromJson(original);
       final result = course.toJson();
@@ -128,6 +137,7 @@ void main() {
       expect(result['name'], 'RT Course');
       expect(result['number_of_holes'], 9);
       expect((result['par_strokes'] as Map)['1'], 3);
+      expect(result['locationName'], 'RT Location');
     });
   });
 

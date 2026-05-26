@@ -69,6 +69,7 @@ void main() {
       'name': 'Pebble Beach Mini',
       'number_of_holes': 18,
       'par_strokes': {'1': 3, '2': 3},
+      'locationName': 'Pebble Location',
     });
     await fakeFirestore.collection('courses').add({
       'name': 'Augusta National Mini',
@@ -79,7 +80,6 @@ void main() {
     await tester.pumpWidget(createCoursesScreen());
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify course cards are shown
     expect(find.text('Pebble Beach Mini'), findsOneWidget);
     expect(find.text('Augusta National Mini'), findsOneWidget);
     expect(find.text('18 holes'), findsOneWidget);
@@ -587,7 +587,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Address: 456 Near Blvd'), findsOneWidget);
-    expect(find.text('Coordinates: 40.10000, -70.10000'), findsOneWidget);
 
     expect(find.text('Close'), findsOneWidget);
     await tester.tap(find.text('Close'));

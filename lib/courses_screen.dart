@@ -420,11 +420,7 @@ class CoursesScreenState extends State<CoursesScreen> {
                 const SizedBox(height: 8.0),
                 Text('Address: ${course.address}'),
               ],
-              if (course.latitude != null && course.longitude != null) ...[
-                const SizedBox(height: 8.0),
-                Text(
-                    'Coordinates: ${course.latitude!.toStringAsFixed(5)}, ${course.longitude!.toStringAsFixed(5)}'),
-              ],
+
               const SizedBox(height: 16.0),
               ...List.generate(course.numberOfHoles, (index) {
                 return _buildHoleDetailsRow(course, index);

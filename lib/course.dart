@@ -13,6 +13,7 @@ class Course {
     this.latitude,
     this.longitude,
     this.address,
+    this.locationName,
   });
 
   factory Course.empty() {
@@ -24,6 +25,7 @@ class Course {
       latitude: null,
       longitude: null,
       address: null,
+      locationName: null,
     );
   }
 
@@ -58,6 +60,7 @@ class Course {
         ? double.tryParse(json['longitude'].toString())
         : null;
     final String? address = json['address'] as String?;
+    final String? locationName = json['locationName'] as String?;
 
     return Course(
       id: id,
@@ -67,6 +70,7 @@ class Course {
       latitude: latitude,
       longitude: longitude,
       address: address,
+      locationName: locationName,
     );
   }
 
@@ -86,21 +90,17 @@ class Course {
             ? value
             : value is double
                 ? value.toInt()
-                : int.tryParse(value.toString()) ??
-                    double.tryParse(value.toString())?.toInt();
+                : int.tryParse(value.toString()) ?? double.tryParse(value.toString())?.toInt();
         if (parsedKey != null && parsedValue != null) {
           parStrokes[parsedKey] = parsedValue;
         }
       });
     }
 
-    final double? latitude = map['latitude'] != null
-        ? double.tryParse(map['latitude'].toString())
-        : null;
-    final double? longitude = map['longitude'] != null
-        ? double.tryParse(map['longitude'].toString())
-        : null;
+    final double? latitude = map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null;
+    final double? longitude = map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null;
     final String? address = map['address'] as String?;
+    final String? locationName = map['locationName'] as String?;
 
     return Course(
       id: id,
@@ -110,6 +110,29 @@ class Course {
       latitude: latitude,
       longitude: longitude,
       address: address,
+      locationName: locationName,
+    );
+  }
+
+  Course copyWith({
+    String? id,
+    String? name,
+    int? numberOfHoles,
+    Map<int, int>? parStrokes,
+    double? latitude,
+    double? longitude,
+    String? address,
+    String? locationName,
+  }) {
+    return Course(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      numberOfHoles: numberOfHoles ?? this.numberOfHoles,
+      parStrokes: parStrokes ?? this.parStrokes,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      address: address ?? this.address,
+      locationName: locationName ?? this.locationName,
     );
   }
 
@@ -120,6 +143,7 @@ class Course {
   final double? latitude;
   final double? longitude;
   final String? address;
+  final String? locationName;
 
   FirebaseFirestore get db => DatabaseConnection.client;
 
@@ -133,6 +157,7 @@ class Course {
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
+      'locationName': locationName,
     };
   }
 
@@ -179,6 +204,7 @@ class Course {
         'latitude': latitude,
         'longitude': longitude,
         'address': address,
+        'locationName': locationName,
       };
 
       if (id.isNotEmpty) {

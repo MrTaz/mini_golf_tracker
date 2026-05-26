@@ -15,15 +15,17 @@ void main() {
         parStrokes: {1: 2, 2: 3, 3: 4},
       );
 
-      expect(course.toJson(), {
-        'id': "7",
+      final dbJson = {
+        'id': '7',
         'name': 'Putter Park',
         'number_of_holes': 3,
         'par_strokes': {'1': 2, '2': 3, '3': 4},
         'latitude': null,
         'longitude': null,
         'address': null,
-      });
+        'locationName': null,
+      };
+      expect(course.toJson(), dbJson);
 
       final decoded = Course.fromJson(course.toJson());
 
@@ -45,6 +47,59 @@ void main() {
       );
 
       expect(() => course.getParValue(2), throwsException);
+    });
+
+    test('copyWith updates fields', () {
+      final course = Course(
+        id: "7",
+        name: 'Putter Park',
+        numberOfHoles: 1,
+        parStrokes: {1: 2},
+      );
+      final updated = course.copyWith(
+        id: "8",
+        name: 'New Park',
+        numberOfHoles: 2,
+        parStrokes: {1: 3, 2: 4},
+        latitude: 10.0,
+        longitude: 20.0,
+        address: '123 Test St',
+        locationName: 'Test Location',
+      );
+      expect(updated.id, '8');
+      expect(updated.name, 'New Park');
+      expect(updated.numberOfHoles, 2);
+      expect(updated.parStrokes, {1: 3, 2: 4});
+      expect(updated.latitude, 10.0);
+      expect(updated.longitude, 20.0);
+      expect(updated.address, '123 Test St');
+      expect(updated.locationName, 'Test Location');
+
+      // Test null inputs use existing values
+      final same = updated.copyWith();
+      expect(same.id, '8');
+      expect(same.name, 'New Park');
+      expect(same.numberOfHoles, 2);
+      expect(same.parStrokes, {1: 3, 2: 4});
+      expect(same.latitude, 10.0);
+      expect(same.longitude, 20.0);
+      expect(same.address, '123 Test St');
+      expect(same.locationName, 'Test Location');
+    });
+
+    test('fromJson parses string doubles and ints', () {
+      final json = {
+        'id': '9',
+        'name': 'Parse Park',
+        'number_of_holes': 1,
+        'par_strokes': {'1': 3.5, '2': 'invalid', '3': '4.5'},
+        'latitude': 10,
+        'longitude': 20.5,
+      };
+      final parsed = Course.fromJson(json);
+      expect(parsed.parStrokes, {1: 3, 3: 4});
+      expect(parsed.latitude, 10.0);
+      expect(parsed.longitude, 20.5);
     });
   });
 

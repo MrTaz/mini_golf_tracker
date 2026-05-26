@@ -23,11 +23,13 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
 
   late String _courseName;
   String? _address;
+  String? _locationName;
   double? _latitude;
   double? _longitude;
   int? _numberOfHoles;
   late List<int> _parStrokes;
   late final TextEditingController _addressController;
+  late final TextEditingController _locationNameController;
 
   bool _isFetchingGPS = false;
   String? _gpsError;
@@ -40,6 +42,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     if (course != null) {
       _courseName = course.name;
       _address = course.address;
+      _locationName = course.locationName;
       _latitude = course.latitude;
       _longitude = course.longitude;
       _numberOfHoles = course.numberOfHoles;
@@ -50,17 +53,20 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     } else {
       _courseName = '';
       _address = null;
+      _locationName = null;
       _latitude = null;
       _longitude = null;
       _numberOfHoles = null;
       _parStrokes = List.filled(18, 3); // Default to par 3
     }
     _addressController = TextEditingController(text: _address);
+    _locationNameController = TextEditingController(text: _locationName);
   }
 
   @override
   void dispose() {
     _addressController.dispose();
+    _locationNameController.dispose();
     super.dispose();
   }
 
@@ -110,6 +116,14 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
         if (addr != null && addr.isNotEmpty) {
           _address = addr;
           _addressController.text = addr;
+        }
+        final locName = result['locationName'] as String?;
+        if (locName != null &&
+            locName.isNotEmpty &&
+            locName != _address &&
+            locName != (_address?.split(',').first ?? '')) {
+          _locationName = locName;
+          _locationNameController.text = locName;
         }
       });
     }
@@ -515,6 +529,13 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
           setState(() {
             _address = resolved;
             _addressController.text = resolved;
+            if (place.name != null &&
+                place.name!.isNotEmpty &&
+                place.name != resolved &&
+                place.name != (parts.isNotEmpty ? parts.first : '')) {
+              _locationName = place.name;
+              _locationNameController.text = place.name!;
+            }
           });
         }
       } catch (e) {
@@ -830,6 +851,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
         latitude: _latitude,
         longitude: _longitude,
         address: _address,
+        locationName: _locationName,
       );
 
       try {
@@ -849,6 +871,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
             latitude: savedCourse.latitude,
             longitude: savedCourse.longitude,
             address: savedCourse.address,
+            locationName: savedCourse.locationName,
           );
           final prefs = await SharedPreferences.getInstance();
           final cachedCourses = prefs.getStringList('courses') ?? [];
@@ -1161,6 +1184,27 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 _courseName = value!.trim();
                               },
                             ),
+                            const SizedBox(height: 16.0),
+                            TextFormField(
+                              controller: _locationNameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: 'Location Name (Business Name)',
+                                prefixIcon: const Icon(Icons.business,
+                                    color: Colors.green),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.green.shade700, width: 2.0),
+                                ),
+                              ),
+                              onSaved: (value) {
+                                _locationName = value?.trim();
+                              },
+                            ),
                             const SizedBox(height: 20.0),
                             TextFormField(
                               controller: _addressController,
@@ -1220,49 +1264,6 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
                                 _address = value?.trim();
                               },
                             ),
-                            if (_latitude != null && _longitude != null) ...[
-                              const SizedBox(height: 12.0),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  border:
-                                      Border.all(color: Colors.green.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.gps_fixed,
-                                        color: Colors.green, size: 16),
-                                    const SizedBox(width: 8.0),
-                                    Expanded(
-                                      child: Text(
-                                        'Coordinates: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
-                                        style: TextStyle(
-                                          fontSize: 13.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green.shade800,
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _latitude = null;
-                                          _longitude = null;
-                                        });
-                                      },
-                                      child: Icon(
-                                        Icons.cancel_rounded,
-                                        color: Colors.red.shade700,
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
