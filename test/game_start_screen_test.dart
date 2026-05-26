@@ -763,7 +763,7 @@ void main() {
     expect(initialOrder[1], contains('p2'));
     expect(initialOrder[2], contains('p3'));
 
-    listView.onReorder.call(0, 2);
+    listView.onReorder(0, 2);
     await tester.pumpAndSettle();
 
     final afterFirst = tester
@@ -775,7 +775,7 @@ void main() {
     expect(afterFirst[1], contains('p1'));
     expect(afterFirst[2], contains('p3'));
 
-    listView.onReorder.call(2, 0);
+    listView.onReorder(2, 0);
     await tester.pumpAndSettle();
 
     final afterSecond = tester
