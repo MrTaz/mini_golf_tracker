@@ -117,6 +117,9 @@ void main() {
     await tester.tap(find.byKey(const Key('drawer-locked-preview')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(LoginScreen), findsOneWidget);
+    final lockedLoginScreen = tester.widget<LoginScreen>(find.byType(LoginScreen));
+    expect(lockedLoginScreen.promptMessage, "Sign up to schedule future rounds and sync with friends.");
     Navigator.of(tester.element(find.byType(LoginScreen))).pop();
     await tester.pumpAndSettle();
 
@@ -166,6 +169,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(LoginScreen), findsOneWidget);
+    final scheduledLoginScreen = tester.widget<LoginScreen>(find.byType(LoginScreen));
+    expect(scheduledLoginScreen.promptMessage, "Sign up to schedule future rounds and sync with friends.");
   });
 
   testWidgets('no active game tile opens create game and refreshes on return',
@@ -312,5 +317,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(LoginScreen), findsOneWidget);
+    final loginScreen = tester.widget<LoginScreen>(find.byType(LoginScreen));
+    expect(loginScreen.promptMessage, "Login or register to view your past game details and save your history to the cloud.");
   });
 }
