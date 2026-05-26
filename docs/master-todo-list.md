@@ -93,24 +93,24 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.6 Course Location Awareness & Duplicate Prevention
 
-* [ ] Implement the technical rules from `course-location-awareness.md` inside `AddEditCourseScreen`.
-* [ ] Populate the skeletal `_showAddressCaptureBottomSheet` method.
-* [ ] Add:
-  * `streetController`
-  * `cityController`
-  * `stateController`
-  * `zipController`
-* [ ] Resolve current coordinate capture failure.
-* [ ] Perform geocoding in the background.
-* [ ] Implement `_findConflictingCourses` using the Haversine formula.
-* [ ] Trigger `_showLocationConflictDialog` when an existing course is within `100 meters`.
-* [ ] Add normalized address substring matching.
-* [ ] Identify duplicates even when coordinates are unavailable.
-* [ ] Ensure `"53 Carter Hill"` can match `"53 Carter Hill Rd"`.
-* [ ] Allow users to select an existing course at the location.
-* [ ] Allow users to bypass the conflict and create a secondary course for multi-course facilities.
-* [ ] Support secondary course examples such as `"Fire Tower Course"` vs. `"Case Course"` at the same GPS coordinate.
-* [ ] Add tests for the `"Add Second Course Anyway"` flow.
+* [x] Implement the technical rules from course-location-awareness.md inside AddEditCourseScreen.
+* [x] Populate the skeletal _showAddressCaptureBottomSheet method.
+* [x] Add:
+  * streetController
+  * cityController
+  * stateController
+  * zipController
+* [x] Resolve current coordinate capture failure.
+* [x] Perform geocoding in the background.
+* [x] Implement _findConflictingCourses using the Haversine formula.
+* [x] Trigger _showLocationConflictDialog when an existing course is within 100 meters.
+* [x] Add normalized address substring matching.
+* [x] Identify duplicates even when coordinates are unavailable.
+* [x] Ensure "53 Carter Hill" can match "53 Carter Hill Rd".
+* [x] Allow users to select an existing course at the location.
+* [x] Allow users to bypass the conflict and create a secondary course for multi-course facilities.
+* [x] Support secondary course examples such as "Fire Tower Course" vs. "Case Course" at the same GPS coordinate.
+* [x] Add tests for the "Add Second Course Anyway" flow.
 
 #### 1.7 Proximity-Based Sorting and Location Safety
 
@@ -437,16 +437,16 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 4.4 Address and Location Tests
 
-* [ ] Update `all_test_code.md` with tests for `_showAddressCaptureBottomSheet`.
-* [ ] Verify empty street fields trigger validation failures.
-* [ ] Verify empty city fields trigger validation failures.
-* [ ] Expand `MockGeolocatorPlatform`.
-* [ ] Expand `MockGeocodingPlatform`.
-* [ ] Cover the `100-meter` proximity threshold logic.
-* [ ] Cover coordinate-to-address mapping.
-* [ ] Test normalized substring address matching.
-* [ ] Test the `"Add Second Course Anyway"` flow.
-* [ ] Ensure the proximity warning works in `AddEditCourseScreen`.
+* [x] Update all_test_code.md with tests for _showAddressCaptureBottomSheet.
+* [x] Verify empty street fields trigger validation failures.
+* [x] Verify empty city fields trigger validation failures.
+* [x] Expand MockGeolocatorPlatform.
+* [x] Expand MockGeocodingPlatform.
+* [x] Cover the 100-meter proximity threshold logic.
+* [x] Cover coordinate-to-address mapping.
+* [x] Test normalized substring address matching.
+* [x] Test the "Add Second Course Anyway" flow.
+* [x] Ensure the proximity warning works in AddEditCourseScreen.
 
 #### 4.5 Stream and Sync Tests
 
@@ -1071,14 +1071,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] `GameInprogressScreen` avoids state errors.
 * [x] `CoursesScreen` renders `"Fairway Unreachable"` error state.
 * [x] `CoursesScreen` retry callback works.
-* [ ] `_showAddressCaptureBottomSheet` validates empty street.
-* [ ] `_showAddressCaptureBottomSheet` validates empty city.
-* [ ] `"Add Second Course Anyway"` flow works.
+* [x] `_showAddressCaptureBottomSheet` validates empty street.
+* [x] `_showAddressCaptureBottomSheet` validates empty city.
+* [x] "Add Second Course Anyway" flow works.
 
 ---
 
 #### Integration / E2E Tests
 
+* [x] Course location duplicate conflict and bypass flow passes (`integration_test/course_location_conflict_flow_test.dart`).
 * [x] Activity Hub game create and active game resume flow passes (`integration_test/activity_hub_game_create_flow_test.dart`).
 * [x] Active game score increment and guest shared drawer access flows pass (`integration_test/phase_1_19_drawer_score_flow_test.dart`).
 * [x] Offline course selection fallback flow passes (`integration_test/course_selection_fallback_test.dart`).
@@ -1096,9 +1097,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Firestore stream updates propagate to UI.
 * [ ] Offline queue replays writes in FIFO order.
 * [ ] Merge approval only completes after challenged owner approves verification link.
-* [ ] Location conflict detects courses within `100 meters`.
-* [ ] Address conflict works without coordinates.
-* [ ] User can create a secondary course at same location.
+* [x] Location conflict detects courses within `100 meters`.
+* [x] Address conflict works without coordinates.
+* [x] User can create a secondary course at same location.
 
 ---
 
