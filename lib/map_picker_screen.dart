@@ -1,18 +1,30 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class MapPickerScreen extends StatefulWidget {
+  @visibleForTesting
+  static http.Client? searchClientForTesting;
+
+  @visibleForTesting
+  static http.Client Function() searchClientFactoryForTesting =
+      _createDefaultSearchClient;
+
   final double? initialLatitude;
   final double? initialLongitude;
+  final http.Client? searchClient;
 
   const MapPickerScreen({
     super.key,
     this.initialLatitude,
     this.initialLongitude,
+    this.searchClient,
   });
 
   @override
@@ -28,6 +40,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   bool _isLocatingUser = false;
+  List<_NominatimSearchResult> _searchResults = [];
 
   // Default coordinates to Chucksters in Hooksett, NH if no initial and GPS unavailable
   static const double defaultLat = 43.0859;
@@ -173,27 +186,53 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   }
 
   Future<void> _searchAddress(String query) async {
-    if (query.trim().isEmpty) return;
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return;
 
     setState(() {
       _isSearching = true;
+      _searchResults = [];
     });
 
     try {
-      final locations = await geocoding.locationFromAddress(query);
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': trimmedQuery,
+        'format': 'json',
+        'addressdetails': '1',
+        'limit': '5',
+      });
+      final injectedClient =
+          widget.searchClient ?? MapPickerScreen.searchClientForTesting;
+      final client =
+          injectedClient ?? MapPickerScreen.searchClientFactoryForTesting();
+      final response = await client.get(
+        uri,
+        headers: const {
+          'User-Agent': 'mini_golf_tracker/1.0 (course-location-search)',
+        },
+      );
+      if (injectedClient == null) {
+        client.close();
+      }
       if (!mounted) return;
 
-      if (locations.isNotEmpty) {
-        final location = locations.first;
-        final newLatLng = LatLng(location.latitude, location.longitude);
-
+      if (response.statusCode != 200) {
+        throw Exception('Nominatim returned ${response.statusCode}');
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw const FormatException('Nominatim response was not a list');
+      }
+      final results = decoded
+          .whereType<Map<String, dynamic>>()
+          .map(_NominatimSearchResult.fromJson)
+          .whereType<_NominatimSearchResult>()
+          .toList();
+      if (results.isNotEmpty) {
         setState(() {
-          _selectedLocation = newLatLng;
+          _searchResults = results;
           _isSearching = false;
         });
-
-        _mapController.move(newLatLng, 15.0);
-        _reverseGeocode(newLatLng);
       } else {
         setState(() {
           _isSearching = false;
@@ -220,6 +259,19 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         ),
       );
     }
+  }
+
+  void _selectSearchResult(_NominatimSearchResult result) {
+    final newLatLng = LatLng(result.latitude, result.longitude);
+    setState(() {
+      _selectedLocation = newLatLng;
+      _resolvedAddress = result.address;
+      _resolvedLocationName = result.name;
+      _isResolvingAddress = false;
+      _searchResults = [];
+      _searchController.text = result.displayName;
+    });
+    _mapController.move(newLatLng, 15.0);
   }
 
   @override
@@ -307,48 +359,76 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             top: MediaQuery.of(context).padding.top + 56.0,
             left: 16.0,
             right: 16.0,
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: Colors.grey),
-                    const SizedBox(width: 8.0),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Search address or location...',
-                          border: InputBorder.none,
+            child: Column(
+              children: [
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey),
+                        const SizedBox(width: 8.0),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Search address or location...',
+                              border: InputBorder.none,
+                            ),
+                            onSubmitted: (value) {
+                              _searchAddress(value);
+                            },
+                          ),
                         ),
-                        onSubmitted: (value) {
-                          _searchAddress(value);
-                        },
-                      ),
+                        if (_isSearching)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.green),
+                            ),
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchResults = [];
+                              });
+                            },
+                          ),
+                      ],
                     ),
-                    if (_isSearching)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                        ),
-                      )
-                    else
-                      IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      ),
-                  ],
+                  ),
                 ),
-              ),
+                if (_searchResults.isNotEmpty)
+                  Card(
+                    key: const Key('map_search_results'),
+                    elevation: 6,
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: _searchResults.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final result = _searchResults[index];
+                        return ListTile(
+                          title: Text(result.name),
+                          subtitle: Text(result.address),
+                          onTap: () => _selectSearchResult(result),
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -493,5 +573,83 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         ],
       ),
     );
+  }
+}
+
+// coverage:ignore-start
+http.Client _createDefaultSearchClient() => http.Client();
+// coverage:ignore-end
+
+class _NominatimSearchResult {
+  const _NominatimSearchResult({
+    required this.displayName,
+    required this.name,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final String displayName;
+  final String name;
+  final String address;
+  final double latitude;
+  final double longitude;
+
+  static _NominatimSearchResult? fromJson(Map<String, dynamic> json) {
+    final lat = double.tryParse(json['lat']?.toString() ?? '');
+    final lon = double.tryParse(json['lon']?.toString() ?? '');
+    final displayName = json['display_name']?.toString() ?? '';
+    if (lat == null || lon == null || displayName.isEmpty) {
+      return null;
+    }
+
+    final addressJson = json['address'];
+    String name = json['name']?.toString() ?? '';
+    if (name.isEmpty && addressJson is Map<String, dynamic>) {
+      name = (addressJson['leisure'] ??
+              addressJson['amenity'] ??
+              addressJson['tourism'] ??
+              addressJson['shop'] ??
+              addressJson['road'] ??
+              displayName.split(',').first)
+          .toString();
+    }
+    if (name.isEmpty) {
+      name = displayName.split(',').first.trim();
+    }
+
+    return _NominatimSearchResult(
+      displayName: displayName,
+      name: name,
+      address: _formatAddress(addressJson, displayName),
+      latitude: lat,
+      longitude: lon,
+    );
+  }
+
+  static String _formatAddress(dynamic addressJson, String fallback) {
+    if (addressJson is! Map<String, dynamic>) {
+      return fallback;
+    }
+
+    final houseNumber = addressJson['house_number']?.toString();
+    final road = addressJson['road']?.toString();
+    final street = [
+      if (houseNumber != null && houseNumber.isNotEmpty) houseNumber,
+      if (road != null && road.isNotEmpty) road,
+    ].join(' ');
+    final locality =
+        addressJson['city'] ?? addressJson['town'] ?? addressJson['village'];
+    final state = addressJson['state'];
+    final postcode = addressJson['postcode'];
+    final parts = <String>[
+      if (street.isNotEmpty) street,
+      if (locality != null && locality.toString().isNotEmpty)
+        locality.toString(),
+      if (state != null && state.toString().isNotEmpty) state.toString(),
+      if (postcode != null && postcode.toString().isNotEmpty)
+        postcode.toString(),
+    ];
+    return parts.isEmpty ? fallback : parts.join(', ');
   }
 }

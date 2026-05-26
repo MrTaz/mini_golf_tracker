@@ -80,8 +80,8 @@ void main() {
     await tester.pumpWidget(createCoursesScreen());
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Pebble Beach Mini'), findsOneWidget);
-    expect(find.text('Augusta National Mini'), findsOneWidget);
+    expect(find.text('Course: Pebble Beach Mini'), findsOneWidget);
+    expect(find.text('Course: Augusta National Mini'), findsOneWidget);
     expect(find.text('18 holes'), findsOneWidget);
     expect(find.text('9 holes'), findsOneWidget);
   });
@@ -126,7 +126,7 @@ void main() {
     await tester.pump(); // Rebuild with fetched data
 
     // Verify selectable course exists
-    expect(find.text('Selectable Course'), findsOneWidget);
+    expect(find.text('Course: Selectable Course'), findsOneWidget);
 
     // Selectable courses have a check icon button when creatingGame is true
     expect(find.byIcon(Icons.check), findsOneWidget);
@@ -181,7 +181,7 @@ void main() {
     expect(find.text('Create New Course'), findsOneWidget);
   });
 
-  testWidgets('tapping course item shows details dialog and allows deletion',
+  testWidgets('tapping course item expands details and allows deletion',
       (tester) async {
     // Populate fake Firestore with a course
     await fakeFirestore.collection('courses').add({
@@ -194,12 +194,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Verify course cards are shown and tap the course list item
-    expect(find.text('Pebble Beach Mini'), findsOneWidget);
-    await tester.tap(find.text('Pebble Beach Mini'));
+    expect(find.text('Course: Pebble Beach Mini'), findsOneWidget);
+    await tester.tap(find.text('Course: Pebble Beach Mini'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Details dialog is shown
+    expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Number of Holes: 9'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
 
@@ -211,10 +211,10 @@ void main() {
 
     // Verify dialog is closed and course is gone from database & UI
     expect(find.text('Number of Holes: 9'), findsNothing);
-    expect(find.text('Pebble Beach Mini'), findsNothing);
+    expect(find.text('Course: Pebble Beach Mini'), findsNothing);
   });
 
-  testWidgets('tapping course item shows details dialog and allows editing',
+  testWidgets('tapping course item expands details and allows editing',
       (tester) async {
     tester.view.physicalSize = const Size(800, 2500);
     tester.view.devicePixelRatio = 1.0;
@@ -232,7 +232,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Tap the course list item
-    await tester.tap(find.text('Old Course Name'));
+    await tester.tap(find.text('Course: Old Course Name'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -261,7 +261,7 @@ void main() {
     expect(find.text('Edit Course'), findsNothing);
 
     // Verify course is renamed in list
-    expect(find.text('New Course Name'), findsOneWidget);
+    expect(find.text('Course: New Course Name'), findsOneWidget);
   });
 
   testWidgets('creating a new course via the dialog saves to database',
@@ -299,7 +299,7 @@ void main() {
     expect(find.text('Create New Course'), findsNothing);
 
     // Verify new course is shown
-    expect(find.text('Fresh Course'), findsOneWidget);
+    expect(find.text('Course: Fresh Course'), findsOneWidget);
   });
 
   testWidgets(
@@ -388,7 +388,7 @@ void main() {
 
     // 6. Verify error is cleared and it shows the newly loaded course
     expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
-    expect(find.text('Recovered Course'), findsOneWidget);
+    expect(find.text('Course: Recovered Course'), findsOneWidget);
   });
 
   testWidgets(
@@ -429,7 +429,7 @@ void main() {
 
     // 3. Verify it gracefully loads from cache and doesn't display the error card
     expect(find.byKey(const Key('fairway_unreachable_card')), findsNothing);
-    expect(find.text('Local Cached Course'), findsOneWidget);
+    expect(find.text('Course: Local Cached Course'), findsOneWidget);
   });
 
   testWidgets('handles location service disabled gracefully', (tester) async {
@@ -477,7 +477,8 @@ void main() {
     expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
   });
 
-  testWidgets('handles location timeout exception gracefully and shows snackbar',
+  testWidgets(
+      'handles location timeout exception gracefully and shows snackbar',
       (tester) async {
     mockGeolocator.exceptionToThrow = TimeoutException('Simulated timeout');
 
@@ -487,7 +488,10 @@ void main() {
 
     expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
     expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.text('Location request timed out. Courses are sorted alphabetically.'), findsOneWidget);
+    expect(
+        find.text(
+            'Location request timed out. Courses are sorted alphabetically.'),
+        findsOneWidget);
   });
 
   testWidgets('handles geolocator distanceBetween exception gracefully',
@@ -519,7 +523,7 @@ void main() {
 
     // The courses should load fine, but since distance calculation failed,
     // distance is treated as null. Proximity sorting should still complete gracefully.
-    expect(find.text('GPS Course'), findsOneWidget);
+    expect(find.text('Course: GPS Course'), findsOneWidget);
   });
 
   testWidgets(
@@ -580,20 +584,16 @@ void main() {
 
     final listItems = find.byType(Card);
     expect(listItems, findsNWidgets(3));
-    expect(tester.widget<Text>(find.text('Near Course')).data, 'Near Course');
+    expect(tester.widget<Text>(find.text('Course: Near Course')).data,
+        'Course: Near Course');
 
-    await tester.tap(find.text('Near Course'));
+    await tester.tap(find.text('Course: Near Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Address: 456 Near Blvd'), findsOneWidget);
 
-    expect(find.text('Close'), findsOneWidget);
-    await tester.tap(find.text('Close'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Close'), findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
   });
 
   testWidgets('handles second page fetch failure without appending courses',
@@ -640,7 +640,7 @@ void main() {
     await tester.pumpWidget(createCoursesScreen());
     await tester.pump(const Duration(milliseconds: 500));
 
-    await tester.tap(find.text('Fragile Course'));
+    await tester.tap(find.text('Course: Fragile Course'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -651,7 +651,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Fragile Course'), findsNothing);
+    expect(find.text('Course: Fragile Course'), findsNothing);
   });
 
   testWidgets(

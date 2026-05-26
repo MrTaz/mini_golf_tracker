@@ -62,8 +62,8 @@ Game _twoPlayerGame({
 Game _onePlayerGame() => Game(
       id: 'game-id-2',
       name: 'Tiny Game',
-      course:
-          Course(id: 'c1', name: 'Hills', numberOfHoles: 18, parStrokes: {1: 3}),
+      course: Course(
+          id: 'c1', name: 'Hills', numberOfHoles: 18, parStrokes: {1: 3}),
       players: [
         PlayerGameInfo(playerId: 'p1', gameId: 'game-id-2', scores: []),
       ],
@@ -73,8 +73,7 @@ Game _onePlayerGame() => Game(
 Game _zeroCourseGame() => Game(
       id: 'game-id-3',
       name: 'No Course Game',
-      course:
-          Course(id: 'c0', name: 'None', numberOfHoles: 0, parStrokes: {}),
+      course: Course(id: 'c0', name: 'None', numberOfHoles: 0, parStrokes: {}),
       players: [
         PlayerGameInfo(playerId: 'p1', gameId: 'game-id-3', scores: []),
         PlayerGameInfo(playerId: 'p2', gameId: 'game-id-3', scores: []),
@@ -85,8 +84,8 @@ Game _zeroCourseGame() => Game(
 Game _sevenPlayerGame() => Game(
       id: 'game-id-5',
       name: 'Seven Player',
-      course:
-          Course(id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
+      course: Course(
+          id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
       players: List.generate(
         7,
         (i) => PlayerGameInfo(
@@ -102,15 +101,24 @@ Game _sevenPlayerGame() => Game(
 Game _threePlayerGame() => Game(
       id: 'game-id-4',
       name: 'Three Player',
-      course:
-          Course(id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
+      course: Course(
+          id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
       players: [
         PlayerGameInfo(
-            playerId: 'p1', gameId: 'game-id-4', playOrderPosition: 0, scores: []),
+            playerId: 'p1',
+            gameId: 'game-id-4',
+            playOrderPosition: 0,
+            scores: []),
         PlayerGameInfo(
-            playerId: 'p2', gameId: 'game-id-4', playOrderPosition: 1, scores: []),
+            playerId: 'p2',
+            gameId: 'game-id-4',
+            playOrderPosition: 1,
+            scores: []),
         PlayerGameInfo(
-            playerId: 'p3', gameId: 'game-id-4', playOrderPosition: 2, scores: []),
+            playerId: 'p3',
+            gameId: 'game-id-4',
+            playOrderPosition: 2,
+            scores: []),
       ],
       scheduledTime: DateTime(2026, 5, 17, 10, 0),
     );
@@ -119,11 +127,11 @@ Game _threePlayerGame() => Game(
 Finder get _editCourseIconButton =>
     find.widgetWithText(ElevatedButton, 'Change course');
 
-Finder get _scheduleIconButton =>
-    find.ancestor(of: find.byIcon(Icons.schedule), matching: find.byType(IconButton));
+Finder get _scheduleIconButton => find.ancestor(
+    of: find.byIcon(Icons.schedule), matching: find.byType(IconButton));
 
-Finder get _lockOutlineIconButton =>
-    find.ancestor(of: find.byIcon(Icons.lock_outline), matching: find.byType(IconButton));
+Finder get _lockOutlineIconButton => find.ancestor(
+    of: find.byIcon(Icons.lock_outline), matching: find.byType(IconButton));
 
 Widget _testApp({required Widget home}) {
   return MaterialApp(
@@ -131,7 +139,6 @@ Widget _testApp({required Widget home}) {
     home: home,
   );
 }
-
 
 // ---------------------------------------------------------------------------
 // Test suite
@@ -162,7 +169,8 @@ void main() {
 
   testWidgets(
       'Creation dialog: typing name and tapping Create pushes GameStartScreen '
-      'with new game; callback is wired through (lines 87-106)', (tester) async {
+      'with new game; callback is wired through (lines 87-106)',
+      (tester) async {
     bool callbackCalled = false;
 
     await tester.pumpWidget(_testApp(
@@ -185,14 +193,15 @@ void main() {
     expect(find.text('Start Game - Super Swing Match'), findsOneWidget);
 
     // Verify the callback stub passes through (lines 104-107)
-    final state = tester.state<GameStartScreenState>(find.byType(GameStartScreen));
+    final state =
+        tester.state<GameStartScreenState>(find.byType(GameStartScreen));
     expect(state.widget.callback, isNotNull);
     state.widget.callback!();
     expect(callbackCalled, isTrue);
   });
 
-  testWidgets(
-      'Creation dialog: tapping Cancel dismisses without navigation', (tester) async {
+  testWidgets('Creation dialog: tapping Cancel dismisses without navigation',
+      (tester) async {
     await tester.pumpWidget(_testApp(
       home: const GameStartScreen(unstartedGame: null),
     ));
@@ -209,7 +218,8 @@ void main() {
 
   testWidgets(
       'Course selection: tapping edit opens CoursesScreen and selecting a course '
-      'updates game.course (!_isCreatingGame branch, lines 141-167)', (tester) async {
+      'updates game.course (!_isCreatingGame branch, lines 141-167)',
+      (tester) async {
     await fakeFirestore.collection('courses').doc('c-abc').set({
       'name': 'Pinecrest Links',
       'number_of_holes': 9,
@@ -230,7 +240,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    expect(find.text('Pinecrest Links'), findsOneWidget);
+    expect(find.text('Course: Pinecrest Links'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.check));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -268,7 +278,8 @@ void main() {
 
   testWidgets(
       'Guest: tapping lock icon also shows Gated dialog; '
-      'Log In / Sign Up navigates to LoginScreen (lines 169-203)', (tester) async {
+      'Log In / Sign Up navigates to LoginScreen (lines 169-203)',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -308,7 +319,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    final state = tester.state<GameStartScreenState>(find.byType(GameStartScreen));
+    final state =
+        tester.state<GameStartScreenState>(find.byType(GameStartScreen));
     state.selectCourseForTesting();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -320,8 +332,7 @@ void main() {
     expect(state.newGameCourseForTesting?.name, 'Pinecrest Links');
   });
 
-  testWidgets(
-      'editStartTimeForTesting as guest shows gated dialog (line 207)',
+  testWidgets('editStartTimeForTesting as guest shows gated dialog (line 207)',
       (tester) async {
     final game = _twoPlayerGame();
 
@@ -329,15 +340,15 @@ void main() {
       home: GameStartScreen(unstartedGame: game),
     ));
 
-    final state = tester.state<GameStartScreenState>(find.byType(GameStartScreen));
+    final state =
+        tester.state<GameStartScreenState>(find.byType(GameStartScreen));
     state.editStartTimeForTesting();
     await tester.pumpAndSettle();
 
     expect(find.text('Scheduling is Gated'), findsOneWidget);
   });
 
-  testWidgets(
-      'Guest Schedule game navigates to LoginScreen (lines 305-307)',
+  testWidgets('Guest Schedule game navigates to LoginScreen (lines 305-307)',
       (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
@@ -419,7 +430,8 @@ void main() {
 
   testWidgets(
       'Tapping Add players opens PlayersScreen; '
-      'selecting + confirming replaces game.players (lines 244-267)', (tester) async {
+      'selecting + confirming replaces game.players (lines 244-267)',
+      (tester) async {
     final game = _twoPlayerGame();
 
     await tester.pumpWidget(_testApp(
@@ -503,7 +515,8 @@ void main() {
 
   // ─── 8. Schedule Validations (lines 317, 325, 333-335) ──────────────────
 
-  testWidgets('Schedule: 0-hole course shows snackbar (line 317)', (tester) async {
+  testWidgets('Schedule: 0-hole course shows snackbar (line 317)',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -554,8 +567,7 @@ void main() {
     expect(find.text('Please select between 2 and 6 players'), findsOneWidget);
   });
 
-  testWidgets(
-      'Schedule: success shows snackbar and pops route (lines 338-346)',
+  testWidgets('Schedule: success shows snackbar and pops route (lines 338-346)',
       (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
@@ -637,8 +649,7 @@ void main() {
     expect(find.text('Please select between 2 and 6 players'), findsOneWidget);
   });
 
-  testWidgets(
-      'Start: DateTime(0) scheduledTime resets to now (line 379)',
+  testWidgets('Start: DateTime(0) scheduledTime resets to now (line 379)',
       (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
@@ -688,8 +699,7 @@ void main() {
     expect(find.byType(GameInprogressScreen), findsOneWidget);
   });
 
-  testWidgets(
-      'PopScope back triggers _updateUnstartedGame (lines 596-599)',
+  testWidgets('PopScope back triggers _updateUnstartedGame (lines 596-599)',
       (tester) async {
     final game = _twoPlayerGame();
 
@@ -743,8 +753,8 @@ void main() {
 
   // ─── 10. ReorderableListView (lines 493-501) ─────────────────────────────
 
-  testWidgets(
-      'ReorderableListView onReorderItem: moves items correctly', (tester) async {
+  testWidgets('ReorderableListView onReorderItem: moves items correctly',
+      (tester) async {
     final game = _threePlayerGame();
 
     await tester.pumpWidget(_testApp(
@@ -756,7 +766,8 @@ void main() {
 
     final initialOrder = tester
         .widgetList<InkWell>(find.byType(InkWell))
-        .where((w) => w.key != null && w.key.toString().contains('inkwellOrderTap'))
+        .where((w) =>
+            w.key != null && w.key.toString().contains('inkwellOrderTap'))
         .map((w) => w.key.toString())
         .toList();
     expect(initialOrder[0], contains('p1'));
@@ -770,7 +781,8 @@ void main() {
 
     final afterFirst = tester
         .widgetList<InkWell>(find.byType(InkWell))
-        .where((w) => w.key != null && w.key.toString().contains('inkwellOrderTap'))
+        .where((w) =>
+            w.key != null && w.key.toString().contains('inkwellOrderTap'))
         .map((w) => w.key.toString())
         .toList();
     expect(afterFirst[0], contains('p2'));
@@ -783,7 +795,8 @@ void main() {
 
     final afterSecond = tester
         .widgetList<InkWell>(find.byType(InkWell))
-        .where((w) => w.key != null && w.key.toString().contains('inkwellOrderTap'))
+        .where((w) =>
+            w.key != null && w.key.toString().contains('inkwellOrderTap'))
         .map((w) => w.key.toString())
         .toList();
     expect(afterSecond[0], contains('p3'));

@@ -8,6 +8,7 @@ import 'package:mini_golf_tracker/add_edit_course_screen.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
 import 'package:mini_golf_tracker/course.dart';
+import 'package:mini_golf_tracker/course_list_item_widget.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -107,7 +108,8 @@ class CoursesScreenState extends State<CoursesScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Location request timed out. Courses are sorted alphabetically.'),
+            content: Text(
+                'Location request timed out. Courses are sorted alphabetically.'),
           ),
         );
       }
@@ -335,39 +337,15 @@ class CoursesScreenState extends State<CoursesScreen> {
 
   Widget _buildCourseListItem(int index) {
     final Course course = courses[index];
-    final bool isSelected =
-        selectedCourse != null && course.id == selectedCourse!.id;
-
-    final double? distanceMeters = _calculateDistance(course);
-    String? distanceStr;
-    if (distanceMeters != null) {
-      final double miles = distanceMeters * 0.000621371;
-      distanceStr = '${miles.toStringAsFixed(1)} miles away';
-    }
-
     return Card(
-      child: Column(
-        children: [
-          ListTile(
-            title: Text(course.name),
-            subtitle: Text(
-              "${course.numberOfHoles} holes"
-              "${distanceStr != null ? ' • $distanceStr' : ''}"
-              "${course.address != null && course.address!.isNotEmpty ? ' • ${course.address}' : ''}",
-            ),
-            leading: const Icon(Icons.golf_course),
-            selected: isSelected,
-            iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {
-              return states.contains(WidgetState.selected)
-                  ? Colors.green
-                  : Colors.teal;
-            }),
-            onTap: () => _showCourseDetails(course),
-            trailing: widget.creatingGame!
-                ? _buildCourseSelectionSwitch(course)
-                : null,
-          ),
-        ],
+      child: CourseListItem(
+        course: course,
+        onDelete: () => _deleteCourse(course),
+        onModify: () => _editCourse(course),
+        trailing:
+            widget.creatingGame! ? _buildCourseSelectionSwitch(course) : null,
+        selected: selectedCourse != null && course.id == selectedCourse!.id,
+        distanceMeters: _calculateDistance(course),
       ),
     );
   }
@@ -405,67 +383,6 @@ class CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
-  void _showCourseDetails(Course course) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(course.name),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Number of Holes: ${course.numberOfHoles}'),
-              if (course.address != null && course.address!.isNotEmpty) ...[
-                const SizedBox(height: 8.0),
-                Text('Address: ${course.address}'),
-              ],
-
-              const SizedBox(height: 16.0),
-              ...List.generate(course.numberOfHoles, (index) {
-                return _buildHoleDetailsRow(course, index);
-              }),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close details dialog first
-                _editCourse(course);
-              },
-              child: const Text('Edit'),
-            ),
-            TextButton(
-              onPressed: () {
-                _deleteCourse(course);
-              },
-              child: const Text('Delete'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildHoleDetailsRow(Course course, int index) {
-    final holeNumber = index + 1;
-    final parStroke = course.parStrokes[holeNumber] ?? 3;
-
-    return Row(
-      children: [
-        Text('Hole $holeNumber:'),
-        const SizedBox(width: 8.0),
-        Text('Par: $parStroke'),
-      ],
-    );
-  }
-
   void _editCourse(Course course) async {
     final result = await Navigator.push<Course>(
       context,
@@ -497,9 +414,6 @@ class CoursesScreenState extends State<CoursesScreen> {
         courses = loadedCourses.whereType<Course>().toList();
       });
     }
-
-    if (!mounted) return;
-    Navigator.of(context).pop();
   }
 
   @override

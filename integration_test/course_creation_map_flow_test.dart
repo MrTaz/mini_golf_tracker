@@ -5,7 +5,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mini_golf_tracker/add_edit_course_screen.dart';
+import 'package:mini_golf_tracker/courses_screen.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mini_golf_tracker/map_picker_screen.dart';
@@ -16,10 +19,12 @@ class MockGeolocatorPlatform extends GeolocatorPlatform {
   Future<bool> isLocationServiceEnabled() async => true;
 
   @override
-  Future<LocationPermission> checkPermission() async => LocationPermission.whileInUse;
+  Future<LocationPermission> checkPermission() async =>
+      LocationPermission.whileInUse;
 
   @override
-  Future<LocationPermission> requestPermission() async => LocationPermission.whileInUse;
+  Future<LocationPermission> requestPermission() async =>
+      LocationPermission.whileInUse;
 
   @override
   Future<Position> getCurrentPosition({
@@ -84,25 +89,56 @@ void main() {
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     GeolocatorPlatform.instance = MockGeolocatorPlatform();
     GeocodingPlatform.instance = MockGeocodingPlatform();
+    MapPickerScreen.searchClientForTesting = MockClient((request) async {
+      return http.Response('''
+[
+  {
+    "display_name": "Test Business Name, 123 Fake St, Testville, TS, 12345",
+    "name": "Test Business Name",
+    "lat": "43.11111",
+    "lon": "-71.22222",
+    "address": {
+      "house_number": "123",
+      "road": "Fake St",
+      "city": "Testville",
+      "state": "TS",
+      "postcode": "12345"
+    }
+  }
+]
+''', 200);
+    });
+  });
+
+  tearDown(() {
+    MapPickerScreen.searchClientForTesting = null;
   });
 
   Widget createWidgetUnderTest() {
     return const MaterialApp(
-      home: AddEditCourseScreen(),
+      home: CoursesScreen(),
     );
   }
 
-  testWidgets('Course creation flow with map picker and location name', (WidgetTester tester) async {
+  testWidgets('Course creation flow with map picker and location name',
+      (WidgetTester tester) async {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddEditCourseScreen), findsOneWidget);
+
     // 1. Enter course name and holes
-    await tester.enterText(find.byType(TextFormField).first, 'Test Integration Course');
+    await tester.enterText(
+        find.byType(TextFormField).first, 'Test Integration Course');
     await tester.enterText(find.byType(TextFormField).at(1), '18');
     await tester.pump();
-    
+
     // Tap out to trigger par grid creation
-    await tester.tap(find.byType(ElevatedButton).first); // Tapping a random button to dismiss keyboard
+    await tester.tap(find
+        .byType(ElevatedButton)
+        .first); // Tapping a random button to dismiss keyboard
     await tester.pumpAndSettle();
 
     // 2. Open Map Picker
@@ -113,7 +149,7 @@ void main() {
 
     // 3. We are now in MapPickerScreen. Search for an address.
     expect(find.byType(MapPickerScreen), findsOneWidget);
-    
+
     // Wait for initial location load (simulate map settling)
     await tester.pump(const Duration(seconds: 1));
 
@@ -124,6 +160,9 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Test Business Name'));
+    await tester.pumpAndSettle();
+
     // Tap Select Location button
     final selectLocationButton = find.text('Confirm Location');
     expect(selectLocationButton, findsOneWidget);
@@ -132,7 +171,7 @@ void main() {
 
     // 4. Back in AddEditCourseScreen, verify location name and address are set
     expect(find.byType(AddEditCourseScreen), findsOneWidget);
-    
+
     expect(find.text('Test Business Name'), findsOneWidget);
     expect(find.text('123 Fake St, Testville, TS, 12345'), findsOneWidget);
 
@@ -152,7 +191,17 @@ void main() {
     await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
-    // Should navigate back or pop. We just verify the pop happened.
+    // Should navigate back to CoursesScreen.
     expect(find.byType(AddEditCourseScreen), findsNothing);
+    expect(find.byType(CoursesScreen), findsOneWidget);
+
+    final createdCourse = find.text('Course: Test Integration Course');
+    expect(createdCourse, findsOneWidget);
+    await tester.tap(createdCourse);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Location: Test Business Name'), findsOneWidget);
+    expect(find.text('Total Par: 54'), findsOneWidget);
   });
 }

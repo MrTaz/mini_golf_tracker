@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mini_golf_tracker/map_picker_screen.dart';
 
 // --- MOCK GEOLOCATOR PLATFORM ---
@@ -117,15 +119,36 @@ void main() {
 
     mockGeocoding = MockGeocodingPlatform();
     GeocodingPlatform.instance = mockGeocoding;
+    MapPickerScreen.searchClientForTesting = null;
+    MapPickerScreen.searchClientFactoryForTesting = () => http.Client();
   });
 
-  Widget createScreen({double? initialLatitude, double? initialLongitude}) {
+  tearDown(() {
+    MapPickerScreen.searchClientForTesting = null;
+    MapPickerScreen.searchClientFactoryForTesting = () => http.Client();
+  });
+
+  Widget createScreen({
+    double? initialLatitude,
+    double? initialLongitude,
+    http.Client? searchClient,
+  }) {
     return MaterialApp(
       home: MapPickerScreen(
         initialLatitude: initialLatitude,
         initialLongitude: initialLongitude,
+        searchClient: searchClient,
       ),
     );
+  }
+
+  MockClient searchClientWith(http.Response response) {
+    return MockClient((request) async {
+      expect(request.url.host, 'nominatim.openstreetmap.org');
+      expect(request.url.queryParameters['format'], 'json');
+      expect(request.headers['User-Agent'], contains('mini_golf_tracker'));
+      return response;
+    });
   }
 
   testWidgets(
@@ -395,35 +418,94 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 2));
   });
 
-  testWidgets('search bar submits and moves map successfully', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+  testWidgets('search bar shows Nominatim results and selecting one moves map',
+      (tester) async {
+    await tester.pumpWidget(createScreen(
+      searchClient: searchClientWith(http.Response('''
+[
+  {
+    "display_name": "Chucksters, 53 Carter Hill Road, Hooksett, NH, 03106",
+    "name": "Chucksters",
+    "lat": "42.0",
+    "lon": "-71.0",
+    "address": {
+      "house_number": "53",
+      "road": "Carter Hill Road",
+      "town": "Hooksett",
+      "state": "NH",
+      "postcode": "03106"
+    }
+  }
+]
+''', 200)),
+    ));
 
-    mockGeocoding.locationsResult = [
-      geocoding.Location(
-        latitude: 42.0,
-        longitude: -71.0,
-        timestamp: DateTime.now(),
-      )
-    ];
-    mockGeocoding.placemarksResult = [
-      geocoding.Placemark(
-        street: 'Search St',
-        locality: 'Search City',
-      )
-    ];
-
-    await tester.enterText(find.byType(TextField), 'Search City');
+    await tester.enterText(find.byType(TextField), 'Chucksters');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    // Map moved and reverse geocoded
-    expect(find.textContaining('Search St, Search City'), findsOneWidget);
+    expect(find.byKey(const Key('map_search_results')), findsOneWidget);
+    final chuckstersResult = find.descendant(
+      of: find.byKey(const Key('map_search_results')),
+      matching: find.text('Chucksters'),
+    );
+    expect(chuckstersResult, findsOneWidget);
+    expect(
+        find.text('53 Carter Hill Road, Hooksett, NH, 03106'), findsOneWidget);
+
+    await tester.tap(chuckstersResult);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('map_search_results')), findsNothing);
+    expect(find.text('Coordinates: 42.00000, -71.00000'), findsOneWidget);
+    expect(
+        find.text('53 Carter Hill Road, Hooksett, NH, 03106'), findsOneWidget);
   });
 
-  testWidgets('search bar shows snackbar when no locations found', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
+  testWidgets('search uses owned client factory and closes it', (tester) async {
+    final client = _ClosingMockClient((request) async {
+      return http.Response('''
+[
+  {
+    "display_name": "Road Result, Search City",
+    "lat": "42.1",
+    "lon": "-71.1",
+    "address": {"road": "Fallback Road"}
+  },
+  {
+    "display_name": "Display Only Result, Search City",
+    "lat": "42.2",
+    "lon": "-71.2",
+    "address": {}
+  },
+  {
+    "display_name": "No Address Result, Search City",
+    "lat": "42.3",
+    "lon": "-71.3"
+  }
+]
+''', 200);
+    });
+    MapPickerScreen.searchClientFactoryForTesting = () => client;
 
-    mockGeocoding.locationsResult = []; // Empty result
+    await tester.pumpWidget(createScreen());
+
+    await tester.enterText(find.byType(TextField), 'Fallback');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(client.closed, isTrue);
+    expect(find.byType(Divider), findsNWidgets(2));
+    expect(find.text('Fallback Road'), findsWidgets);
+    expect(find.text('Display Only Result'), findsOneWidget);
+    expect(find.text('No Address Result'), findsOneWidget);
+  });
+
+  testWidgets('search bar shows snackbar when no locations found',
+      (tester) async {
+    await tester.pumpWidget(createScreen(
+      searchClient: searchClientWith(http.Response('[]', 200)),
+    ));
 
     await tester.enterText(find.byType(TextField), 'Bad Query');
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -432,16 +514,19 @@ void main() {
     expect(find.text('Address not found: Bad Query'), findsOneWidget);
   });
 
-  testWidgets('search bar shows snackbar when search throws exception', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
-
-    mockGeocoding.exceptionToThrow = 'Geocoding failed';
+  testWidgets('search bar shows snackbar when search throws exception',
+      (tester) async {
+    await tester.pumpWidget(createScreen(
+      searchClient: searchClientWith(http.Response('server down', 500)),
+    ));
 
     await tester.enterText(find.byType(TextField), 'Error Query');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    expect(find.text('Search failed: Geocoding failed'), findsOneWidget);
+    expect(
+        find.textContaining('Search failed: Exception: Nominatim returned 500'),
+        findsOneWidget);
   });
 
   testWidgets('search bar clear button clears text', (tester) async {
@@ -456,24 +541,34 @@ void main() {
     expect(find.text('To be cleared'), findsNothing);
   });
 
-  testWidgets('search bar shows loading indicator during search', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: MapPickerScreen()));
-
-    mockGeocoding.delay = const Duration(seconds: 1);
-    mockGeocoding.locationsResult = [
-      geocoding.Location(
-        latitude: 42.0,
-        longitude: -71.0,
-        timestamp: DateTime.now(),
-      )
-    ];
+  testWidgets('search bar shows loading indicator during search',
+      (tester) async {
+    await tester.pumpWidget(createScreen(
+      searchClient: MockClient((request) async {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        return http.Response('[]', 200);
+      }),
+    ));
 
     await tester.enterText(find.byType(TextField), 'Search City');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsWidgets); // Should find it now
+    expect(find.byType(CircularProgressIndicator),
+        findsWidgets); // Should find it now
 
     await tester.pumpAndSettle(const Duration(seconds: 2));
   });
+}
+
+class _ClosingMockClient extends MockClient {
+  _ClosingMockClient(super.fn);
+
+  bool closed = false;
+
+  @override
+  void close() {
+    closed = true;
+    super.close();
+  }
 }
