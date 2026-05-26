@@ -166,7 +166,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.11 Game Start Screen UX & Logic Fixes
 
-* [ ] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
+* [x] **Fix Blank Player Tiles:** In `GameStartScreen`, fix the player lookup logic so that it properly loads player names and data from local storage or the `unstartedGame` object, rather than falling back to `Player.empty()`.
 * [x] **Default Avatar Unification:** In `PlayerListItem._buildPlayerProfileCircleIcon`, replace the fallback `Text('?')` logic with the standard `assets/images/avatars_3d_avatar_28.png` image for users without a Gravatar.
 * [x] **Explicit Drag Handles:** In `GameStartScreen._buildPlayerOrderSection`, add an `Icons.drag_handle` to the right side of the `PlayerListItem` to make reordering visually obvious and instantly draggable without a long-press.
 * [x] **Course Selection Redesign:** Redesign `_buildSelectCourseCard()` in `GameStartScreen` to match the "Add players" button layout. Remove the confusing `Icons.edit` pencil icon from the course tile. Instead, add a `Row` at the bottom of the card with `mainAxisAlignment: MainAxisAlignment.end` containing an `ElevatedButton` that says "Select course" (or "Change course") which triggers the `_selectCourse()` action.
@@ -187,7 +187,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **DRY Avatar Abstraction:** Create a new `PlayerAvatarWidget` to serve as the single source of truth for avatar rendering. It should encapsulate the `CircleAvatar`, `GravatarImageView`, and the unified `assets/images/avatars_3d_avatar_28.png` fallback logic.
 * [x] **Avatar Unification & Implementation:** Refactor `PlayerListItem`, `PlayerProfileWidget`, the mid-game player list in `GameInprogressScreen`, and the `UserAccountsDrawerHeader` in `main.dart` to strictly use the new `PlayerAvatarWidget`. For the guest drawer, wrap the new widget in a `GestureDetector` that routes to the `LoginScreen`.
 * [x] **In-Game Conversion Hook:** Conditionally render a freemium banner directly below the Course Card in `GameInprogressScreen` if `UserProvider().loggedInUser == null`. The banner should read *"Playing as a Guest. Sign up to save your score to the cloud!"* and route the user to the `LoginScreen` when tapped.
-* [ ] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
+* [x] **In-Game AppBar Options (Pause/End/Abandon):** Add a `PopupMenuButton` to the `AppBar` of `GameInprogressScreen` with three actions:
   * **"Pause Game":** Navigates back to `HomeScreen` (putting the game on hold).
   * **"End Game Early":** Displays a confirmation `AlertDialog` warning that the game will be finalized and cannot be reopened. The dialog must include three actions: **"Cancel"**, **"Pause Game instead"** (navigates to HomeScreen), and **"End Game"** (calls `_handleGameCompletion()`).
   * **"Abandon Game":** Displays a strict confirmation `AlertDialog` warning the user of permanent data loss. If confirmed, calls `deleteSavedGame` and navigates back to `HomeScreen`.
@@ -242,16 +242,16 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 #### 1.20 Auth & Verification Blocker Fixes
 
 * [x] **Test Account Bypass:** In `UserProvider` or `Player.canVerifiedAuthUserClaimPlayer`, implement a debug-only or specific email bypass (e.g., automatically treating `test@example.com` as verified) so developers and E2E tests can successfully log in and bypass the `ClaimAccountScreen`.
-* [ ] **Real Google Sign-In:** In `login_screen.dart`, completely remove the `_simulateSocialLogin` and `_handleGoogleLogin` mock methods. Implement the actual `GoogleSignIn` SDK flow to authenticate users using their real Google accounts.
+* [x] **Real Google Sign-In:** In `login_screen.dart`, completely remove the `_simulateSocialLogin` and `_handleGoogleLogin` mock methods. Implement the actual `GoogleSignIn` SDK flow to authenticate users using their real Google accounts.
 * [x] **Auth E2E Tests:** Write a new integration test (`integration_test/auth_login_flow_test.dart`) that verifies the email/password login flow successfully bypasses verification for test accounts and successfully reaches the Dashboard.
 * [x] **Fix Google Sign-In Client ID:** In `lib/login_screen.dart`, update the `GoogleSignIn` instantiation to explicitly include the `serverClientId` (your Firebase Web Client ID) to resolve the `clientConfigurationError` on Android.
 * [x] **Fix Firestore Login Permission Denied:** Update `firestore.rules` to permit read access to the `player_contacts` collection, or handle the `PERMISSION_DENIED` exception gracefully during the test-account bypass flow so the app does not crash.
 
 #### 1.21 Android KGP Migration (Tech Debt)
 
-* [ ] **Migrate `build.gradle.kts`:** Follow the official Flutter breaking-changes guide (<https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers>) to remove the explicit Kotlin Gradle Plugin from the Android app-level build file.
-* [ ] **Upgrade KGP Plugins:** Check the changelogs and bump the versions in `pubspec.yaml` for `google_sign_in_android`, `package_info_plus`, `shared_preferences_android`, and `url_launcher_android` to versions that support Built-in Kotlin.
-* [ ] **Android Predictive Back Support:** Add `android:enableOnBackInvokedCallback="true"` to `android/app/src/main/AndroidManifest.xml` to clear the `WindowOnBackDispatcher` warning.
+* [x] **Migrate `build.gradle.kts`:** Follow the official Flutter breaking-changes guide (<https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers>) to remove the explicit Kotlin Gradle Plugin from the Android app-level build file.
+* [x] **Upgrade KGP Plugins:** Check the changelogs and bump the versions in `pubspec.yaml` for `google_sign_in_android`, `package_info_plus`, `shared_preferences_android`, and `url_launcher_android` to versions that support Built-in Kotlin.
+* [x] **Android Predictive Back Support:** Add `android:enableOnBackInvokedCallback="true"` to `android/app/src/main/AndroidManifest.xml` to clear the `WindowOnBackDispatcher` warning.
 
 #### 1.22 Post-Auth Polish & Database Connectivity
 
@@ -261,7 +261,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Fix Game Visibility for Participants:** In `lib/game.dart`, update `saveGameToDatabase()` to inject a flat `participant_ids` array (extracting all `playerId`s from the game's players list) into the Firestore document.
 * [x] **Update Game Query:** Update `fetchGamesForCurrentUser()` to query `where('participant_ids', arrayContains: currentUserId)` instead of `creator_id` so players can see games even if a guest created them.
 * [x] **Update Composite Indexes:** Deploy the new `participant_ids` + `scheduled_time` composite index to Firestore to support the new query.
-* [ ] **Sync Local Firestore Indexes:** Run `firebase firestore:indexes > firestore.indexes.json` in the terminal to pull the composite indexes created in the Firebase Console down to the local repository state so they are tracked in version control.
+* [x] **Sync Local Firestore Indexes:** Run `firebase firestore:indexes > firestore.indexes.json` in the terminal to pull the composite indexes created in the Firebase Console down to the local repository state so they are tracked in version control.
 
 ---
 
@@ -1001,24 +1001,33 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `asset_golf_ball_path.dart`
 * [x] `claim_account_screen.dart`
 * [x] `contact_identity.dart`
+* [ ] `course_list_item_widget.dart`
+* [ ] `course.dart`
 * [x] `courses_screen.dart`
 * [x] `dashboard_screen.dart`
 * [x] `database_connection_error.dart`
+* [ ] `database_connection.dart`
+* [ ] `firebase_options.dart`
 * [x] `game_card_widget.dart`
 * [x] `game_create_screen.dart`
 * [x] `game_inprogress_screen.dart`
 * [x] `game_start_screen.dart`
 * [x] `game.dart`
+* [ ] `gravatar_image_view.dart`
+* [ ] `home_screen.dart`
 * [x] `login_screen.dart`
 * [x] `main.dart`
 * [x] `map_picker_screen.dart`
+* [ ] `past_game_card_widget.dart`
 * [x] `past_game_details_screen.dart`
 * [x] `past_game_list_item.dart`
 * [x] `past_games_screen.dart`
 * [x] `player_avatar_widget.dart`
 * [x] `player_create_screen.dart`
+* [ ] `player_form_widget.dart`
 * [x] `player_game_info.dart`
 * [x] `player_profile_widget.dart`
+* [ ] `player_score_data_table_card.dart`
 * [x] `player.dart`
 * [x] `players_card_widget.dart`
 * [x] `players_list_screen.dart`
@@ -1070,7 +1079,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
-* [ ] Activity Hub game create and active game resume flow passes (`integration_test/activity_hub_game_create_flow_test.dart`).
+* [x] Activity Hub game create and active game resume flow passes (`integration_test/activity_hub_game_create_flow_test.dart`).
 * [x] Active game score increment and guest shared drawer access flows pass (`integration_test/phase_1_19_drawer_score_flow_test.dart`).
 * [x] Offline course selection fallback flow passes (`integration_test/course_selection_fallback_test.dart`).
 * [x] Authentication and test-account verification bypass flow passes (`integration_test/auth_login_flow_test.dart`).
