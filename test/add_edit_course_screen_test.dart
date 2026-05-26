@@ -831,4 +831,84 @@ void main() {
 
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
   });
+
+  testWidgets('Address normalized substring match in conflict check', (tester) async {
+    await fakeFirestore.collection('courses').add({
+      'name': 'Existing Course',
+      'numberOfHoles': 18,
+      'parStrokes': {'1': 3},
+      'address': '53 Carter Hill Rd',
+    });
+
+    await tester.pumpWidget(createScreen());
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'New Course');
+    await tester.tap(find.text('18 Holes'));
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address (Optional)'),
+        '53 Carter Hill');
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final createCourseBtn = find.text('Create Course');
+    await tester.scrollUntilVisible(createCourseBtn, 100.0,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(createCourseBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nearby Courses Found'), findsOneWidget);
+  });
+
+  testWidgets('Duplicate not triggered if coordinates are > 100 meters away', (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Seed existing course at some coordinate
+    await fakeFirestore.collection('courses').add({
+      'name': 'Far Course',
+      'number_of_holes': 18,
+      'latitude': 43.12345,
+      'longitude': -71.54321,
+      'par_strokes': {'1': 3},
+    });
+
+    await tester.pumpWidget(createScreen());
+    await tester.tap(find.text('18 Holes'));
+    await tester.pump();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'New Course');
+
+    // Force our custom coordinate that is > 100 meters away
+    // Distance between (43.12345, -71.54321) and (43.12500, -71.54321) is ~172 meters.
+    mockGeolocator.mockPosition = Position(
+      latitude: 43.12500,
+      longitude: -71.54321,
+      timestamp: DateTime.now(),
+      accuracy: 1.0,
+      altitude: 1.0,
+      heading: 1.0,
+      speed: 1.0,
+      speedAccuracy: 1.0,
+      altitudeAccuracy: 1.0,
+      headingAccuracy: 1.0,
+    );
+
+    await tester.tap(find.byIcon(Icons.my_location));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.text('Create Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Should NOT show conflict dialog, and should successfully save
+    expect(find.text('Nearby Courses Found'), findsNothing);
+    final savedCourses = await fakeFirestore.collection('courses').get();
+    expect(savedCourses.docs.any((d) => d.get('name') == 'New Course'), isTrue);
+  });
 }

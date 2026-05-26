@@ -539,6 +539,14 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
     }
   }
 
+  String _normalizeAddress(String val) {
+    return val
+        .toLowerCase()
+        .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   Future<List<Course>> _findConflictingCourses(
       double? lat, double? lng, String? address) async {
     final List<Course> conflicts = [];
@@ -565,7 +573,7 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
               course.latitude!,
               course.longitude!,
             );
-            if (distance <= 200) {
+            if (distance <= 100) {
               isConflict = true;
             }
           } catch (e) {
@@ -578,9 +586,12 @@ class _AddEditCourseScreenState extends State<AddEditCourseScreen> {
             address.trim().isNotEmpty &&
             course.address != null &&
             course.address!.trim().isNotEmpty) {
-          if (course.address!.trim().toLowerCase() ==
-              address.trim().toLowerCase()) {
-            isConflict = true;
+          final norm1 = _normalizeAddress(address);
+          final norm2 = _normalizeAddress(course.address!);
+          if (norm1.isNotEmpty && norm2.isNotEmpty) {
+            if (norm1.contains(norm2) || norm2.contains(norm1)) {
+              isConflict = true;
+            }
           }
         }
         if (isConflict) {
