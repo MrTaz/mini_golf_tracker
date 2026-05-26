@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -48,12 +49,13 @@ class CoursesScreenState extends State<CoursesScreen> {
   }
 
   Future<void> _initData() async {
-    _getCurrentLocation().then((_) {
-      if (mounted) {
-        _sortCoursesByProximity();
-      }
-    });
-    await _initializeCourses();
+    await Future.wait([
+      _getCurrentLocation(),
+      _initializeCourses(),
+    ]);
+    if (mounted) {
+      _sortCoursesByProximity();
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -96,6 +98,18 @@ class CoursesScreenState extends State<CoursesScreen> {
           _currentPosition = position;
           _isLocating = false;
         });
+      }
+    } on TimeoutException catch (e) {
+      Utilities.debugPrintWithCallerInfo("Location request timed out: $e");
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location request timed out. Courses are sorted alphabetically.'),
+          ),
+        );
       }
     } catch (e) {
       Utilities.debugPrintWithCallerInfo("Failed to get location: $e");
