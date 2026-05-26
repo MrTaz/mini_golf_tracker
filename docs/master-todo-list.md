@@ -156,6 +156,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Guest UX Intercept (Past Games):**
   * For Guests: If the user taps a specific past game detail, trigger the `LoginScreen` prompt to "Save this history to the cloud."
 * [x] **UI Tidiness:** Use a `Divider` between these activity sections and standard navigation links to maintain a clean visual hierarchy.
+* [x] **Add Context to Guest Intercepts:** Update the `AppDrawer` guest intercepts to pass specific `promptMessage` strings to the `LoginScreen` ("Save this history to the cloud" and "Sign up to schedule future rounds"), render them in a highly visible banner above the login form, and prove the flow works via an E2E integration test.
 
 #### 1.10 Guest UX Hardening & Navigation Fixes
 
@@ -246,6 +247,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Auth E2E Tests:** Write a new integration test (`integration_test/auth_login_flow_test.dart`) that verifies the email/password login flow successfully bypasses verification for test accounts and successfully reaches the Dashboard.
 * [x] **Fix Google Sign-In Client ID:** In `lib/login_screen.dart`, update the `GoogleSignIn` instantiation to explicitly include the `serverClientId` (your Firebase Web Client ID) to resolve the `clientConfigurationError` on Android.
 * [x] **Fix Firestore Login Permission Denied:** Update `firestore.rules` to permit read access to the `player_contacts` collection, or handle the `PERMISSION_DENIED` exception gracefully during the test-account bypass flow so the app does not crash.
+* [ ] **Restore Social Login Placeholders:** In `lib/login_screen.dart`, restore the Facebook, Snapchat, and Instagram login providers, but configure their callbacks to return a "Not implemented yet" message to the user.
 
 #### 1.21 Android KGP Migration (Tech Debt)
 
@@ -1087,6 +1089,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Player selection, deselection, and clear-all flow passes (`integration_test/player_selection_flow_test.dart`).
 * [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
 * [ ] Google Sign-In E2E authentication flow passes (Note: requires native UI test configuration to tap system pop-ups).
+*  [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
 * [ ] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
 * [ ] Guest creates local game with matching contact.
