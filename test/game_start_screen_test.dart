@@ -763,7 +763,9 @@ void main() {
     expect(initialOrder[1], contains('p2'));
     expect(initialOrder[2], contains('p3'));
 
-    listView.onReorder(0, 2);
+    // onReorderItem receives the final target index directly (no -1 adjustment).
+    // (0, 1): p1 moves after p2 → [p2, p1, p3]
+    listView.onReorderItem!(0, 1);
     await tester.pumpAndSettle();
 
     final afterFirst = tester
@@ -775,7 +777,8 @@ void main() {
     expect(afterFirst[1], contains('p1'));
     expect(afterFirst[2], contains('p3'));
 
-    listView.onReorder(2, 0);
+    // (2, 0): p3 moves to front → [p3, p2, p1]
+    listView.onReorderItem!(2, 0);
     await tester.pumpAndSettle();
 
     final afterSecond = tester
@@ -786,5 +789,88 @@ void main() {
     expect(afterSecond[0], contains('p3'));
     expect(afterSecond[1], contains('p2'));
     expect(afterSecond[2], contains('p1'));
+  });
+
+  // ─── 11. Player resolution: loggedInUser branch (line 521) ───────────────
+
+  testWidgets(
+      'Player order section: player with empty id matching loggedInUser is '
+      'resolved to loggedInUser (line 521)', (tester) async {
+    // The logged-in user's id IS the playerId in the game.
+    // getPlayerFriendById searches Player.players; since 'auth-uid' is NOT
+    // in Player.players, it returns Player.empty() (id == ''), triggering
+    // the `player?.id == ''` branch that assigns UserProvider().loggedInUser.
+    final authUser = _authPlayer(id: 'auth-uid');
+    await UserProvider().login(authUser);
+
+    // Use a game whose player id matches loggedInUser.id but NOT Player.players.
+    final game = Game(
+      id: 'game-friend',
+      name: 'Friend Game',
+      course: Course(
+          id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
+      players: [
+        // playerId 'auth-uid' is NOT in Player.players → getPlayerFriendById
+        // returns Player.empty() → triggers line 521
+        PlayerGameInfo(
+            playerId: 'auth-uid',
+            gameId: 'game-friend',
+            playOrderPosition: 0,
+            scores: []),
+        PlayerGameInfo(
+            playerId: 'p1',
+            gameId: 'game-friend',
+            playOrderPosition: 1,
+            scores: []),
+      ],
+      scheduledTime: DateTime(2026, 5, 17, 10, 0),
+    );
+    // Ensure 'auth-uid' is absent so getPlayerFriendById returns Player.empty()
+    Player.players = [_guestPlayer('p1', 'Ava')];
+
+    await tester.pumpWidget(_testApp(
+      home: GameStartScreen(unstartedGame: game),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameStartScreen), findsOneWidget);
+  });
+
+  // ─── 12. Player resolution: synthetic Player fallback (lines 523-528) ────
+
+  testWidgets(
+      'Player order section: completely unknown playerId falls back to '
+      'synthetic Player (lines 523-528)', (tester) async {
+    // No loggedInUser → guest mode. playerId is not in Player.players
+    // and getPlayerFriendById returns null → synthetic Player created.
+    final game = Game(
+      id: 'game-unknown',
+      name: 'Unknown Player Game',
+      course: Course(
+          id: 'c1', name: 'Windy Hills', numberOfHoles: 18, parStrokes: {1: 3}),
+      players: [
+        PlayerGameInfo(
+            playerId: 'unknown-id',
+            gameId: 'game-unknown',
+            playOrderPosition: 0,
+            scores: []),
+        PlayerGameInfo(
+            playerId: 'p1',
+            gameId: 'game-unknown',
+            playOrderPosition: 1,
+            scores: []),
+      ],
+      scheduledTime: DateTime(2026, 5, 17, 10, 0),
+    );
+    // Only seed p1 — unknown-id is not present → triggers synthetic fallback
+    Player.players = [_guestPlayer('p1', 'Ava')];
+
+    await tester.pumpWidget(_testApp(
+      home: GameStartScreen(unstartedGame: game),
+    ));
+    await tester.pumpAndSettle();
+
+    // The synthetic player uses its id as the playerName, so the key exists
+    expect(find.byKey(const Key('inkwellOrderTapunknown-id')), findsOneWidget);
   });
 }

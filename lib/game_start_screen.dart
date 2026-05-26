@@ -530,11 +530,8 @@ class GameStartScreenState extends State<GameStartScreen> {
                         return _buildPlayerListItem(
                             player, playerIndex, gamePlayerInfo.playerId);
                       }).toList(),
-                      onReorder: (int oldIndex, int newIndex) {
+                      onReorderItem: (int oldIndex, int newIndex) {
                         setState(() {
-                          if (oldIndex < newIndex) {
-                            newIndex -= 1;
-                          }
                           final PlayerGameInfo player =
                               _playersInfo.removeAt(oldIndex);
                           player.playOrderPosition = newIndex;
