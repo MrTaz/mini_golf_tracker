@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -474,6 +475,19 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
+  });
+
+  testWidgets('handles location timeout exception gracefully and shows snackbar',
+      (tester) async {
+    mockGeolocator.exceptionToThrow = TimeoutException('Simulated timeout');
+
+    await tester.pumpWidget(createCoursesScreen());
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(mockGeolocator.isLocationServiceEnabledCount, greaterThan(0));
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text('Location request timed out. Courses are sorted alphabetically.'), findsOneWidget);
   });
 
   testWidgets('handles geolocator distanceBetween exception gracefully',
