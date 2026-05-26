@@ -125,6 +125,14 @@ Finder get _scheduleIconButton =>
 Finder get _lockOutlineIconButton =>
     find.ancestor(of: find.byIcon(Icons.lock_outline), matching: find.byType(IconButton));
 
+Widget _testApp({required Widget home}) {
+  return MaterialApp(
+    theme: ThemeData(splashFactory: NoSplash.splashFactory),
+    home: home,
+  );
+}
+
+
 // ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
@@ -157,7 +165,7 @@ void main() {
       'with new game; callback is wired through (lines 87-106)', (tester) async {
     bool callbackCalled = false;
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(
         unstartedGame: null,
         callback: () => callbackCalled = true,
@@ -185,7 +193,7 @@ void main() {
 
   testWidgets(
       'Creation dialog: tapping Cancel dismisses without navigation', (tester) async {
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: const GameStartScreen(unstartedGame: null),
     ));
     await tester.pump();
@@ -210,7 +218,7 @@ void main() {
 
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -243,7 +251,7 @@ void main() {
 
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -268,7 +276,7 @@ void main() {
 
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -294,7 +302,7 @@ void main() {
       'par_strokes': {'1': 3},
     });
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: null),
     ));
     await tester.pump();
@@ -317,7 +325,7 @@ void main() {
       (tester) async {
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -336,7 +344,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _twoPlayerGame()),
     ));
 
@@ -360,7 +368,7 @@ void main() {
     );
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -393,7 +401,7 @@ void main() {
     );
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -414,7 +422,7 @@ void main() {
       'selecting + confirming replaces game.players (lines 244-267)', (tester) async {
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -447,7 +455,7 @@ void main() {
       '(lines 269-272, 403-404, 415)', (tester) async {
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -480,7 +488,7 @@ void main() {
     final game = _twoPlayerGame();
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(
         unstartedGame: game,
         callback: () => callbackFired = true,
@@ -503,7 +511,7 @@ void main() {
 
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _zeroCourseGame()),
     ));
 
@@ -520,7 +528,7 @@ void main() {
 
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _onePlayerGame()),
     ));
 
@@ -537,7 +545,7 @@ void main() {
 
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _sevenPlayerGame()),
     ));
 
@@ -556,7 +564,7 @@ void main() {
 
     await UserProvider().login(_authPlayer());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: Scaffold(
         body: GameStartScreen(unstartedGame: _twoPlayerGame()),
       ),
@@ -587,7 +595,7 @@ void main() {
 
     final game = _twoPlayerGame(scheduledTime: DateTime(0));
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -605,7 +613,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _zeroCourseGame()),
     ));
 
@@ -620,7 +628,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: _onePlayerGame()),
     ));
 
@@ -641,7 +649,7 @@ void main() {
 
     final game = _twoPlayerGame(scheduledTime: DateTime(0));
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -666,7 +674,7 @@ void main() {
       scheduledTime: DateTime.now().add(const Duration(hours: 2)),
     );
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -685,7 +693,7 @@ void main() {
       (tester) async {
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: Builder(
         builder: (context) => Scaffold(
           body: TextButton(
@@ -722,7 +730,7 @@ void main() {
 
     final game = _twoPlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -739,7 +747,7 @@ void main() {
       'ReorderableListView onReorderItem: moves items correctly', (tester) async {
     final game = _threePlayerGame();
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(_testApp(
       home: GameStartScreen(unstartedGame: game),
     ));
 
@@ -755,7 +763,7 @@ void main() {
     expect(initialOrder[1], contains('p2'));
     expect(initialOrder[2], contains('p3'));
 
-    listView.onReorder.call(0, 1);
+    listView.onReorder.call(0, 2);
     await tester.pumpAndSettle();
 
     final afterFirst = tester
