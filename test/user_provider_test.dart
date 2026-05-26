@@ -13,6 +13,7 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakeFirebaseFirestore fakeFirestore;
   late MockFirebaseAuth mockAuth;
   late UserProvider userProvider;

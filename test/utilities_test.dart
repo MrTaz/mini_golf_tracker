@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('Utilities.getPositionSuffix', () {
     test(
         'returns st for 1', () => expect(Utilities.getPositionSuffix(1), 'st'));
