@@ -329,6 +329,10 @@ void main() {
     // Verify location name is shown inside the expanded tile
     expect(find.text('Awesome Location'), findsOneWidget);
     expect(find.text('Par Values:'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Awesome Location')).dy,
+      lessThan(tester.getTopLeft(find.text('Par Values:')).dy),
+    );
     expect(find.byType(GridView), findsOneWidget);
     expect(find.text('Number of Holes: 18'), findsNothing);
     expect(find.text('Address: 123 Mini Golf Lane'), findsNothing);

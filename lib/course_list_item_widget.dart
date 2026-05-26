@@ -99,19 +99,23 @@ class CourseListItemState extends State<CourseListItem> {
             ),
             trailing: widget.trailing,
             children: [
+              if (widget.course.locationName != null &&
+                  widget.course.locationName!.isNotEmpty)
+                ListTile(
+                  title: Text(
+                    widget.course.locationName!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ListTile(
                   title:
                       const Text('Par Values:', style: TextStyle(fontSize: 16)),
                   subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (widget.course.locationName != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Text(widget.course.locationName!,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500)),
-                          ),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Text(
