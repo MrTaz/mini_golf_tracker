@@ -240,7 +240,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    expect(find.text('Course: Pinecrest Links'), findsOneWidget);
+    expect(find.text('Pinecrest Links'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.check));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));

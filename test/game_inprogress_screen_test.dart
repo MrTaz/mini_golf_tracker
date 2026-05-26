@@ -191,7 +191,7 @@ void main() {
     courseListItem.onDelete();
     courseListItem.onModify();
 
-    expect(find.text('Course: Test Course'), findsOneWidget);
+    expect(find.text('Test Course'), findsOneWidget);
   });
 
   testWidgets(

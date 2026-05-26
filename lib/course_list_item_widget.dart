@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CourseListItem extends StatefulWidget {
   const CourseListItem({
@@ -26,11 +27,27 @@ class CourseListItem extends StatefulWidget {
 class CourseListItemState extends State<CourseListItem> {
   bool showDetails = false;
 
+  Future<void> _launchAddress() async {
+    final address = widget.course.address;
+    if (address == null || address.isEmpty) {
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final distanceText = widget.distanceMeters == null
         ? null
         : '${(widget.distanceMeters! * 0.000621371).toStringAsFixed(1)} miles away';
+    final hasAddress =
+        widget.course.address != null && widget.course.address!.isNotEmpty;
 
     return Column(
       children: [
@@ -40,24 +57,48 @@ class CourseListItemState extends State<CourseListItem> {
               color: widget.selected ? Colors.green : Colors.teal,
             ),
             title: Text(
-              'Course: ${widget.course.name}',
+              widget.course.name,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(
-              "${widget.course.numberOfHoles} holes"
-              "${distanceText != null ? ' • $distanceText' : ''}"
-              "${widget.course.address != null && widget.course.address!.isNotEmpty ? ' • ${widget.course.address}' : ''}",
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${widget.course.numberOfHoles} holes"
+                  "${distanceText != null ? ' • $distanceText' : ''}",
+                ),
+                if (hasAddress)
+                  InkWell(
+                    key: const Key('course_address_map_link'),
+                    onTap: _launchAddress,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.map_outlined,
+                            size: 16,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              widget.course.address!,
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
             trailing: widget.trailing,
             children: [
-              ListTile(
-                title: Text('Number of Holes: ${widget.course.numberOfHoles}'),
-              ),
-              if (widget.course.address != null &&
-                  widget.course.address!.isNotEmpty)
-                ListTile(
-                  title: Text('Address: ${widget.course.address}'),
-                ),
               ListTile(
                   title:
                       const Text('Par Values:', style: TextStyle(fontSize: 16)),
@@ -67,8 +108,7 @@ class CourseListItemState extends State<CourseListItem> {
                         if (widget.course.locationName != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Text(
-                                'Location: ${widget.course.locationName}',
+                            child: Text(widget.course.locationName!,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500)),
                           ),
@@ -79,11 +119,16 @@ class CourseListItemState extends State<CourseListItem> {
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        Wrap(
-                          spacing: 16.0,
-                          runSpacing: 12.0,
-                          children: List.generate(widget.course.numberOfHoles,
-                              (index) {
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            childAspectRatio: 1.0,
+                          ),
+                          itemCount: widget.course.numberOfHoles,
+                          itemBuilder: (context, index) {
                             final holeNumber = index + 1;
                             final parValue =
                                 widget.course.parStrokes[holeNumber] ?? 0;
@@ -97,7 +142,7 @@ class CourseListItemState extends State<CourseListItem> {
                                         fontWeight: FontWeight.bold)),
                               ],
                             );
-                          }),
+                          },
                         )
                       ])),
               OverflowBar(
