@@ -177,6 +177,11 @@ class LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  @visibleForTesting
+  Future<String?> handleNotImplementedLogin() async {
+    return 'Not implemented yet';
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = UserProvider().loggedInUser;
@@ -309,6 +314,18 @@ class LoginScreenState extends State<LoginScreen> {
                   LoginProvider(
                     icon: FontAwesomeIcons.google,
                     callback: handleGoogleLogin,
+                  ),
+                  LoginProvider(
+                    icon: FontAwesomeIcons.facebookF,
+                    callback: handleNotImplementedLogin,
+                  ),
+                  LoginProvider(
+                    icon: FontAwesomeIcons.snapchat,
+                    callback: handleNotImplementedLogin,
+                  ),
+                  LoginProvider(
+                    icon: FontAwesomeIcons.instagram,
+                    callback: handleNotImplementedLogin,
                   ),
                 ],
                 onSubmitAnimationCompleted: () {
