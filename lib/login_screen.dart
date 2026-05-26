@@ -12,8 +12,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   final GoogleSignIn? googleSignIn;
+  final String? promptMessage;
 
-  const LoginScreen({super.key, this.googleSignIn});
+  const LoginScreen({super.key, this.googleSignIn, this.promptMessage});
 
   @override
   State<LoginScreen> createState() => LoginScreenState();
@@ -255,9 +256,29 @@ class LoginScreenState extends State<LoginScreen> {
                 fit: BoxFit.cover,
               ),
             ),
-            child: Container(
-              transform: Matrix4.translationValues(0, -100, 0.0),
-              child: FlutterLogin(
+            child: Column(
+              children: [
+                if (widget.promptMessage != null)
+                  Container(
+                    color: Colors.amber,
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.black87),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.promptMessage!,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: Container(
+                    transform: Matrix4.translationValues(0, -100, 0.0),
+                    child: FlutterLogin(
                 onLogin: authUser,
                 onSignup: signupUser,
                 showDebugButtons: (kDebugMode) ? true : false,
@@ -296,7 +317,10 @@ class LoginScreenState extends State<LoginScreen> {
                 onRecoverPassword: recoverPassword,
               ),
             ),
-          )),
-    );
+          ),
+        ],
+      ),
+    ),
+  ));
   }
 }
