@@ -114,15 +114,15 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.7 Proximity-Based Sorting and Location Safety
 
-* [ ] In `CoursesScreen.initState`, trigger `_getCurrentLocation()` and `_initializeCourses()` concurrently.
-* [ ] Use `Future.wait` or equivalent to prevent UI blocking.
-* [ ] Ensure all UI-updating callbacks verify `mounted` before executing.
-* [ ] Re-sort the `CoursesScreen` list immediately after a successful GPS lock.
-* [ ] Use high-accuracy `LocationSettings`.
-* [ ] Update `_getCurrentLocation` in `courses_screen.dart` to explicitly catch `TimeoutException`.
-* [ ] Use `locationSettings` with a `5-second timeLimit`.
-* [ ] Display a non-blocking `SnackBar` or status icon if the timeout triggers.
-* [ ] Do not fail silently on location timeout.
+* [x] In `CoursesScreen.initState`, trigger `_getCurrentLocation()` and `_initializeCourses()` concurrently.
+* [x] Use `Future.wait` or equivalent to prevent UI blocking.
+* [x] Ensure all UI-updating callbacks verify `mounted` before executing.
+* [x] Re-sort the `CoursesScreen` list immediately after a successful GPS lock.
+* [x] Use high-accuracy `LocationSettings`.
+* [x] Update `_getCurrentLocation` in `courses_screen.dart` to explicitly catch `TimeoutException`.
+* [x] Use `locationSettings` with a `5-second timeLimit`.
+* [x] Display a non-blocking `SnackBar` or status icon if the timeout triggers.
+* [x] Do not fail silently on location timeout.
 
 #### 1.8 Active Game Auto-Launch & Navigation Flow (Critical)
 
