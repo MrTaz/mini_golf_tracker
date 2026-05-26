@@ -27,11 +27,7 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    googleSignInInstance = widget.googleSignIn ??
-        GoogleSignIn(
-          serverClientId:
-              '114725116317-hcrn2kms85skt1kb0q4c73sgrj9fkc3u.apps.googleusercontent.com',
-        );
+    googleSignInInstance = widget.googleSignIn ?? GoogleSignIn.instance;
   }
 
   Duration get loginTime => const Duration(milliseconds: 50);
@@ -140,17 +136,18 @@ class LoginScreenState extends State<LoginScreen> {
   @visibleForTesting
   Future<String?> handleGoogleLogin() async {
     try {
-      final GoogleSignInAccount? googleUser =
-          await googleSignInInstance.signIn();
-      if (googleUser == null) {
-        return null;
+      if (widget.googleSignIn == null) {
+        await googleSignInInstance.initialize(
+          serverClientId:
+              '114725116317-hcrn2kms85skt1kb0q4c73sgrj9fkc3u.apps.googleusercontent.com',
+        );
       }
+      final googleUser = await googleSignInInstance.authenticate();
 
       final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+          googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
       );
 
       final userCredential =

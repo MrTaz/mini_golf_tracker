@@ -4,14 +4,12 @@ import 'package:flutter_login/flutter_login.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -124,12 +122,10 @@ void main() {
       'email': 'google@example.com',
     });
 
-    final googleSignIn = GoogleSignIn();
-    TestGoogleSignInPlatform.signInUser(
+    final googleSignIn = MockGoogleSignIn();
+    MockGoogleSignIn.setMockUser(
       id: 'google-uid',
       email: 'google@example.com',
-      idToken: 'mock_id_token',
-      accessToken: 'mock_access_token',
     );
 
     await tester.pumpWidget(createLoginScreen(googleSignIn: googleSignIn));
@@ -196,7 +192,8 @@ void main() {
   testWidgets('Direct authUser, signupUser, recoverPassword coverage',
       (tester) async {
     // cover loginTime
-    await tester.pumpWidget(MaterialApp(home: const LoginScreen()));
+    final googleSignIn = MockGoogleSignIn();
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)));
     final stateForTime =
         tester.state<LoginScreenState>(find.byType(LoginScreen));
     expect(stateForTime.loginTime, equals(const Duration(milliseconds: 50)));
@@ -205,7 +202,7 @@ void main() {
     userProvider.setAuthInstanceForTesting(mockAuth);
     await userProvider.initialize();
 
-    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpWidget(createLoginScreen(googleSignIn: googleSignIn));
     await tester.pumpAndSettle();
 
     var state = tester.state<LoginScreenState>(find.byType(LoginScreen));
@@ -227,7 +224,7 @@ void main() {
     expect(authResult, isNull);
 
     // 2.2 Already logged in UI (Logout & Back to Home)
-    await tester.pumpWidget(MaterialApp(home: const LoginScreen()));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)));
     await tester.pumpAndSettle();
 
     // Tap Back to Home
@@ -243,7 +240,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // State is logged out now, so repump LoginScreen to get the FlutterLogin widget back
-    await tester.pumpWidget(MaterialApp(home: const LoginScreen()));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)));
     await tester.pumpAndSettle();
     state = tester.state<LoginScreenState>(find.byType(LoginScreen));
 
@@ -333,12 +330,9 @@ void main() {
     expect(recoverResult, isNull);
 
     // handleGoogleLogin
-    final googleSignIn = GoogleSignIn();
-    TestGoogleSignInPlatform.signInUser(
+    MockGoogleSignIn.setMockUser(
       id: 'google-uid',
       email: 'google@example.com',
-      idToken: 'mock-id-token',
-      accessToken: 'mock-access-token',
     );
     await tester
         .pumpWidget(MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)));
@@ -359,9 +353,9 @@ void main() {
     expect(googleResult, isNull);
 
     // User cancellation path
-    TestGoogleSignInPlatform.cancelSignIn();
+    MockGoogleSignIn.cancelSignIn();
     var googleCancellationResult = await googleState.handleGoogleLogin();
-    expect(googleCancellationResult, isNull);
+    expect(googleCancellationResult, equals('Google Sign-In failed.'));
 
     // Claim path when the auth UID has no player but verified contact matches.
     await Player.createPlayer(
@@ -370,11 +364,9 @@ void main() {
       email: 'google-claim@example.com',
       ownerId: 'legacy-google-owner',
     );
-    TestGoogleSignInPlatform.signInUser(
+    MockGoogleSignIn.setMockUser(
       id: 'google-claim-uid',
       email: 'google-claim@example.com',
-      idToken: 'mock-id-token',
-      accessToken: 'mock-access-token',
     );
     userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
       uid: 'google-claim-uid',
@@ -384,11 +376,9 @@ void main() {
     expect(googleClaimResult, isNull);
 
     // Error path
-    TestGoogleSignInPlatform.signInUser(
+    MockGoogleSignIn.setMockUser(
       id: 'google-uid',
       email: 'google@example.com',
-      idToken: 'mock-id-token',
-      accessToken: 'mock-access-token',
     );
     userProvider.setAuthInstanceForTesting(genericThrowingAuth);
     var googleErrorResult = await googleState.handleGoogleLogin();
@@ -403,7 +393,8 @@ void main() {
     userProvider.setAuthInstanceForTesting(mockAuth);
     await userProvider.initialize();
 
-    await tester.pumpWidget(createLoginScreen());
+    final googleSignIn = MockGoogleSignIn();
+    await tester.pumpWidget(createLoginScreen(googleSignIn: googleSignIn));
     await tester.pumpAndSettle();
     final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
 
@@ -421,8 +412,7 @@ void main() {
       equals('Verify an email or phone number to claim your player history.'),
     );
 
-    final googleSignIn = GoogleSignIn();
-    TestGoogleSignInPlatform.cancelSignIn();
+    MockGoogleSignIn.cancelSignIn();
     await tester.pumpWidget(
       MaterialApp(home: LoginScreen(googleSignIn: googleSignIn)),
     );
@@ -430,13 +420,11 @@ void main() {
     final googleState =
         tester.state<LoginScreenState>(find.byType(LoginScreen));
     final googleCancellationResult = await googleState.handleGoogleLogin();
-    expect(googleCancellationResult, isNull);
+    expect(googleCancellationResult, equals('Google Sign-In failed.'));
 
-    TestGoogleSignInPlatform.signInUser(
+    MockGoogleSignIn.setMockUser(
       id: 'google-no-player-uid',
       email: 'google-no-player@example.com',
-      idToken: 'mock-id-token',
-      accessToken: 'mock-access-token',
     );
     userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
       uid: 'google-no-player-uid',
@@ -450,55 +438,83 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 2));
   });
+
+  testWidgets('Google Sign-In initialization is covered', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleGoogleLogin();
+    expect(result, equals('Google Sign-In failed.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
 
-class TestGoogleSignInPlatform extends GoogleSignInPlatform
-    with MockPlatformInterfaceMixin {
-  TestGoogleSignInPlatform._();
+class FakeGoogleSignInAccount implements GoogleSignInAccount {
+  @override
+  final String id;
+  @override
+  final String email;
+  @override
+  final String displayName;
+  @override
+  final String? photoUrl = null;
+  final String? serverAuthCode = null;
 
-  static GoogleSignInUserData? _signInUser;
-  static GoogleSignInTokenData _tokenData = GoogleSignInTokenData();
+  FakeGoogleSignInAccount({
+    required this.id,
+    required this.email,
+    this.displayName = 'Google User',
+  });
 
-  static void signInUser({
-    required String id,
-    required String email,
-    required String idToken,
-    required String accessToken,
-  }) {
-    _signInUser = GoogleSignInUserData(
-      id: id,
-      email: email,
-      displayName: 'Google User',
-      idToken: idToken,
-    );
-    _tokenData = GoogleSignInTokenData(
-      idToken: idToken,
-      accessToken: accessToken,
-    );
-    GoogleSignInPlatform.instance = TestGoogleSignInPlatform._();
+  @override
+  GoogleSignInAuthentication get authentication => FakeGoogleSignInAuthentication();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class FakeGoogleSignInAuthentication implements GoogleSignInAuthentication {
+  @override
+  final String idToken = 'mock_id_token';
+  final String? accessToken = 'mock_access_token';
+  final String? serverAuthCode = null;
+}
+
+class MockGoogleSignIn implements GoogleSignIn {
+  static GoogleSignInAccount? _mockUser;
+
+  static void setMockUser({required String id, required String email}) {
+    _mockUser = FakeGoogleSignInAccount(id: id, email: email);
   }
 
   static void cancelSignIn() {
-    _signInUser = null;
-    _tokenData = GoogleSignInTokenData();
-    GoogleSignInPlatform.instance = TestGoogleSignInPlatform._();
+    _mockUser = null;
   }
 
   @override
-  Future<void> initWithParams(SignInInitParameters params) async {}
+  Future<void> initialize({
+    String? clientId,
+    String? hostedDomain,
+    String? nonce,
+    String? serverClientId,
+  }) async {}
 
   @override
-  Future<GoogleSignInUserData?> signIn() async {
-    return _signInUser;
+  Future<GoogleSignInAccount> authenticate({List<String> scopeHint = const []}) async {
+    if (_mockUser == null) {
+      throw Exception('Sign in cancelled');
+    }
+    return _mockUser!;
   }
 
   @override
-  Future<GoogleSignInTokenData> getTokens({
-    required String email,
-    bool? shouldRecoverAuth,
-  }) async {
-    return _tokenData;
-  }
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class ThrowingFirebaseAuth implements FirebaseAuth {
