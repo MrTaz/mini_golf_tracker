@@ -94,13 +94,32 @@ void main() {
     expect(
         findIconByCodePoint(FontAwesomeIcons.google.codePoint), findsWidgets);
     expect(findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint),
-        findsNothing);
+        findsWidgets);
     expect(
-        findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint), findsNothing);
+        findIconByCodePoint(FontAwesomeIcons.snapchat.codePoint), findsWidgets);
     expect(findIconByCodePoint(FontAwesomeIcons.instagram.codePoint),
-        findsNothing);
+        findsWidgets);
 
     // Add extra pump to clear timers from animations
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Social login placeholders return Not implemented yet',
+      (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    expect(await state.handleNotImplementedLogin(), equals('Not implemented yet'));
+
+    final facebookButton = findIconByCodePoint(FontAwesomeIcons.facebookF.codePoint);
+    expect(facebookButton, findsOneWidget);
+
     await tester.pump(const Duration(seconds: 5));
   });
 
