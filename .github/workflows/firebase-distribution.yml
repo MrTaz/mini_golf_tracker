@@ -35,7 +35,7 @@ jobs:
 
       - name: Calculate Semantic Version
         id: semver
-        uses: paulhatch/semantic-version@latest
+        uses: paulhatch/semantic-version@v5.4.0
         with:
           tag_prefix: "v"
           major_pattern: "BREAKING CHANGE:"
