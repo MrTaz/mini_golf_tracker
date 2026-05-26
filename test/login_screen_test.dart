@@ -39,9 +39,9 @@ void main() {
     timeDilation = 1.0; // Reset after each test
   });
 
-  Widget createLoginScreen({GoogleSignIn? googleSignIn}) {
+  Widget createLoginScreen({GoogleSignIn? googleSignIn, String? promptMessage}) {
     return MaterialApp(
-      home: LoginScreen(googleSignIn: googleSignIn),
+      home: LoginScreen(googleSignIn: googleSignIn, promptMessage: promptMessage),
       onGenerateRoute: (settings) {
         if (settings.name == '/') {
           return MaterialPageRoute(
@@ -63,6 +63,23 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(FlutterLogin), findsOneWidget);
     // Final pump to help clear any remaining timers before disposal
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('LoginScreen shows promptMessage when provided', (tester) async {
+    await tester.pumpWidget(createLoginScreen(promptMessage: 'Important Message!'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Important Message!'), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('LoginScreen does not show banner when promptMessage is null', (tester) async {
+    await tester.pumpWidget(createLoginScreen(promptMessage: null));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.info_outline), findsNothing);
     await tester.pump(const Duration(seconds: 1));
   });
 
@@ -184,7 +201,7 @@ void main() {
 
     final loginButton = find.text('LOGIN');
     await tester.ensureVisible(loginButton);
-    await tester.tap(loginButton);
+    await tester.tap(loginButton, warnIfMissed: false);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   });
