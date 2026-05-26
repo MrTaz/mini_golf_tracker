@@ -32,11 +32,11 @@ class AppDrawer extends StatelessWidget {
     changeBodyCallback?.call(const HomeScreen());
   }
 
-  Future<void> _openLogin(BuildContext context) async {
+  Future<void> _openLogin(BuildContext context, {String? message}) async {
     final navigator = Navigator.of(context);
     navigator.pop();
     await navigator.push(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => LoginScreen(promptMessage: message)),
     );
     onRefreshRequested?.call();
   }
@@ -249,7 +249,7 @@ class AppDrawer extends StatelessWidget {
                           navigator
                               .push(
                                 MaterialPageRoute(
-                                    builder: (context) => const LoginScreen()),
+                                    builder: (context) => const LoginScreen(promptMessage: "Login or register to view your past game details and save your history to the cloud.")),
                               )
                               .then((_) => onRefreshRequested?.call());
                         } else {
@@ -274,7 +274,7 @@ class AppDrawer extends StatelessWidget {
                   navigator.pop();
                   final route = user == null
                       ? MaterialPageRoute(
-                          builder: (context) => const LoginScreen())
+                          builder: (context) => const LoginScreen(promptMessage: "Sign up to schedule future rounds and sync with friends."))
                       : MaterialPageRoute(
                           builder: (context) => const ScheduledGamesScreen());
                   navigator.push(route).then((_) => onRefreshRequested?.call());
@@ -291,7 +291,7 @@ class AppDrawer extends StatelessWidget {
                     "🔒 Sign up to schedule future rounds.",
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  onTap: () => _openLogin(context),
+                  onTap: () => _openLogin(context, message: "Sign up to schedule future rounds and sync with friends."),
                 )
               else if (topUpcoming.isNotEmpty)
                 ...topUpcoming.map((game) => ListTile(
