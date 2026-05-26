@@ -247,7 +247,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Auth E2E Tests:** Write a new integration test (`integration_test/auth_login_flow_test.dart`) that verifies the email/password login flow successfully bypasses verification for test accounts and successfully reaches the Dashboard.
 * [x] **Fix Google Sign-In Client ID:** In `lib/login_screen.dart`, update the `GoogleSignIn` instantiation to explicitly include the `serverClientId` (your Firebase Web Client ID) to resolve the `clientConfigurationError` on Android.
 * [x] **Fix Firestore Login Permission Denied:** Update `firestore.rules` to permit read access to the `player_contacts` collection, or handle the `PERMISSION_DENIED` exception gracefully during the test-account bypass flow so the app does not crash.
-* [ ] **Restore Social Login Placeholders:** In `lib/login_screen.dart`, restore the Facebook, Snapchat, and Instagram login providers, but configure their callbacks to return a "Not implemented yet" message to the user.
+* [x] **Restore Social Login Placeholders:** In `lib/login_screen.dart`, restore the Facebook, Snapchat, and Instagram login providers, but configure their callbacks to return a "Not implemented yet" message to the user.
 
 #### 1.21 Android KGP Migration (Tech Debt)
 
