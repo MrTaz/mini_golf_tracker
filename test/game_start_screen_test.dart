@@ -763,7 +763,7 @@ void main() {
     expect(initialOrder[1], contains('p2'));
     expect(initialOrder[2], contains('p3'));
 
-    // onReorderItem receives the final target index directly (no -1 adjustment).
+    // onReorder receives the final target index directly (no -1 adjustment).
     // (0, 1): p1 moves after p2 → [p2, p1, p3]
     listView.onReorderItem!(0, 1);
     await tester.pumpAndSettle();
