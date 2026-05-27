@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/add_edit_course_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/main.dart';
@@ -176,7 +177,7 @@ void main() {
         findsNothing);
   });
 
-  testWidgets('course card provides inert delete and modify callbacks',
+  testWidgets('course card has null onDelete and onModify updates course',
       (tester) async {
     final game = createTestGame();
     Player.players = [testPlayer1, testPlayer2];
@@ -188,10 +189,44 @@ void main() {
       find.byType(CourseListItem),
     );
 
-    courseListItem.onDelete();
-    courseListItem.onModify();
+    // Verify onDelete is null in GameInprogressScreen's CourseListItem
+    expect(courseListItem.onDelete, isNull);
 
-    expect(find.text('Test Course'), findsOneWidget);
+    // Expand the CourseListItem ExpansionTile
+    await tester.tap(find.text('Test Course'));
+    await tester.pumpAndSettle();
+
+    // Verify Delete button is hidden
+    expect(find.text('Delete'), findsNothing);
+
+    // Tap the Edit button
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Verify AddEditCourseScreen is pushed
+    expect(find.byType(AddEditCourseScreen), findsOneWidget);
+
+    // Pop the screen with an updated course
+    final updatedCourse = Course(
+      id: 'c1',
+      name: 'Updated Course Name',
+      numberOfHoles: 2,
+      parStrokes: {1: 4, 2: 4},
+    );
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pop(updatedCourse);
+    await tester.pumpAndSettle();
+
+    // Verify UI is updated with the new course name and par
+    expect(find.text('Updated Course Name'), findsOneWidget);
+    expect(game.course.name, 'Updated Course Name');
+
+    // Verify SharedPreferences updated (triggers _updateGame)
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.containsKey(game.id), isTrue);
+    final gameJson = prefs.getString(game.id);
+    expect(gameJson, contains('Updated Course Name'));
   });
 
   testWidgets(

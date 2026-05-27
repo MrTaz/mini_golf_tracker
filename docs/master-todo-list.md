@@ -275,9 +275,15 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Harden Global Firestore Rules:** Restore schema validation in `firestore.rules` for the `games`, `players`, `player_contacts`, and `friends` collections. Enforce strict data types and required fields for all `create` and `update` operations to prevent NoSQL injection, while preserving guest write access.
 
 #### 1.24 Hotfix: Course Selection State Synchronization
+
 * [x] **CoursesScreen UI Synchronization:** In `CoursesScreen`, change the trailing course selection widget to a `Switch` that accurately reflects if the course is currently selected. 
 * [x] **Clear Course Action:** Add a "Clear" button to the `CoursesScreen` AppBar when in `creatingGame` mode.
 * [x] **Handle Cleared State:** Update `GameCreateScreen._selectCourse()` to accept a sentinel `Course.empty()` object as a signal to explicitly clear the `_selectedCourse` state, distinguishing it from a standard navigator cancellation.
+
+###### 1.25 Hotfix: In-Game Course Editing & Delete UI
+
+*  [x] **CourseListItem Delete Toggle:** Make the `onDelete` callback in `CourseListItem` optional (`VoidCallback?`). If null, completely hide the delete icon/button from the expanded details.
+*  [x] **Active Game Course Edit:** In `GameInprogressScreen`, pass `null` to `onDelete` for the course card. Wire the `onModify` callback to navigate to `AddEditCourseScreen` with the current course. When the navigator returns an updated course, mutate `widget.currentGame.course`, call `setState()`, and trigger `_updateGame()` to instantly sync the changes.
 
 ---
 

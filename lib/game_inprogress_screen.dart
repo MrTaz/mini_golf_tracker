@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/add_edit_course_screen.dart';
+import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/game_card_widget.dart' as game_card;
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/main.dart';
@@ -99,9 +101,26 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             CourseListItem(
-                course: widget.currentGame.course,
-                onDelete: () {},
-                onModify: () {}),
+              course: widget.currentGame.course,
+              onDelete: null,
+              onModify: () async {
+                final updatedCourse = await Navigator.push<Course>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditCourseScreen(
+                      course: widget.currentGame.course,
+                    ),
+                  ),
+                );
+                if (updatedCourse != null) {
+                  setState(() {
+                    widget.currentGame.course = updatedCourse;
+                    currentHolePar = updatedCourse.getParValue(currentHole);
+                  });
+                  await _updateGame();
+                }
+              },
+            ),
           ],
         ),
       ),

@@ -6,7 +6,7 @@ class CourseListItem extends StatefulWidget {
   const CourseListItem({
     super.key,
     required this.course,
-    required this.onDelete,
+    this.onDelete,
     required this.onModify,
     this.trailing,
     this.selected = false,
@@ -14,7 +14,7 @@ class CourseListItem extends StatefulWidget {
   });
 
   final Course course;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
   final VoidCallback onModify;
   final Widget? trailing;
   final bool selected;
@@ -156,10 +156,11 @@ class CourseListItemState extends State<CourseListItem> {
                     onPressed: widget.onModify,
                     child: const Text('Edit'),
                   ),
-                  TextButton(
-                    onPressed: widget.onDelete,
-                    child: const Text('Delete'),
-                  ),
+                  if (widget.onDelete != null)
+                    TextButton(
+                      onPressed: widget.onDelete,
+                      child: const Text('Delete'),
+                    ),
                 ],
               ),
             ]),

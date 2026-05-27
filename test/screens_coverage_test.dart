@@ -152,7 +152,7 @@ void main() {
     final courseListItemWidgets =
         tester.widgetList<CourseListItem>(find.byType(CourseListItem));
     if (courseListItemWidgets.isNotEmpty) {
-      courseListItemWidgets.first.onDelete();
+      courseListItemWidgets.first.onDelete?.call();
       courseListItemWidgets.first.onModify();
     }
   });
@@ -365,6 +365,34 @@ void main() {
 
     expect(urlLauncher.canLaunchCalls, 1);
     expect(urlLauncher.launchCalls, 0);
+  });
+
+  testWidgets('CourseListItem hides delete button when onDelete is null',
+      (tester) async {
+    final course = Course(
+      id: 'c1',
+      name: 'No Delete Course',
+      numberOfHoles: 9,
+      parStrokes: {for (var i = 1; i <= 9; i++) i: 3},
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CourseListItem(
+          course: course,
+          onModify: () {},
+          onDelete: null,
+        ),
+      ),
+    ));
+
+    // Expand
+    await tester.tap(find.text('No Delete Course'));
+    await tester.pumpAndSettle();
+
+    // Verify Edit is present but Delete is missing
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsNothing);
   });
 }
 
