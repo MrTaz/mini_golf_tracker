@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/contact_identity.dart';
+import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
 
 import 'player.dart';
 
@@ -31,7 +31,6 @@ class PlayerFormState extends State<PlayerForm> {
   late TextEditingController _nicknameController;
   late TextEditingController _phoneNumberController;
   late TextEditingController _playerNameController;
-  late TextEditingController _statusController;
 
   @override
   void dispose() {
@@ -39,7 +38,6 @@ class PlayerFormState extends State<PlayerForm> {
     _nicknameController.dispose();
     _emailController.dispose();
     _phoneNumberController.dispose();
-    _statusController.dispose();
     super.dispose();
   }
 
@@ -54,28 +52,24 @@ class PlayerFormState extends State<PlayerForm> {
     _emailController = TextEditingController(text: widget.player?.email ?? '');
     _phoneNumberController =
         TextEditingController(text: widget.player?.phoneNumber ?? '');
-    _statusController =
-        TextEditingController(text: widget.player?.status ?? '');
   }
 
   bool get isEditing => widget.player != null;
+  bool get isGuestScorekeeper =>
+      currentUser == null && widget.player?.id == 'guest';
 
-  Future<void> loadCurrentUser() async {
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // setState(() {
-    //   currentUser = Player.getPlayerByEmail(prefs.getString("email") ?? "")!;
-    // });
-  }
+  Future<void> loadCurrentUser() async {}
 
   bool validateRequiredFields() {
-    if (_playerNameController.text.isEmpty ||
-        _nicknameController.text.isEmpty) {
+    final playerNameMissing =
+        !isGuestScorekeeper && _playerNameController.text.isEmpty;
+    if (playerNameMissing || _nicknameController.text.isEmpty) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Missing required fields'),
-            content: (_playerNameController.text.isEmpty)
+            content: playerNameMissing
                 ? const Text("The Player's Name must be filled in.")
                 : const Text("The Player's Nickname must be filled in."),
             actions: [
@@ -129,6 +123,9 @@ class PlayerFormState extends State<PlayerForm> {
   }
 
   Future<void> saveChanges() async {
+    if (isGuestScorekeeper) {
+      _playerNameController.text = _nicknameController.text;
+    }
     if (validateRequiredFields()) {
       if (widget.player != null) {
         widget.player!.playerName = _playerNameController.text;
@@ -139,7 +136,6 @@ class PlayerFormState extends State<PlayerForm> {
             ContactIdentity.normalizePhoneNumber(_phoneNumberController.text);
         widget.player!.normalizedEmail = widget.player!.email;
         widget.player!.normalizedPhoneNumber = widget.player!.phoneNumber;
-        widget.player!.status = _statusController.text;
         widget.player!.ownerId = currentUser?.id ?? 'guest';
 
         if (widget.editingOrAdding == 'Add') {
@@ -178,38 +174,72 @@ class PlayerFormState extends State<PlayerForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         (widget.editingOrAdding == 'Edit')
-            ? Text("Edit Player Attributes (${widget.player!.id})")
+            ? const Text("Edit Player Attributes")
             : const Text("Add A New Player"),
         const SizedBox(height: 10),
-        TextFormField(
-          controller: _playerNameController,
-          decoration: const InputDecoration(labelText: 'Player Name'),
-          enabled: widget.allowEditing,
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _nicknameController,
-          decoration: const InputDecoration(labelText: 'Nickname'),
-          enabled: widget.allowEditing,
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _emailController,
-          decoration: const InputDecoration(labelText: 'Email'),
-          enabled: widget.allowEditing,
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _phoneNumberController,
-          decoration: const InputDecoration(labelText: 'Phone Number'),
-          enabled: widget.allowEditing,
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _statusController,
-          decoration: const InputDecoration(labelText: 'Status'),
-          enabled: widget.allowEditing,
-        ),
+        if (isGuestScorekeeper) ...[
+          TextFormField(
+            controller: _nicknameController,
+            decoration: const InputDecoration(labelText: 'Nickname'),
+            enabled: widget.allowEditing,
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const LoginScreen(
+                    promptMessage:
+                        'Log in or sign up to set your real name, email, and phone number!',
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.lock_outline, color: Colors.black87),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Log in or sign up to set your real name, email, and phone number!',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          TextFormField(
+            controller: _playerNameController,
+            decoration: const InputDecoration(labelText: 'Player Name'),
+            enabled: widget.allowEditing,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _nicknameController,
+            decoration: const InputDecoration(labelText: 'Nickname'),
+            enabled: widget.allowEditing,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
+            enabled: widget.allowEditing,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _phoneNumberController,
+            decoration: const InputDecoration(labelText: 'Phone Number'),
+            enabled: widget.allowEditing,
+          ),
+        ],
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () {

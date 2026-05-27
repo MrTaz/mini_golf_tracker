@@ -212,12 +212,12 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.15 Friends List & Player Form Polish
 
-* [ ] **Remove UUID from Header:** In `player_form_widget.dart`, update the edit mode header to simply read "Edit Player Attributes" without concatenating `widget.player!.id`.
-* [ ] **Remove Status Field:** In `player_form_widget.dart`, remove the `_statusController` and its associated `TextFormField` from the UI.
-* [ ] **Dynamic Edit/Cancel Icon:** In `player_list_item.dart`, update the edit icon logic in `_buildTrailingIcons()`. If `isDropdownOpen` is true, display `Icons.close` (to indicate cancel); otherwise, display `Icons.edit`.
-* [ ] **Expandable Player Details:** Update `PlayerListItem` so that if `creatingGame` is false, tapping the `ListTile` expands a read-only view of the player's saved details (Email, Phone, Total Score), satisfying the PII privacy requirements from Phase 5.6.
+* [x] **Remove UUID from Header:** In `player_form_widget.dart`, update the edit mode header to simply read "Edit Player Attributes" without concatenating `widget.player!.id`.
+* [x] **Remove Status Field:** In `player_form_widget.dart`, remove the `_statusController` and its associated `TextFormField` from the UI.
+* [x] **Dynamic Edit/Cancel Icon:** In `player_list_item.dart`, update the edit icon logic in `_buildTrailingIcons()`. If `isDropdownOpen` is true, display `Icons.close` (to indicate cancel); otherwise, display `Icons.edit`.
+* [x] **Expandable Player Details:** Update `PlayerListItem` so that if `creatingGame` is false, tapping the `ListTile` expands a read-only view of the player's saved details (Email, Phone, Total Score), satisfying the PII privacy requirements from Phase 5.6.
 * [ ] **PlayerCreateScreen Form Polish:** Redesign the embedded "Add a new player" form inputs to look modern, well-spaced, and visually cohesive with the new Material 3 card aesthetic introduced in Phase 1.3.
-*  [ ] **Guest Scorekeeper PII Gating:** In `PlayerForm`, detect if the user is editing the "Guest Scorekeeper" profile (`id == 'guest'`). If so, allow them to edit only their nickname. Hide the Name, Email, and Phone fields, and replace them with a freemium-style banner that navigates to the `LoginScreen` if they want to claim the profile and add contact details. Automatically sync the `playerName` to the `nickname` behind the scenes to satisfy database schema rules.
+* [x] **Guest Scorekeeper PII Gating:** In `PlayerForm`, detect if the user is editing the "Guest Scorekeeper" profile (`id == 'guest'`). If so, allow them to edit only their nickname. Hide the Name, Email, and Phone fields, and replace them with a freemium-style banner that navigates to the `LoginScreen` if they want to claim the profile and add contact details. Automatically sync the `playerName` to the `nickname` behind the scenes to satisfy database schema rules.
 
 #### 1.16 Auto-Resume Race Conditions & Concurrency Fixes
 
@@ -1117,8 +1117,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `PlayersScreen` receives `currentlySelectedPlayers`.
 * [x] `PlayersScreen` clears all selected players.
 * [x] `GameCreateScreen` receives returned selected players.
-* [ ] `PlayerListItem` hides PII by default.
-* [ ] `PlayerListItem` reveals PII on expansion.
+* [x] `PlayerListItem` hides PII by default.
+* [x] `PlayerListItem` reveals PII on expansion.
 * [ ] `PlayerForm` shows PII sharing toggle.
 * [ ] `GameInprogressScreen` responds to stream updates.
 * [ ] `GameInprogressScreen` avoids out-of-bounds errors.

@@ -31,6 +31,7 @@ class PlayerListItem extends StatefulWidget {
 }
 
 class PlayerListItemState extends State<PlayerListItem> {
+  bool isDetailsOpen = false;
   bool isDropdownOpen = false;
   bool isSelected = false;
   final Player? loggedInUser = UserProvider().loggedInUser;
@@ -69,6 +70,18 @@ class PlayerListItemState extends State<PlayerListItem> {
   void toggleDropdown() {
     setState(() {
       isDropdownOpen = !isDropdownOpen;
+      if (isDropdownOpen) {
+        isDetailsOpen = false;
+      }
+    });
+  }
+
+  void toggleDetails() {
+    setState(() {
+      isDetailsOpen = !isDetailsOpen;
+      if (isDetailsOpen) {
+        isDropdownOpen = false;
+      }
     });
   }
 
@@ -115,10 +128,11 @@ class PlayerListItemState extends State<PlayerListItem> {
                     widget.onPlayerSelected!(widget.player);
                   }
                 } else {
-                  toggleDropdown();
+                  toggleDetails();
                 }
               },
               trailing: _buildTrailingIcons()),
+          _buildReadOnlyDetails(),
           _buildListItemDropDownEdit()
         ],
       ),
@@ -154,7 +168,7 @@ class PlayerListItemState extends State<PlayerListItem> {
         if (_allowEditing)
           GestureDetector(
             onTap: toggleDropdown,
-            child: const Icon(Icons.edit),
+            child: Icon(isDropdownOpen ? Icons.close : Icons.edit),
           ),
         const SizedBox(width: 8),
         if (widget.onRemove != null) ...[
@@ -203,6 +217,43 @@ class PlayerListItemState extends State<PlayerListItem> {
     } else {
       return const SizedBox(width: 0);
     }
+  }
+
+  Widget _buildReadOnlyDetails() {
+    if (!isDetailsOpen || widget.creatingGame == true || isDropdownOpen) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Divider(),
+          _buildDetailRow('Email', widget.player.email ?? 'Not provided'),
+          _buildDetailRow('Phone', widget.player.phoneNumber ?? 'Not provided'),
+          _buildDetailRow('Total Score', widget.player.totalScore.toString()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 
   @override

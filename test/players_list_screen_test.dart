@@ -27,60 +27,121 @@ void main() {
   });
 
   Player testPlayer() {
-    return Player(id: 'p1', playerName: 'Ava Guest', nickname: 'Ava', ownerId: 'guest', totalScore: 0);
+    return Player(
+      id: 'p1',
+      playerName: 'Ava Guest',
+      nickname: 'Ava',
+      ownerId: 'guest',
+      totalScore: 7,
+      email: 'ava@example.com',
+      phoneNumber: '5551234567',
+    );
   }
 
-  testWidgets('PlayerListItem renders with listOrderNumber and checks suffix logic', (tester) async {
+  testWidgets(
+      'PlayerListItem renders with listOrderNumber and checks suffix logic',
+      (tester) async {
     // position % 10 == 1
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 1))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 1))));
     expect(find.text('1st'), findsOneWidget);
 
     // position % 10 == 2
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 2))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 2))));
     expect(find.text('2nd'), findsOneWidget);
 
     // position % 10 == 3
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 3))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 3))));
     expect(find.text('3rd'), findsOneWidget);
 
     // position % 10 == 4
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 4))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 4))));
     expect(find.text('4th'), findsOneWidget);
-    
+
     // position % 100 == 11
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 11))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 11))));
     expect(find.text('11th'), findsOneWidget);
 
     // position % 100 == 12
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 12))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 12))));
     expect(find.text('12th'), findsOneWidget);
 
     // position % 100 == 13
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer(), listOrderNumber: 13))));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(player: testPlayer(), listOrderNumber: 13))));
     expect(find.text('13th'), findsOneWidget);
   });
 
-  testWidgets('PlayerListItem toggles dropdown when edit icon is tapped', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer()))));
-    
+  testWidgets('PlayerListItem toggles dropdown and edit icon state',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: PlayerListItem(player: testPlayer()))));
+
+    expect(find.byIcon(Icons.edit), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsNothing);
+
     // Tap to open
     await tester.tap(find.byIcon(Icons.edit));
     await tester.pumpAndSettle();
 
     expect(find.byType(Divider), findsWidgets);
+    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byIcon(Icons.edit), findsNothing);
 
     // Tap to close instead of Save, because unauthenticated users don't see the Save button
-    await tester.tap(find.byIcon(Icons.edit));
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
-    
+
     expect(find.byType(Divider), findsNothing);
+    expect(find.byIcon(Icons.edit), findsOneWidget);
+  });
+
+  testWidgets('PlayerListItem hides PII until read-only expansion',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: PlayerListItem(player: testPlayer()))),
+    );
+
+    expect(find.text('ava@example.com'), findsNothing);
+    expect(find.text('5551234567'), findsNothing);
+    expect(find.text('7'), findsNothing);
+
+    await tester.tap(find.text('Ava Guest'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
+    expect(find.text('Total Score'), findsOneWidget);
+    expect(find.text('ava@example.com'), findsOneWidget);
+    expect(find.text('5551234567'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+
+    await tester.tap(find.text('Ava Guest'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ava@example.com'), findsNothing);
+    expect(find.text('5551234567'), findsNothing);
   });
 
   testWidgets('PlayerListItem selection tap and switch tap', (tester) async {
     bool selected = false;
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(
-      player: testPlayer(), 
-      creatingGame: true, 
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(
+      player: testPlayer(),
+      creatingGame: true,
       onPlayerSelected: (p) => selected = true,
       isSelected: false,
     ))));
@@ -95,11 +156,15 @@ void main() {
     expect(selected, true);
   });
 
-  testWidgets('PlayerListItem selection tap and switch tap calls onPlayerSelected', (tester) async {
+  testWidgets(
+      'PlayerListItem selection tap and switch tap calls onPlayerSelected',
+      (tester) async {
     int selectedCount = 0;
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(
-      player: testPlayer(), 
-      creatingGame: true, 
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PlayerListItem(
+      player: testPlayer(),
+      creatingGame: true,
       onPlayerSelected: (p) => selectedCount++,
       isSelected: false,
     ))));
@@ -117,11 +182,13 @@ void main() {
 
   testWidgets('PlayerListItem didUpdateWidget state sync', (tester) async {
     await tester.pumpWidget(const TestWrapper());
-    final state = tester.state<PlayerListItemState>(find.byType(PlayerListItem));
+    final state =
+        tester.state<PlayerListItemState>(find.byType(PlayerListItem));
     expect(state.isSelected, false);
 
     // Update parent state via public helper to avoid analyzer warnings
-    final wrapperState = tester.state<TestWrapperState>(find.byType(TestWrapper));
+    final wrapperState =
+        tester.state<TestWrapperState>(find.byType(TestWrapper));
     wrapperState.updateSelected(true);
     await tester.pumpAndSettle();
 
@@ -144,7 +211,9 @@ void main() {
     expect(removed, true);
   });
 
-  testWidgets('PlayerListItem save edited changes closes dropdown for authenticated owner', (tester) async {
+  testWidgets(
+      'PlayerListItem save edited changes closes dropdown for authenticated owner',
+      (tester) async {
     final owner = Player(
       id: 'owner123',
       playerName: 'Owner Player',
@@ -155,7 +224,10 @@ void main() {
     await UserProvider().login(owner);
 
     // Pre-create player in fake Firestore so update() doesn't throw not-found
-    await fakeFirestore.collection('players').doc('owner123').set(owner.toJson());
+    await fakeFirestore
+        .collection('players')
+        .doc('owner123')
+        .set(owner.toJson());
 
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -197,9 +269,14 @@ class TestWrapperState extends State<TestWrapper> {
       isSelected = val;
     });
   }
-  
+
   Player testPlayer() {
-    return Player(id: 'p1', playerName: 'Ava Guest', nickname: 'Ava', ownerId: 'guest', totalScore: 0);
+    return Player(
+        id: 'p1',
+        playerName: 'Ava Guest',
+        nickname: 'Ava',
+        ownerId: 'guest',
+        totalScore: 0);
   }
 
   @override
@@ -215,4 +292,3 @@ class TestWrapperState extends State<TestWrapper> {
     );
   }
 }
-
