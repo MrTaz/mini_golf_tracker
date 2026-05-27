@@ -1042,9 +1042,11 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 **Fully Covered Files (100% Line Coverage):**
 
 * [x] `add_edit_course_screen.dart`
+* [ ] `always_scrollable_overscroll_physics_class.dart`
 * [x] `app_drawer_widget.dart`
 * [x] `asset_bouncy_animation.dart`
 * [x] `asset_golf_ball_path.dart`
+* [ ] `assets.dart`
 * [x] `claim_account_screen.dart`
 * [x] `contact_identity.dart`
 * [x] `course_list_item_widget.dart`
@@ -1053,6 +1055,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `dashboard_screen.dart`
 * [x] `database_connection_error.dart`
 * [ ] `database_connection.dart`
+* [ ] `extra_scroll_physics_class.dart`
 * [ ] `firebase_options.dart`
 * [x] `game_card_widget.dart`
 * [x] `game_create_screen.dart`
@@ -1067,12 +1070,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] `past_game_card_widget.dart`
 * [x] `past_game_details_screen.dart`
 * [x] `past_game_list_item.dart`
+* [x] `past_games_list_view.dart`
 * [x] `past_games_screen.dart`
 * [x] `player_avatar_widget.dart`
 * [x] `player_create_screen.dart`
+* [ ] `player_details_screen.dart`
 * [ ] `player_form_widget.dart`
 * [x] `player_game_info.dart`
 * [x] `player_profile_widget.dart`
+* [ ] `player_score_card.dart`
 * [ ] `player_score_data_table_card.dart`
 * [x] `player.dart`
 * [x] `players_card_widget.dart`
