@@ -268,6 +268,11 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Update Composite Indexes:** Deploy the new `participant_ids` + `scheduled_time` composite index to Firestore to support the new query.
 * [x] **Sync Local Firestore Indexes:** Run `firebase firestore:indexes > firestore.indexes.json` in the terminal to pull the composite indexes created in the Firebase Console down to the local repository state so they are tracked in version control.
 
+#### 1.23 Hotfix: Guest Course Creation & Cache Fallback
+
+* [ ] **Update Firestore Rules:** Update `firestore.rules` for the `/courses/{document}` match block to `allow read, create, update: if true;` so guests can contribute to the community course database.
+* [ ] **Fix Offline Cache Append:** In `AddEditCourseScreen`, update the offline fallback catch block so that when a course fails to save to the cloud, it appends the new course to the `SharedPreferences` 'courses' list before popping the navigator.
+
 ---
 
 ### Phase 2 — Identity Foundation & Local Game Adoption
