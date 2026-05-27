@@ -208,6 +208,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
 * [x] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
 * [x] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
+* [x] **Creator Warning E2E Test:** Create an integration test (integration_test/creator_participation_warning_test.dart) proving the Creator Participation warning dialog successfully intercepts the start flow and can be bypassed.
 
 #### 1.15 Friends List & Player Form Polish
 
@@ -1131,6 +1132,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
+* [x] Creator participation warning bypass flow passes (integration_test/creator_participation_warning_test.dart).
 * [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
 * [x] Update `integration_test/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
 * [x] Course location duplicate conflict and bypass flow passes (`integration_test/course_location_conflict_flow_test.dart`).
