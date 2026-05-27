@@ -128,11 +128,11 @@ void main() {
     // Verify selectable course exists
     expect(find.text('Selectable Course'), findsOneWidget);
 
-    // Selectable courses have a check icon button when creatingGame is true
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    // Selectable courses have a Switch when creatingGame is true
+    expect(find.byType(Switch), findsOneWidget);
 
-    // Tap selection button
-    await tester.tap(find.byIcon(Icons.check));
+    // Tap Switch to toggle it to true
+    await tester.tap(find.byType(Switch));
     await tester.pump(); // Start pop transition
     await tester
         .pump(const Duration(milliseconds: 500)); // Finish pop transition
@@ -141,6 +141,104 @@ void main() {
     expect(returnedCourse, isNotNull);
     expect(returnedCourse!.name, 'Selectable Course');
     expect(returnedCourse!.id, docRef.id);
+  });
+
+  testWidgets(
+      'Switch is rendered and toggled correctly when a selectedCourse is injected, and verify Clear button taps',
+      (tester) async {
+    // Populate fake Firestore
+    final docRef = await fakeFirestore.collection('courses').add({
+      'name': 'Injected Course',
+      'number_of_holes': 18,
+      'par_strokes': {'1': 3},
+    });
+
+    final injectedCourse = Course(
+      id: docRef.id,
+      name: 'Injected Course',
+      numberOfHoles: 18,
+      parStrokes: {1: 3},
+    );
+
+    Course? returnedCourse;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () async {
+                returnedCourse = await Navigator.push<Course>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CoursesScreen(
+                      creatingGame: true,
+                      selectedCourse: injectedCourse,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Go to Selection'),
+            );
+          },
+        ),
+      ),
+    );
+
+    // Tap button to go to CoursesScreen
+    await tester.tap(find.text('Go to Selection'));
+    await tester.pump(); // Start navigation transition
+    await tester.pump(const Duration(milliseconds: 500)); // Finish transition
+    await tester.pump(); // Rebuild with fetched data
+
+    // Verify injected course switch is rendered and is ON (value is true)
+    final switchFinder = find.byType(Switch);
+    expect(switchFinder, findsOneWidget);
+    expect(tester.widget<Switch>(switchFinder).value, isTrue);
+
+    // 1. Verify we can tap the "Clear" button in AppBar to clear selection
+    expect(find.text('Clear'), findsOneWidget);
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(returnedCourse, isNotNull);
+    expect(returnedCourse!.id, isEmpty); // Course.empty() has an empty id
+
+    // Now let's go back and test turning the switch OFF
+    returnedCourse = null;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () async {
+                returnedCourse = await Navigator.push<Course>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CoursesScreen(
+                      creatingGame: true,
+                      selectedCourse: injectedCourse,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Go to Selection'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Go to Selection'));
+    await tester.pumpAndSettle();
+
+    // Toggle the switch to false (turn it off)
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(returnedCourse, isNotNull);
+    expect(returnedCourse!.id, isEmpty); // Toggling Switch off also returns Course.empty()
   });
 
   testWidgets('triggers load more courses on scroll', (tester) async {

@@ -351,14 +351,17 @@ class CoursesScreenState extends State<CoursesScreen> {
   }
 
   Widget _buildCourseSelectionSwitch(Course course) {
-    return IconButton(
-      icon: const Icon(Icons.check),
-      onPressed: () {
-        setState(() {
-          selectedCourse = course;
-          _handleCourseSelection(
-              course); // Call the method to handle course selection
-        });
+    return Switch(
+      value: selectedCourse != null && course.id == selectedCourse!.id,
+      onChanged: (bool value) {
+        if (value) {
+          setState(() {
+            selectedCourse = course;
+          });
+          _handleCourseSelection(course);
+        } else {
+          Navigator.pop(context, Course.empty());
+        }
       },
     );
   }
@@ -424,6 +427,14 @@ class CoursesScreenState extends State<CoursesScreen> {
       appBar: (widget.creatingGame!)
           ? AppBar(
               title: const Text('Select Course'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, Course.empty());
+                  },
+                  child: const Text('Clear'),
+                ),
+              ],
             )
           : null,
       body: Stack(children: [

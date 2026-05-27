@@ -374,6 +374,50 @@ void main() {
     expect(find.text('Windy Hills'), findsOneWidget);
   });
 
+  testWidgets('handleCourseSelectionResult with empty course clears selection',
+      (tester) async {
+    await pumpCreateScreen(tester);
+    final state =
+        tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
+    
+    // First select a course
+    state.handleCourseSelectionResult(_fakeCourse());
+    await tester.pump();
+    expect(find.text('Windy Hills'), findsOneWidget);
+
+    // Now select Course.empty()
+    state.handleCourseSelectionResult(Course.empty());
+    await tester.pump();
+    expect(find.text('Select a course'), findsOneWidget);
+  });
+
+  testWidgets('returning Course.empty() from navigation clears selection',
+      (tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navKey,
+      home: const GameCreateScreen(),
+    ));
+    await tester.pump();
+
+    // 1. Initial state has no course selection
+    expect(find.text('Select a course'), findsOneWidget);
+
+    // 2. Select course
+    await tester.tap(find.text('Select a course'));
+    await tester.pump(); // push starts
+    navKey.currentState!.pop(_fakeCourse());
+    await tester.pumpAndSettle();
+    expect(find.text('Windy Hills'), findsOneWidget);
+
+    // 3. Select course again but return Course.empty()
+    await tester.tap(find.text('Windy Hills'));
+    await tester.pump(); // push starts
+    navKey.currentState!.pop(Course.empty());
+    await tester.pumpAndSettle();
+    expect(find.text('Select a course'), findsOneWidget);
+  });
+
   testWidgets('tapping Course selection card dismisses game name focus',
       (tester) async {
     final navKey = GlobalKey<NavigatorState>();

@@ -241,7 +241,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Pinecrest Links'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.check));
+    await tester.tap(find.byType(Switch));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -325,7 +325,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    await tester.tap(find.byIcon(Icons.check));
+    await tester.tap(find.byType(Switch));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 

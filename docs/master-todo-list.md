@@ -274,6 +274,11 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Fix Offline Cache Append:** In `AddEditCourseScreen`, update the offline fallback catch block so that when a course fails to save to the cloud, it appends the new course to the `SharedPreferences` 'courses' list before popping the navigator.
 * [x] **Harden Global Firestore Rules:** Restore schema validation in `firestore.rules` for the `games`, `players`, `player_contacts`, and `friends` collections. Enforce strict data types and required fields for all `create` and `update` operations to prevent NoSQL injection, while preserving guest write access.
 
+#### 1.24 Hotfix: Course Selection State Synchronization
+* [x] **CoursesScreen UI Synchronization:** In `CoursesScreen`, change the trailing course selection widget to a `Switch` that accurately reflects if the course is currently selected. 
+* [x] **Clear Course Action:** Add a "Clear" button to the `CoursesScreen` AppBar when in `creatingGame` mode.
+* [x] **Handle Cleared State:** Update `GameCreateScreen._selectCourse()` to accept a sentinel `Course.empty()` object as a signal to explicitly clear the `_selectedCourse` state, distinguishing it from a standard navigator cancellation.
+
 ---
 
 ### Phase 2 — Identity Foundation & Local Game Adoption

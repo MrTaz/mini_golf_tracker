@@ -55,7 +55,11 @@ class GameCreateScreenState extends State<GameCreateScreen> {
   @visibleForTesting
   void handleCourseSelectionResult(Course? course) {
     if (course != null) {
-      setState(() => _selectedCourse = course);
+      if (course.id.isEmpty) {
+        setState(() => _selectedCourse = null);
+      } else {
+        setState(() => _selectedCourse = course);
+      }
     }
   }
 
@@ -77,14 +81,21 @@ class GameCreateScreenState extends State<GameCreateScreen> {
     final Course? selectedCourse = await Navigator.push<Course?>(
       context,
       MaterialPageRoute(
-          builder: (context) => const CoursesScreen(
+          builder: (context) => CoursesScreen(
                 creatingGame: true,
+                selectedCourse: _selectedCourse,
               )),
     );
     if (selectedCourse != null) {
-      setState(() {
-        _selectedCourse = selectedCourse;
-      });
+      if (selectedCourse.id.isEmpty) {
+        setState(() {
+          _selectedCourse = null;
+        });
+      } else {
+        setState(() {
+          _selectedCourse = selectedCourse;
+        });
+      }
     }
   }
 
