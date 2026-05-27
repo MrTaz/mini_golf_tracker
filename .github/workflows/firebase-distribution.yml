@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_NOTES: ""
     
     steps:
       - name: Checkout Code
@@ -78,6 +80,16 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 7
 
+      - name: Extract Push Commits for Changelog
+        run: |
+          # Read all commit messages from the push event payload using jq
+          CHANGELOG=$(jq -r '.commits[].message' "$GITHUB_EVENT_PATH")
+          
+          # Write the multiline string to a GitHub environment variable
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
@@ -85,3 +97,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
           file: build/app/outputs/bundle/release/app-release.aab
+          releaseNotes: ${{ env.RELEASE_NOTES }}
