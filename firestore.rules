@@ -30,9 +30,7 @@ service cloud.firestore {
     match /players/{playerId} {
       allow read: if true;
       
-      allow create: if isLoggedIn()
-        && request.resource.data.owner_id == request.auth.uid
-        && request.resource.data.id == playerId
+      allow create: if request.resource.data.id == playerId
         && request.resource.data.total_score == 0
         && request.resource.data.player_name is string
         && request.resource.data.player_name.size() > 0
@@ -48,18 +46,16 @@ service cloud.firestore {
         && hasReservedEmail(playerId)
         && hasReservedPhone(playerId);
 
-      allow update: if isLoggedIn() && (
-        // Case 1: Owner updates their profile fields. Must not change key identifier fields.
+      allow update: if (
+        // Case 1: Owner or guest updates profile fields.
         (
-          resource.data.owner_id == request.auth.uid
-          && request.resource.data.owner_id == resource.data.owner_id
-          && request.resource.data.id == resource.data.id
+          request.resource.data.id == resource.data.id
           && request.resource.data.player_name is string
           && request.resource.data.player_name.size() > 0
           && request.resource.data.player_name.size() <= 100
           && request.resource.data.nickname is string
           && request.resource.data.nickname.size() <= 100
-          && (request.resource.data.total_score is int || request.resource.data.total_score is float)
+          && (request.resource.data.total_score is int || request.resource.data.total_score is float || request.resource.data.total_score is number)
           && request.resource.data.total_score >= 0
           && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
           && (!('phone_number' in request.resource.data) || request.resource.data.phone_number == null || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
@@ -71,12 +67,13 @@ service cloud.firestore {
         // Case 2: Peer user or game host updates only the total_score field after a game.
         || (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['total_score'])
-          && (request.resource.data.total_score is int || request.resource.data.total_score is float)
+          && (request.resource.data.total_score is int || request.resource.data.total_score is float || request.resource.data.total_score is number)
           && request.resource.data.total_score >= 0
         )
         // Case 3: A verified Firebase Auth contact claims an unclaimed player.
         || (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed_by_uid'])
+          isLoggedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed_by_uid'])
           && resource.data.claimed_by_uid == null
           && request.resource.data.claimed_by_uid == request.auth.uid
           && (
@@ -101,9 +98,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create: if (
-          isLoggedIn()
-          && request.resource.data.player_id is string
-          && request.resource.data.created_by_uid == request.auth.uid
+          request.resource.data.player_id is string
           && (
             (
               request.resource.data.kind == 'email'
@@ -132,9 +127,7 @@ service cloud.firestore {
     match /friends/{friendDocId} {
       allow read: if true;
       
-      allow create, update: if isLoggedIn()
-        && (request.resource.data.player_id == request.auth.uid || request.resource.data.friend_id == request.auth.uid)
-        && request.resource.data.player_id is string
+      allow create, update: if request.resource.data.player_id is string
         && request.resource.data.player_id.size() > 0
         && request.resource.data.player_id.size() <= 100
         && request.resource.data.friend_id is string
@@ -162,7 +155,13 @@ service cloud.firestore {
 
     // Games Collection
     match /games/{gameId} {
-      allow create, read, update: if true;
+      allow read: if true;
+      
+      allow create, update: if request.resource.data.name is string
+        && request.resource.data.status is string
+        && request.resource.data.course is map
+        && request.resource.data.players is list
+        && request.resource.data.participant_ids is list;
 
       allow delete: if request.auth != null
         && (request.auth.uid == resource.data.creator_id || isTestAccount());
