@@ -120,9 +120,20 @@ class Game {
   }
 
   int calculateTotalScore(PlayerGameInfo player) {
-    // if (!scores.containsKey(player)) {
-    //   addPlayer(player);
-    // }
+    if (!scores.containsKey(player)) {
+      PlayerGameInfo? existingKey;
+      for (final k in scores.keys) {
+        if (k.playerId == player.playerId) {
+          existingKey = k;
+          break;
+        }
+      }
+      if (existingKey != null) {
+        scores[player] = scores[existingKey]!;
+      } else {
+        addPlayer(player);
+      }
+    }
 
     final List<int> playerScores = player.scores;
     if (playerScores.isEmpty) {
@@ -134,20 +145,24 @@ class Game {
     return player.totalScore;
   }
 
-  PlayerGameInfo getWinner() {
-    PlayerGameInfo? winner;
+  List<PlayerGameInfo> getWinners() {
+    if (players.isEmpty) {
+      return [];
+    }
     int? minScore;
+    List<PlayerGameInfo> winners = [];
 
     for (final player in players) {
       final totalScore = calculateTotalScore(player);
-      if (minScore == null || totalScore <= minScore) {
+      if (minScore == null || totalScore < minScore) {
         minScore = totalScore;
-        winner = player;
-        // TODO: deal with multiple winners
+        winners = [player];
+      } else if (totalScore == minScore) {
+        winners.add(player);
       }
     }
 
-    return winner!;
+    return winners;
   }
 
   List<PlayerGameInfo> getSortedPlayerScores() {

@@ -375,6 +375,39 @@ class GameStartScreenState extends State<GameStartScreen> {
       return;
     }
 
+    final creator = UserProvider().loggedInUser;
+    if (creator != null) {
+      final isCreatorInGame =
+          widget.unstartedGame!.players.any((p) => p.playerId == creator.id);
+      if (!isCreatorInGame) {
+        final startAnyway = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("You are not playing!"),
+              content: const Text(
+                  "You have not added yourself to the player list for this game. Do you want to start the game anyway?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  key: const Key("btnStartAnyway"),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Start Anyway"),
+                ),
+              ],
+            );
+          },
+        );
+        if (!mounted) return;
+        if (startAnyway != true) {
+          return;
+        }
+      }
+    }
+
     if (widget.unstartedGame!.scheduledTime == DateTime(0)) {
       widget.unstartedGame!.scheduledTime = DateTime.now();
     }

@@ -95,6 +95,26 @@ void main() {
     expect(selected, true);
   });
 
+  testWidgets('PlayerListItem selection tap and switch tap calls onPlayerSelected', (tester) async {
+    int selectedCount = 0;
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayerListItem(
+      player: testPlayer(), 
+      creatingGame: true, 
+      onPlayerSelected: (p) => selectedCount++,
+      isSelected: false,
+    ))));
+
+    // Tap ListTile (should call onPlayerSelected)
+    await tester.tap(find.text('Ava Guest'));
+    await tester.pumpAndSettle();
+    expect(selectedCount, 1);
+
+    // Tap switch (should call onPlayerSelected)
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(selectedCount, 2);
+  });
+
   testWidgets('PlayerListItem didUpdateWidget state sync', (tester) async {
     await tester.pumpWidget(const TestWrapper());
     final state = tester.state<PlayerListItemState>(find.byType(PlayerListItem));

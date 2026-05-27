@@ -203,11 +203,11 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.14 Gameplay Rules & Scoring Edge Cases
 
-* [ ] **Handle Multiple Winners (Ties):** Refactor `Game.getWinner()` in `game.dart` to return a `List<PlayerGameInfo> getWinners()` to account for ties.
-* [ ] **Winner UI Updates:** Update `PastGameListItem` and `PastGamesListView` to handle and display multiple winners (e.g., "Winners: Alice, Bob" instead of "Winner: Alice").
-* [ ] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
-* [ ] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
-* [ ] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
+* [x] **Handle Multiple Winners (Ties):** Refactor `Game.getWinner()` in `game.dart` to return a `List<PlayerGameInfo> getWinners()` to account for ties.
+* [x] **Winner UI Updates:** Update `PastGameListItem` and `PastGamesListView` to handle and display multiple winners (e.g., "Winners: Alice, Bob" instead of "Winner: Alice").
+* [x] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
+* [x] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
+* [x] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
 
 #### 1.15 Friends List & Player Form Polish
 

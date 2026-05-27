@@ -656,7 +656,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await UserProvider().login(_authPlayer());
+    await UserProvider().login(_authPlayer(id: 'p1'));
 
     final game = _twoPlayerGame(scheduledTime: DateTime(0));
 
@@ -679,7 +679,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await UserProvider().login(_authPlayer());
+    await UserProvider().login(_authPlayer(id: 'p1'));
 
     final game = _twoPlayerGame(
       scheduledTime: DateTime.now().add(const Duration(hours: 2)),
@@ -885,5 +885,91 @@ void main() {
 
     // The synthetic player uses its id as the playerName, so the key exists
     expect(find.byKey(const Key('inkwellOrderTapunknown-id')), findsOneWidget);
+  });
+
+  group('Creator Participation Rule', () {
+    testWidgets(
+        'Missing creator in player list shows AlertDialog on Start; '
+        'tapping Cancel stays on screen, tapping Start Anyway starts the game',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final creator = _authPlayer(id: 'creator-uid');
+      await UserProvider().login(creator);
+
+      final game = _twoPlayerGame();
+
+      await tester.pumpWidget(_testApp(
+        home: GameStartScreen(unstartedGame: game),
+      ));
+
+      await tester.tap(find.text('Start the game!'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You are not playing!'), findsOneWidget);
+      expect(
+        find.text(
+            'You have not added yourself to the player list for this game. Do you want to start the game anyway?'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You are not playing!'), findsNothing);
+      expect(find.byType(GameInprogressScreen), findsNothing);
+
+      await tester.tap(find.text('Start the game!'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You are not playing!'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('btnStartAnyway')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameInprogressScreen), findsOneWidget);
+    });
+
+    testWidgets(
+        'Creator in player list does not show AlertDialog and starts game immediately',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final creator = _authPlayer(id: 'creator-uid');
+      await UserProvider().login(creator);
+
+      final game = Game(
+        id: 'game-id-creator',
+        name: 'Creator Game',
+        course: Course(
+          id: 'c1',
+          name: 'Windy Hills',
+          numberOfHoles: 18,
+          parStrokes: {1: 3, 2: 4},
+        ),
+        players: [
+          PlayerGameInfo(
+              playerId: 'creator-uid', gameId: 'game-id-creator', scores: []),
+          PlayerGameInfo(playerId: 'p2', gameId: 'game-id-creator', scores: []),
+        ],
+        scheduledTime: DateTime(2026, 5, 17, 10, 0),
+      );
+
+      await tester.pumpWidget(_testApp(
+        home: GameStartScreen(unstartedGame: game),
+      ));
+
+      await tester.tap(find.text('Start the game!'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You are not playing!'), findsNothing);
+      expect(find.byType(GameInprogressScreen), findsOneWidget);
+    });
   });
 }

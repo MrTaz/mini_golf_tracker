@@ -189,9 +189,18 @@ void main() {
       game.recordScore(p, 3, 5);
       expect(game.calculateTotalScore(p), 12);
     });
+
+    test('safely initializes an unknown player not currently in scores map', () {
+      final game = buildTestGame(id: 'g1');
+      final outsider = makePlayer('outsider', 'g1');
+      final total = game.calculateTotalScore(outsider);
+      expect(total, 0);
+      expect(game.players.contains(outsider), isTrue);
+      expect(game.scores.containsKey(outsider), isTrue);
+    });
   });
 
-  group('Game.getWinner', () {
+  group('Game.getWinners', () {
     test('returns the player with the lowest total score', () {
       final p1 = makePlayer('p1', 'g1');
       final p2 = makePlayer('p2', 'g1');
@@ -205,17 +214,27 @@ void main() {
       game.recordScore(p2, 2, 4);
       game.recordScore(p2, 3, 4); // total = 12
 
-      final winner = game.getWinner();
-      expect(winner.playerId, 'p1');
+      final winners = game.getWinners();
+      expect(winners.length, 1);
+      expect(winners.first.playerId, 'p1');
     });
 
-    test('returns player with equal lowest score', () {
+    test('returns all players in a tie', () {
       final p1 = makePlayer('p1', 'g1');
       final p2 = makePlayer('p2', 'g1');
       final game = buildTestGame(id: 'g1', players: [p1, p2]);
-      // Both score 0 (no strokes recorded), p2 or p1 accepted
-      final winner = game.getWinner();
-      expect(winner.playerId, anyOf('p1', 'p2'));
+      
+      game.recordScore(p1, 1, 3);
+      game.recordScore(p2, 1, 3);
+
+      final winners = game.getWinners();
+      expect(winners.length, 2);
+      expect(winners.map((w) => w.playerId).toList(), unorderedEquals(['p1', 'p2']));
+    });
+
+    test('returns empty list when no players exist', () {
+      final game = buildTestGame(id: 'g1');
+      expect(game.getWinners(), isEmpty);
     });
   });
 

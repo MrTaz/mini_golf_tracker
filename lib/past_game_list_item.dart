@@ -66,11 +66,16 @@ class PastGameListItemState extends State<PastGameListItem> {
                         fontWeight: FontWeight.w300,
                         fontStyle: FontStyle.italic),
                   ),
-            subtitle: Text(
-              'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, Winner: ${Player.empty().getPlayerFriendById(widget.pastGame.getWinner().playerId)?.nickname ?? "Unknown"}',
-              // style: const TextStyle(
-              //   fontSize: 8.0
-              // )
+            subtitle: Builder(
+              builder: (context) {
+                final winners = widget.pastGame.getWinners();
+                final nicknames = winners.map((p) => Player.empty().getPlayerFriendById(p.playerId)?.nickname ?? "Unknown").toList();
+                final nicknamesStr = nicknames.join(', ');
+                final winnerLabel = winners.length > 1 ? 'Winners: $nicknamesStr' : 'Winner: $nicknamesStr';
+                return Text(
+                  'Course: ${widget.pastGame.course.name}, (${widget.pastGame.course.numberOfHoles} holes) - ${widget.pastGame.players.length} players, $winnerLabel',
+                );
+              },
             ),
             selected: isSelected,
             iconColor: WidgetStateColor.resolveWith((Set<WidgetState> states) {

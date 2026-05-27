@@ -107,10 +107,16 @@ class PlayerListItemState extends State<PlayerListItem> {
                     : Colors.teal;
               }),
               onTap: () {
-                setState(() {
-                  // This is called when the user toggles the switch.
-                  isSelected = !isSelected;
-                });
+                if (widget.creatingGame == true) {
+                  setState(() {
+                    isSelected = !isSelected;
+                  });
+                  if (widget.onPlayerSelected != null) {
+                    widget.onPlayerSelected!(widget.player);
+                  }
+                } else {
+                  toggleDropdown();
+                }
               },
               trailing: _buildTrailingIcons()),
           _buildListItemDropDownEdit()
@@ -161,18 +167,13 @@ class PlayerListItemState extends State<PlayerListItem> {
         if (widget.creatingGame == true)
           Switch(
             value: isSelected,
-            onChanged: (bool? value) {
+            onChanged: (bool value) {
               setState(() {
-                isSelected = value!;
+                isSelected = value;
               });
               if (widget.onPlayerSelected != null) {
                 widget.onPlayerSelected!(widget.player);
               }
-              // if (isSelected) {
-              //   // removePlayerFromGame(player);
-              // } else {
-              //   // addPlayerToGame(player);
-              // }
             },
           ),
         if (widget.showDragHandle) const Icon(Icons.drag_handle),
