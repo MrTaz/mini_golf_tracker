@@ -7,7 +7,13 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGamesListView extends StatefulWidget {
-  const PastGamesListView({super.key});
+  const PastGamesListView({
+    super.key,
+    @visibleForTesting this.startTimeFormatter,
+  });
+
+  /// Optional override for formatting start time — used in tests only.
+  final Future<String> Function(DateTime)? startTimeFormatter;
 
   @override
   State<PastGamesListView> createState() => _PastGamesListViewState();
@@ -51,6 +57,11 @@ class _PastGamesListViewState extends State<PastGamesListView> {
     }
   }
 
+  Future<String> _formatStartTime(DateTime startTime) {
+    final formatter = widget.startTimeFormatter ?? Utilities.formatStartTime;
+    return formatter(startTime);
+  }
+
   Widget getGames(BuildContext context) {
     if (_isLoading) {
       return const Expanded(
@@ -69,8 +80,7 @@ class _PastGamesListViewState extends State<PastGamesListView> {
         itemBuilder: (BuildContext context, int index) {
           // Utilities.debugPrintWithCallerInfo("Current Game: ${previousGames[index].toJson()}");
           return FutureBuilder<String>(
-            future: Future.value(
-                Utilities.formatStartTime(previousGames[index].startTime!)),
+            future: _formatStartTime(previousGames[index].startTime!),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return InkWell(
@@ -138,11 +148,8 @@ class _PastGamesListViewState extends State<PastGamesListView> {
         separatorBuilder: (BuildContext context, int index) => const Divider(),
       ));
     } else {
-      return SizedBox(
-          height: MediaQuery.of(context).size.height,
-          width: MediaQuery.of(context).size.width * 0.9,
-          child: const Align(
-              alignment: Alignment.center, child: Text("Let's play!")));
+      return const Expanded(
+          child: Center(child: Text("Let's play!")));
     }
   }
 

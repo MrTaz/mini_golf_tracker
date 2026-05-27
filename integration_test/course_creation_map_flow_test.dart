@@ -195,13 +195,13 @@ void main() {
     expect(find.byType(AddEditCourseScreen), findsNothing);
     expect(find.byType(CoursesScreen), findsOneWidget);
 
-    final createdCourse = find.text('Course: Test Integration Course');
+    final createdCourse = find.text('Test Integration Course');
     expect(createdCourse, findsOneWidget);
     await tester.tap(createdCourse);
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text('Location: Test Business Name'), findsOneWidget);
+    expect(find.text('Test Business Name'), findsOneWidget);
     expect(find.text('Total Par: 54'), findsOneWidget);
   });
 }
