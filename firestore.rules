@@ -147,18 +147,7 @@ service cloud.firestore {
 
     // Courses Collection
     match /courses/{courseId} {
-      allow read: if true;
-      
-      allow create: if isLoggedIn()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.number_of_holes is int
-        && request.resource.data.number_of_holes >= 1
-        && request.resource.data.number_of_holes <= 36
-        && request.resource.data.par_strokes is map;
-
-      allow update, delete: if false;
+      allow read, create, update: if true;
     }
 
     // Games Collection

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
@@ -792,6 +793,16 @@ void main() {
     final failingFirestore = ExceptionThrowingFirestore();
     DatabaseConnection.setFirestoreInstanceForTesting(failingFirestore);
 
+    // Seed SharedPreferences with an existing course to test the appending logic
+    final prefs = await SharedPreferences.getInstance();
+    final seededCourse = Course(
+      id: 'local_seeded',
+      name: 'Existing Cache Course',
+      numberOfHoles: 9,
+      parStrokes: {1: 3},
+    );
+    await prefs.setStringList('courses', [jsonEncode(seededCourse.toJson())]);
+
     await tester.pumpWidget(createScreen());
 
     await tester.tap(find.text('9 Holes'));
@@ -804,11 +815,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    final prefs = await SharedPreferences.getInstance();
     final cachedCourses = prefs.getStringList('courses') ?? [];
 
-    expect(cachedCourses, hasLength(1));
-    expect(cachedCourses.single, contains('Offline Course'));
+    expect(cachedCourses, hasLength(2));
+    expect(cachedCourses.first, contains('Existing Cache Course'));
+    expect(cachedCourses.last, contains('Offline Course'));
     expect(find.byType(AddEditCourseScreen), findsNothing);
 
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
@@ -892,5 +903,91 @@ void main() {
     expect(find.text('Nearby Courses Found'), findsNothing);
     final savedCourses = await fakeFirestore.collection('courses').get();
     expect(savedCourses.docs.any((d) => d.get('name') == 'New Course'), isTrue);
+  });
+
+  testWidgets('displays duplicate dialog on save when exact duplicate exists', (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Seed duplicate course in fake database
+    await fakeFirestore.collection('courses').add({
+      'name': 'Duplicate Course',
+      'number_of_holes': 18,
+      'latitude': 43.12345,
+      'longitude': -71.54321,
+      'address': '53 Carter Hill Rd, Hooksett, NH',
+      'par_strokes': {'1': 3},
+    });
+
+    await tester.pumpWidget(createScreen());
+
+    await tester.ensureVisible(find.text('18 Holes')); await tester.tap(find.text('18 Holes'));
+    await tester.pump();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Course Name'), 'Duplicate Course');
+
+    // Tap create to get conflict warning
+    await tester.ensureVisible(find.text('Create Course')); await tester.tap(find.text('Create Course'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Duplicate dialog is shown
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text('Duplicate Course')), findsOneWidget);
+    expect(find.text('A course with the same name and number of holes already exists in the database.'), findsOneWidget);
+
+    // Tap "OK" to dismiss
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('filters out self coordinates during conflict check when editing', (tester) async {
+    tester.view.physicalSize = const Size(800, 2500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final docRef = await fakeFirestore.collection('courses').add({
+      'name': 'Chucksters Fire Tower',
+      'number_of_holes': 18,
+      'latitude': 43.12345,
+      'longitude': -71.54321,
+      'address': '53 Carter Hill Rd, Hooksett, NH',
+      'par_strokes': {'1': 3},
+    });
+
+    final course = Course(
+      id: docRef.id,
+      name: 'Chucksters Fire Tower',
+      numberOfHoles: 18,
+      latitude: 43.12345,
+      longitude: -71.54321,
+      address: '53 Carter Hill Rd, Hooksett, NH',
+      parStrokes: {1: 3},
+    );
+
+    await tester.pumpWidget(createScreen(course: course));
+
+    // Change course name to trigger editing
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Course Name'), 'Chucksters Fire Tower Edited');
+
+    // Save Changes
+    final saveBtn = find.text('Save Changes');
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Should NOT show conflict dialog, and should successfully save
+    expect(find.text('Nearby Courses Found'), findsNothing);
+    expect(find.byType(AddEditCourseScreen), findsNothing);
+
+    final savedCourses = await fakeFirestore.collection('courses').get();
+    expect(savedCourses.docs.any((d) => d.get('name') == 'Chucksters Fire Tower Edited'), isTrue);
   });
 }
