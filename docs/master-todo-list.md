@@ -174,11 +174,14 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.12 Course Creation & Map Enhancements
 
-* [ ] **Course Model Update:** Add a `locationName` (Business Name) field to the `Course` model, distinct from the `name` (Course Name). Update `toJson`, `fromJson`, and `fromMap`.
-* [ ] **Hide Raw GPS:** In `AddEditCourseScreen` and `CoursesScreen` detail views, remove the display of raw latitude and longitude coordinates.
-* [ ] **Address Search:** In `MapPickerScreen`, add a search bar at the top that uses the `geocoding` package to convert a typed address into coordinates, jumping the map to that location.
-* [ ] **Fix Course Dropdown Overflow:** In `CourseListItem`, replace the rigid `GridView.builder` for par values with a responsive `Wrap` or dynamic grid to eliminate the "BOTTOM OVERFLOWED" Flutter UI error.
-* [ ] **Enhanced Details:** Display the "Total Par" and the new "Location Name" inside the `CourseListItem` dropdown details.
+* [x] **Course Model Update:** Add a `locationName` (Business Name) field to the `Course` model, distinct from the `name` (Course Name). Update `toJson`, `fromJson`, and `fromMap`.
+* [x] **Hide Raw GPS:** In `AddEditCourseScreen` and `CoursesScreen` detail views, remove the display of raw latitude and longitude coordinates.
+* [x] **Address Search:** In `MapPickerScreen`, add a search bar at the top that uses the `geocoding` package to convert a typed address into coordinates, jumping the map to that location.
+* [x] **Fix Course Dropdown Overflow:** In `CourseListItem`, replace the rigid `GridView.builder` for par values with a responsive `Wrap` or dynamic grid to eliminate the "BOTTOM OVERFLOWED" Flutter UI error.
+* [x] **Enhanced Details:** Display the "Total Par" and the new "Location Name" inside the `CourseListItem` dropdown details.
+* [x] **Unify CoursesScreen UI:** Refactor `CoursesScreen` to actually use the `CourseListItem` widget instead of its own hardcoded card and popup dialog.
+* [x] **POI & Business Name Search:** Upgrade the map search bar to use a free API (like OpenStreetMap Nominatim) so users can search for mini-golf courses by business name (e.g., "Chucksters") and pick from an autocomplete list.
+* [x] **CourseListItem UI Polish:** Clean up the `CourseListItem` expansion. The header should show the Course, # of Holes, and Address. The expanded view should move `locationName` above the Par Values, avoid repeating the header text, enforce a strict 6-column grid for hole pars (to prevent orphaned items), and make the address clickable using `url_launcher` to open native maps.
 
 #### 1.13 Game In-Progress UI & Logic Overhaul
 
@@ -612,6 +615,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] **Scheduling Paywall:** Enforce the rule that only users with `isPremium == true` can persist games with a `scheduled_time` in the future.
 * [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
 * [ ] **Premium Pace of Play Analytics:** Build a premium post-game summary UI that parses the historical `scoreTimestamps` data to calculate total game duration, average time per hole, and individual player pace statistics.
+*  [ ] **Premium Places Search:** Upgrade the Map Picker search bar to use the Google Places API for premium subscribers, providing instant, highly accurate business name searches and rich POI data (e.g., ratings, photos).
 
 ### Phase 9 — CI/CD & Deployment
 
@@ -621,6 +625,29 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
 * [ ] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using either standard GitHub Action steps or Fastlane Match) to successfully archive and sign the iOS `.ipa`.
 * [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
+
+##### Phase 10 — Gamification & Advanced Player Profiles (Future)
+*  [ ] **Hall of Fame & Badges:** Create a badge gallery, trophy tracking, recent unlocks, and major medals won.
+*  [ ] **Global Rankings & Stats:** Expand the `Player` model to track global rank, total aces, best round, total games played, and an experimental "skills rating".
+*  [ ] **Profile Dashboard:** Redesign the player profile to showcase these stats, subscription details, and a quick-link to the Hall of Fame.
+
+##### Phase 11 — Social Discovery & Matchmaking (Future)
+
+* [ ] **Live Presence:** Add online status indicators (green dots/badges) to player avatars in the `PlayersScreen`.
+* [ ] **Challenge System:** Replace the simple selection switch in the friends list with a direct "Challenge" button.
+* [ ] **Suggested Friends & Matchmaking:** Suggest friends based on past shared courses or proximity (players currently online at the same facility).
+
+##### Phase 12 — Rich Course Discovery (Future)
+
+* [ ] **Course Search & Filtering:** Add a search bar to the top of the `CoursesScreen` to search the existing database.
+* [ ] **Rich Course Cards:** Redesign course list items to include course images, community star ratings, business name, address, par, and cost to play.
+
+##### Phase 13 — Active Game UI Overhaul (Future)
+
+* [ ] **Hole & Distance Header:** Redesign the top of `GameInprogressScreen` to show the current hole, par, distance, and a game progress bar.
+* [ ] **Persistent Scorecard Layout:** Redesign the player list to be scrollable, with a dedicated, sticky score-entry card at the bottom for the selected player.
+* [ ] **Advanced Stroke Entry:** Add visual golf stroke name badges (e.g., "-1 birdie") to the stroke counter and a "Finish Hole" button.
+* [ ] **Community Tips Card:** Add a crowd-sourced "Hole Strategy / Tips" card below the scoring area for the current hole.
 
 ---
 
@@ -1003,8 +1030,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `asset_golf_ball_path.dart`
 * [x] `claim_account_screen.dart`
 * [x] `contact_identity.dart`
-* [ ] `course_list_item_widget.dart`
-* [ ] `course.dart`
+* [x] `course_list_item_widget.dart`
+* [x] `course.dart`
 * [x] `courses_screen.dart`
 * [x] `dashboard_screen.dart`
 * [x] `database_connection_error.dart`
@@ -1081,7 +1108,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
-* [ ] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
+* [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
+* [x] Update `integration_test/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
 * [x] Course location duplicate conflict and bypass flow passes (`integration_test/course_location_conflict_flow_test.dart`).
 * [x] Activity Hub game create and active game resume flow passes (`integration_test/activity_hub_game_create_flow_test.dart`).
 * [x] Active game score increment and guest shared drawer access flows pass (`integration_test/phase_1_19_drawer_score_flow_test.dart`).
