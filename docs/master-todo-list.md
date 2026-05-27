@@ -208,7 +208,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Start Screen Player Toggles:** Fix the commented-out `addPlayerToGame`/`removePlayerFromGame` logic in `PlayerListItem` so that toggling the Switch during game creation properly mutates the selected players list.
 * [x] **Creator Participation Rule:** Implement a validation rule in `GameStartScreen` to warn or prevent a game from starting if the Game Creator has not added themselves to the player list.
 * [x] **Score Initialization Safety:** Re-implement the safety check in `Game.calculateTotalScore` to gracefully handle or initialize scores if `!scores.containsKey(player)` evaluates to true.
-* [x] **Creator Warning E2E Test:** Create an integration test (integration_test/creator_participation_warning_test.dart) proving the Creator Participation warning dialog successfully intercepts the start flow and can be bypassed.
+* [x] **Creator Warning E2E Test:** Create an integration test (`integration_test/creator_participation_warning_test.dart`) proving the Creator Participation warning dialog successfully intercepts the start flow and can be bypassed.
 
 #### 1.15 Friends List & Player Form Polish
 
@@ -217,6 +217,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Dynamic Edit/Cancel Icon:** In `player_list_item.dart`, update the edit icon logic in `_buildTrailingIcons()`. If `isDropdownOpen` is true, display `Icons.close` (to indicate cancel); otherwise, display `Icons.edit`.
 * [ ] **Expandable Player Details:** Update `PlayerListItem` so that if `creatingGame` is false, tapping the `ListTile` expands a read-only view of the player's saved details (Email, Phone, Total Score), satisfying the PII privacy requirements from Phase 5.6.
 * [ ] **PlayerCreateScreen Form Polish:** Redesign the embedded "Add a new player" form inputs to look modern, well-spaced, and visually cohesive with the new Material 3 card aesthetic introduced in Phase 1.3.
+*  [ ] **Guest Scorekeeper PII Gating:** In `PlayerForm`, detect if the user is editing the "Guest Scorekeeper" profile (`id == 'guest'`). If so, allow them to edit only their nickname. Hide the Name, Email, and Phone fields, and replace them with a freemium-style banner that navigates to the `LoginScreen` if they want to claim the profile and add contact details. Automatically sync the `playerName` to the `nickname` behind the scenes to satisfy database schema rules.
 
 #### 1.16 Auto-Resume Race Conditions & Concurrency Fixes
 
@@ -1132,7 +1133,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
-* [x] Creator participation warning bypass flow passes (integration_test/creator_participation_warning_test.dart).
+* [ ] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
+* [x] Creator participation warning bypass flow passes (`integration_test/creator_participation_warning_test.dart`).
 * [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
 * [x] Update `integration_test/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
 * [x] Course location duplicate conflict and bypass flow passes (`integration_test/course_location_conflict_flow_test.dart`).
