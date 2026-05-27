@@ -8,7 +8,18 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/past_games_list_view.dart';
+import 'package:mini_golf_tracker/past_game_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class MockFirestoreWithError implements FirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String collectionPath) {
+    throw FirebaseException(plugin: 'firestore', message: 'Simulated failure');
+  }
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   setUp(() {
@@ -29,7 +40,7 @@ void main() {
     expect(tester.takeException(), isNotNull);
   });
 
-  testWidgets('PastGamesListView renders with games when logged in', (tester) async {
+  testWidgets('PastGamesListView renders with games when logged in, supports tap, separator, and ties', (tester) async {
     final creator = Player(
       id: 'creator1',
       playerName: 'Jane',
@@ -37,14 +48,23 @@ void main() {
       ownerId: 'creator1',
       totalScore: 0,
     );
+    final friend = Player(
+      id: 'friend1',
+      playerName: 'Bob',
+      nickname: 'Bob',
+      ownerId: 'creator1',
+      totalScore: 0,
+    );
+    Player.players.add(friend);
     await UserProvider().login(creator);
 
-    final game = Game(
+    final game1 = Game(
       id: 'g1',
-      name: 'Test Game',
+      name: 'Test Game 1',
       course: Course(id: 'c1', name: 'Pinecrest', numberOfHoles: 1, parStrokes: {1: 3}),
       players: [
         PlayerGameInfo(playerId: 'creator1', gameId: 'g1', scores: [2]),
+        PlayerGameInfo(playerId: 'friend1', gameId: 'g1', scores: [2]),
       ],
       scheduledTime: DateTime(2026, 1, 1),
       startTime: DateTime(2026, 1, 1),
@@ -52,9 +72,23 @@ void main() {
       status: 'completed',
     );
 
+    final game2 = Game(
+      id: 'g2',
+      name: 'Test Game 2',
+      course: Course(id: 'c2', name: 'Oakridge', numberOfHoles: 1, parStrokes: {1: 3}),
+      players: [
+        PlayerGameInfo(playerId: 'creator1', gameId: 'g2', scores: [3]),
+      ],
+      scheduledTime: DateTime(2026, 1, 2),
+      startTime: DateTime(2026, 1, 2),
+      completedTime: DateTime(2026, 1, 2),
+      status: 'completed',
+    );
+
     final fakeFirestore = FakeFirebaseFirestore();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
-    await Game.saveGameToDatabase(game, creator);
+    await Game.saveGameToDatabase(game1, creator);
+    await Game.saveGameToDatabase(game2, creator);
 
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1.0;
@@ -69,6 +103,89 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pinecrest'), findsOneWidget);
+    expect(find.text('Oakridge'), findsOneWidget);
+    expect(find.text('Winners: Jane, Bob'), findsOneWidget);
     expect(find.text('Winner: Jane'), findsOneWidget);
+    
+    // Verify separator is present
+    expect(find.byType(Divider), findsOneWidget);
+
+    // Tap on Pinecrest
+    await tester.tap(find.text('Pinecrest'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PastGameDetailsScreen), findsOneWidget);
+  });
+
+  testWidgets('PastGamesListView renders Let\'s play! when no games exist', (tester) async {
+    final creator = Player(
+      id: 'creator1',
+      playerName: 'Jane',
+      nickname: 'Jane',
+      ownerId: 'creator1',
+      totalScore: 0,
+    );
+    await UserProvider().login(creator);
+
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Column(children: [Expanded(child: PastGamesListView())]))));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text("Let's play!"), findsOneWidget);
+  });
+
+  testWidgets('PastGamesListView catches load errors and sets _isLoading false', (tester) async {
+    final creator = Player(
+      id: 'creator1',
+      playerName: 'Jane',
+      nickname: 'Jane',
+      ownerId: 'creator1',
+      totalScore: 0,
+    );
+    await UserProvider().login(creator);
+
+    DatabaseConnection.setFirestoreInstanceForTesting(MockFirestoreWithError());
+
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Column(children: [Expanded(child: PastGamesListView())]))));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Verify it handles error and finishes loading
+    expect(find.text("Let's play!"), findsOneWidget);
+  });
+
+  testWidgets('PastGamesListView renders FutureBuilder error state when formatStartTime fails', (tester) async {
+    final creator = Player(
+      id: 'creator1',
+      playerName: 'Jane',
+      nickname: 'Jane',
+      ownerId: 'creator1',
+      totalScore: 0,
+    );
+    await UserProvider().login(creator);
+
+    // Using negative year to force formatStartTime / WorldHolidays to throw
+    final game = Game(
+      id: 'g1',
+      name: 'Error Game',
+      course: Course(id: 'c1', name: 'Error Hills', numberOfHoles: 1, parStrokes: {1: 3}),
+      players: [
+        PlayerGameInfo(playerId: 'creator1', gameId: 'g1', scores: [2]),
+      ],
+      scheduledTime: DateTime(-100),
+      startTime: DateTime(-100),
+      completedTime: DateTime(-100),
+      status: 'completed',
+    );
+
+    final fakeFirestore = FakeFirebaseFirestore();
+    DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    await Game.saveGameToDatabase(game, creator);
+
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Column(children: [Expanded(child: PastGamesListView())]))));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Error:'), findsOneWidget);
   });
 }
