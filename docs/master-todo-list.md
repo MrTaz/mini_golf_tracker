@@ -270,8 +270,9 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.23 Hotfix: Guest Course Creation & Cache Fallback
 
-* [ ] **Update Firestore Rules:** Update `firestore.rules` for the `/courses/{document}` match block to `allow read, create, update: if true;` so guests can contribute to the community course database.
-* [ ] **Fix Offline Cache Append:** In `AddEditCourseScreen`, update the offline fallback catch block so that when a course fails to save to the cloud, it appends the new course to the `SharedPreferences` 'courses' list before popping the navigator.
+* [x] **Update Firestore Rules:** Update `firestore.rules` for the `/courses/{document}` match block to `allow read, create, update: if true;` so guests can contribute to the community course database.
+* [x] **Fix Offline Cache Append:** In `AddEditCourseScreen`, update the offline fallback catch block so that when a course fails to save to the cloud, it appends the new course to the `SharedPreferences` 'courses' list before popping the navigator.
+* [x] **Harden Global Firestore Rules:** Restore schema validation in `firestore.rules` for the `games`, `players`, `player_contacts`, and `friends` collections. Enforce strict data types and required fields for all `create` and `update` operations to prevent NoSQL injection, while preserving guest write access.
 
 ---
 
