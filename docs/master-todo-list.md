@@ -230,10 +230,11 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.17 In-Game Educational Tooltips & Lifecycle Hooks
 
-* [ ] **App Lifecycle Observer:** In `GameInprogressScreenState`, mix in `WidgetsBindingObserver` and implement `didChangeAppLifecycleState`. Detect when the app transitions to `AppLifecycleState.resumed`.
-* [ ] **Dynamic Idle Interaction Timer:** Wrap the root `Scaffold` of `GameInprogressScreen` in a `Listener` to detect user touches. Implement a `Timer` that resets on every touch. The timer's duration should be dynamically calculated based on the active player count (e.g., `widget.currentGame.players.length * 3` minutes) to accommodate larger groups safely.
-* [ ] **Pause Reminder Coach Mark:** Create a dismissible, highly visible chat bubble or tooltip pointing to the AppBar's `PopupMenuButton` with the text: *"Need a break? You can safely pause your game here!"*
-* [ ] **Trigger Logic:** Display the Pause Reminder Coach Mark automatically if the user resumes the app from the background OR if the dynamic idle timer fires. Ensure the bubble disappears as soon as the user taps anywhere on the screen.
+* [x] **App Lifecycle Observer:** In `GameInprogressScreenState`, mix in `WidgetsBindingObserver` and implement `didChangeAppLifecycleState`. Detect when the app transitions to `AppLifecycleState.resumed`.
+* [x] **Dynamic Idle Interaction Timer:** Wrap the root `Scaffold` of `GameInprogressScreen` in a `Listener` to detect user touches. Implement a `Timer` that resets on every touch. The timer's duration should be dynamically calculated based on the active player count (e.g., `widget.currentGame.players.length * 3` minutes) to accommodate larger groups safely.
+* [x] **Pause Reminder Coach Mark:** Create a dismissible, highly visible chat bubble or tooltip pointing to the AppBar's `PopupMenuButton` with the text: *"Need a break? You can safely pause your game here!"*
+* [x] **Trigger Logic:** Display the Pause Reminder Coach Mark automatically if the user resumes the app from the background OR if the dynamic idle timer fires. Ensure the bubble disappears as soon as the user taps anywhere on the screen.
+* [x] **Pause Reminder E2E Test:** Create an integration test (`integration_test/pause_reminder_coach_mark_test.dart`) verifying that the coach mark appears when the app is resumed and successfully dismisses upon tapping.
 
 #### 1.18 Silent Pace of Play Data Collection
 
@@ -1144,6 +1145,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
+* [x] In-game pause reminder coach mark flow passes (`integration_test/pause_reminder_coach_mark_test.dart`).
 * [x] Concurrency guardrails and active game warning flow passes (`integration_test/concurrency_guardrails_flow_test.dart`).
 * [x] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
 * [x] Creator participation warning bypass flow passes (`integration_test/creator_participation_warning_test.dart`).
