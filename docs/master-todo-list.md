@@ -1148,7 +1148,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 **Pending Specific Behavioral Tests:**
 
-* [ ] Player.createPlayer nickname-only creation.
+* [x] Player.createPlayer nickname-only creation.
 * [x] PlayerForm quick-play validation bypass.
 * [x] ContactIdentity.normalizeEmail.
 * [x] ContactIdentity.normalizePhoneNumber.
@@ -1162,8 +1162,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Game.recordScore with last_updated.
 * [ ] FIFO SyncQueue.
 * [ ] GameCardWidget.deleteSavedGame targeted storage lookup.
-* [ ] _findConflictingCourses Haversine threshold.
-* [ ] Normalized address substring matching.
+* [x] _findConflictingCourses Haversine threshold.
+* [x] Normalized address substring matching.
 
 ---
 
