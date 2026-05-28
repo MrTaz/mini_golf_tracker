@@ -126,12 +126,15 @@ class MainScaffold extends State<HomePage> with RouteAware {
     if (widget.skipAutoResume) return;
     final activeGames =
         await Game.getLocallySavedGames(gameStatusTypes: ['started']);
-    if (activeGames.isNotEmpty && activeGames.first != null) {
-      if (mounted && UserProvider().pendingClaimPlayer == null) {
-        await Player.loadLocalGuestPlayers();
-        setState(() {
-          body = GameInprogressScreen(currentGame: activeGames.first!);
-        });
+    if (activeGames.isNotEmpty) {
+      activeGames.sort((a, b) => (b?.scheduledTime ?? DateTime(0)).compareTo(a?.scheduledTime ?? DateTime(0)));
+      if (activeGames.first != null) {
+        if (mounted && UserProvider().pendingClaimPlayer == null) {
+          await Player.loadLocalGuestPlayers();
+          setState(() {
+            body = GameInprogressScreen(currentGame: activeGames.first!);
+          });
+        }
       }
     }
   }

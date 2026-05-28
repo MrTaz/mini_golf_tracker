@@ -11,7 +11,14 @@ import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
+Course _fakeCourse({String id = 'c1', String name = 'Windy Hills'}) => Course(
+      id: id,
+      name: name,
+      numberOfHoles: 9,
+      parStrokes: {1: 3, 2: 4, 3: 3, 4: 4, 5: 3, 6: 4, 7: 3, 8: 4, 9: 3},
+    );
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -596,6 +603,92 @@ void main() {
     expect(find.byType(GameStartScreen), findsNothing);
   });
 
+  testWidgets('Schedule: shows scheduling conflict dialog and cancel stops schedule',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await UserProvider().login(_authPlayer());
+    
+    // Need to set fake Firestore with an unstarted game within 2 hours
+    final conflictGame = Game(
+      id: 'conflict_game',
+      name: 'Conflict Game',
+      course: _fakeCourse(),
+      players: [PlayerGameInfo(playerId: 'auth-uid', gameId: 'conflict_game', scores: [])],
+      scheduledTime: DateTime.now().add(const Duration(minutes: 30)),
+      status: 'unstarted_game',
+    );
+    await DatabaseConnection.client.collection('games').doc(conflictGame.id).set({
+      ...conflictGame.toJson(),
+      'participant_ids': ['auth-uid'],
+    });
+    await DatabaseConnection.client.collection('player_game_info').doc('${conflictGame.id}_auth-uid').set({
+      'game_id': conflictGame.id,
+      'player_id': 'auth-uid',
+    });
+
+    await tester.pumpWidget(_testApp(
+      home: Scaffold(
+        body: GameStartScreen(unstartedGame: _twoPlayerGame(scheduledTime: DateTime.now())),
+      ),
+    ));
+
+    await tester.tap(find.text('Schedule game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scheduling Conflict'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameStartScreen), findsOneWidget); // Did not pop
+  });
+
+  testWidgets('Schedule: shows scheduling conflict dialog and double-book schedules game',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await UserProvider().login(_authPlayer());
+    
+    // Need to set fake Firestore with an unstarted game within 2 hours
+    final conflictGame = Game(
+      id: 'conflict_game2',
+      name: 'Conflict Game 2',
+      course: _fakeCourse(),
+      players: [PlayerGameInfo(playerId: 'auth-uid', gameId: 'conflict_game2', scores: [])],
+      scheduledTime: DateTime.now().add(const Duration(minutes: 30)),
+      status: 'unstarted_game',
+    );
+    await DatabaseConnection.client.collection('games').doc(conflictGame.id).set({
+      ...conflictGame.toJson(),
+      'participant_ids': ['auth-uid'],
+    });
+    await DatabaseConnection.client.collection('player_game_info').doc('${conflictGame.id}_auth-uid').set({
+      'game_id': conflictGame.id,
+      'player_id': 'auth-uid',
+    });
+
+    await tester.pumpWidget(_testApp(
+      home: Scaffold(
+        body: GameStartScreen(unstartedGame: _twoPlayerGame(scheduledTime: DateTime.now())),
+      ),
+    ));
+
+    await tester.tap(find.text('Schedule game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Double-Book'), findsOneWidget);
+    await tester.tap(find.text('Double-Book'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameStartScreen), findsNothing); // It popped
+  });
+
   testWidgets(
       'Schedule: DateTime(0) scheduledTime is reset to now (lines 333-335)',
       (tester) async {
@@ -749,6 +842,70 @@ void main() {
     await tester.pumpAndSettle();
 
     // Valid game (2 players, valid course) navigates to GameInprogressScreen
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+  });
+
+  testWidgets('Start: shows warning dialog when active game exists and cancel stops start',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Create an active game in SharedPreferences
+    final game = Game(
+      id: 'active_game',
+      name: 'Active Game',
+      course: _fakeCourse(),
+      players: [],
+      scheduledTime: DateTime.now(),
+      status: 'started',
+    );
+    SharedPreferences.setMockInitialValues({'active_game': jsonEncode(game.toJson())});
+
+    await tester.pumpWidget(_testApp(
+      home: GameStartScreen(unstartedGame: _twoPlayerGame()),
+    ));
+
+    await tester.tap(find.text('Start the game!'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Warning'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsNothing);
+  });
+
+  testWidgets('Start: shows warning dialog when active game exists and continue starts game',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Create an active game in SharedPreferences
+    final game = Game(
+      id: 'active_game',
+      name: 'Active Game',
+      course: _fakeCourse(),
+      players: [],
+      scheduledTime: DateTime.now(),
+      status: 'started',
+    );
+    SharedPreferences.setMockInitialValues({'active_game': jsonEncode(game.toJson())});
+
+    await tester.pumpWidget(_testApp(
+      home: GameStartScreen(unstartedGame: _twoPlayerGame()),
+    ));
+
+    await tester.tap(find.text('Start the game!'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Continue'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
     expect(find.byType(GameInprogressScreen), findsOneWidget);
   });
 

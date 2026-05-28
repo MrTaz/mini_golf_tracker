@@ -223,9 +223,10 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.16 Auto-Resume Race Conditions & Concurrency Fixes
 
-* [ ] **Multiple Active Games Warning:** In `GameCreateScreen._createGame` and `GameStartScreen._startGame`, check if a game with status `"started"` already exists. If so, display an `AlertDialog` warning the user: *"You already have a game in progress. Starting a new game will put your current game on hold."* requiring them to tap "Continue" to proceed.
-* [ ] **Auto-Resume Sorting Fix:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, sort the retrieved `activeGames` by `scheduledTime` descending before calling `.first!` to ensure the app reliably auto-resumes the most recently created active game instead of a random one.
-* [ ] **Auth-Only Scheduling Conflict Detection:** For authenticated users in `GameStartScreen._scheduleGame` and `GameCreateScreen._createGame`, fetch all existing `"unstarted_game"` records. If the newly selected `scheduledTime` falls within 2 hours of an existing scheduled game where the current user is a participant, display a warning `AlertDialog`: *"Scheduling Conflict: You already have a game scheduled near this time. Do you want to double-book?"* requiring explicit confirmation to proceed.
+* [x] **Multiple Active Games Warning:** In `GameCreateScreen._createGame` and `GameStartScreen._startGame`, check if a game with status `"started"` already exists. If so, display an `AlertDialog` warning the user: *"You already have a game in progress. Starting a new game will put your current game on hold."* requiring them to tap "Continue" to proceed.
+* [x] **Auto-Resume Sorting Fix:** In `main.dart`'s `_checkAndAutoResumeActiveGame()`, sort the retrieved `activeGames` by `scheduledTime` descending before calling `.first!` to ensure the app reliably auto-resumes the most recently created active game instead of a random one.
+* [x] **Auth-Only Scheduling Conflict Detection:** For authenticated users in `GameStartScreen._scheduleGame` and `GameCreateScreen._createGame`, fetch all existing `"unstarted_game"` records. If the newly selected `scheduledTime` falls within 2 hours of an existing scheduled game where the current user is a participant, display a warning `AlertDialog`: *"Scheduling Conflict: You already have a game scheduled near this time. Do you want to double-book?"* requiring explicit confirmation to proceed.
+* [x] **Concurrency Guardrails E2E Test:** Create an integration test (`integration_test/concurrency_guardrails_flow_test.dart`) verifying that the `"Multiple Active Games"` warning dialog successfully interrupts the flow and can be bypassed or canceled.
 
 #### 1.17 In-Game Educational Tooltips & Lifecycle Hooks
 
@@ -565,9 +566,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Refactor `PlayerListItem` to use `ExpansionTile`.
 * [x] Hide email and phone number fields by default.
 * [x] Reveal PII only when the tile is expanded by the user.
-* [x] Add a `"PII Sharing Preferences"` toggle in `PlayerProfileWidget`.
-* [x] Update `PlayerForm` in `player_form_widget.dart` to include a `pii_sharing_prefs` toggle.
-* [x] Use `SwitchListTile` for the PII sharing preference.
+* [x] ~~Add a `"PII Sharing Preferences"` toggle in `PlayerProfileWidget`.~~ (Removed: Privacy is now owner-exclusive via PlayerForm)
+* [x] Update `PlayerForm` in `player_form_widget.dart` to include granular privacy checkboxes (`shareName`, `shareEmail`, `sharePhone`).
+* [x] Use `CheckboxListTile` for the granular PII sharing preferences.
 * [x] Respect `pii_sharing_prefs` in the UI.
 
 #### 5.7 Social Login Account Linking & Detection
@@ -836,14 +837,15 @@ Consolidated into:
 * Use `ContactIdentity.normalizeEmail`.
 * Use `ContactIdentity.normalizePhoneNumber`.
 * Normalize before all database writes.
-* Add `pii_sharing_prefs` with `SwitchListTile`.
+* Add granular privacy checkboxes (`shareName`, `shareEmail`, `sharePhone`).
+* Enforce privacy setting visibility only for the authenticated owner of the profile.
 
 ---
 
 #### `PlayerProfileWidget`
 
-* Add `"PII Sharing Preferences"` toggle.
-* Ensure UI respects PII sharing setting.
+* Ensure UI respects granular PII sharing settings (`shareName`, `shareEmail`, `sharePhone`).
+* (Note: Privacy toggles are exclusively managed in `PlayerForm`, not the profile widget).
 
 ---
 
@@ -1142,6 +1144,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
+* [x] Concurrency guardrails and active game warning flow passes (`integration_test/concurrency_guardrails_flow_test.dart`).
 * [x] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
 * [x] Creator participation warning bypass flow passes (`integration_test/creator_participation_warning_test.dart`).
 * [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).

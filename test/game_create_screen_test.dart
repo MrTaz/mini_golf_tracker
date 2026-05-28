@@ -8,7 +8,9 @@ import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:convert';
+import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/player_game_info.dart';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -329,6 +331,153 @@ void main() {
     final gameJson = prefs.getString(prefs.getKeys().first);
     expect(gameJson, isNotNull);
     expect(gameJson!.contains('2099'), isFalse);
+  });
+
+  testWidgets('shows warning dialog when active game exists and cancel stops creation',
+      (tester) async {
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    
+    // Create an active game in SharedPreferences
+    final game = Game(
+      id: 'active_game',
+      name: 'Active Game',
+      course: _fakeCourse(),
+      players: [],
+      scheduledTime: DateTime.now(),
+      status: 'started',
+    );
+    SharedPreferences.setMockInitialValues({'active_game': jsonEncode(game.toJson())});
+
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField), 'Test Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Warning'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsNothing);
+  });
+
+  testWidgets('shows warning dialog when active game exists and continue creates game',
+      (tester) async {
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    
+    // Create an active game in SharedPreferences
+    final game = Game(
+      id: 'active_game',
+      name: 'Active Game',
+      course: _fakeCourse(),
+      players: [],
+      scheduledTime: DateTime.now(),
+      status: 'started',
+    );
+    SharedPreferences.setMockInitialValues({'active_game': jsonEncode(game.toJson())});
+
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField), 'Test Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Continue'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+  });
+
+  testWidgets('shows scheduling conflict dialog and cancel stops creation',
+      (tester) async {
+    UserProvider().loggedInUser = _authPlayer();
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    
+    // Need to set fake Firestore with an unstarted game within 2 hours
+    final conflictGame = Game(
+      id: 'conflict_game',
+      name: 'Conflict Game',
+      course: _fakeCourse(),
+      players: [PlayerGameInfo(playerId: 'auth-uid', gameId: 'conflict_game', scores: [])],
+      scheduledTime: DateTime.now().add(const Duration(minutes: 30)),
+      status: 'unstarted_game',
+    );
+    await DatabaseConnection.client.collection('games').doc(conflictGame.id).set({
+      ...conflictGame.toJson(),
+      'participant_ids': ['auth-uid'],
+    });
+    await DatabaseConnection.client.collection('player_game_info').doc('${conflictGame.id}_auth-uid').set({
+      'game_id': conflictGame.id,
+      'player_id': 'auth-uid',
+    });
+
+    state.setScheduledTimeForTesting(DateTime.now());
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField), 'Test Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scheduling Conflict'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsNothing);
+  });
+
+  testWidgets('shows scheduling conflict dialog and double-book creates game',
+      (tester) async {
+    UserProvider().loggedInUser = _authPlayer();
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    
+    // Need to set fake Firestore with an unstarted game within 2 hours
+    final conflictGame = Game(
+      id: 'conflict_game2',
+      name: 'Conflict Game 2',
+      course: _fakeCourse(),
+      players: [PlayerGameInfo(playerId: 'auth-uid', gameId: 'conflict_game2', scores: [])],
+      scheduledTime: DateTime.now().add(const Duration(minutes: 30)),
+      status: 'unstarted_game',
+    );
+    await DatabaseConnection.client.collection('games').doc(conflictGame.id).set({
+      ...conflictGame.toJson(),
+      'participant_ids': ['auth-uid'],
+    });
+    await DatabaseConnection.client.collection('player_game_info').doc('${conflictGame.id}_auth-uid').set({
+      'game_id': conflictGame.id,
+      'player_id': 'auth-uid',
+    });
+
+    state.setScheduledTimeForTesting(DateTime.now());
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField), 'Test Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Double-Book'), findsOneWidget);
+    await tester.tap(find.text('Double-Book'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
   });
 
   // ─── 4. Course selection guard logic ─────────────────────────────────────

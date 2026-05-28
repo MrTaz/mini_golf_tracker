@@ -258,6 +258,72 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         return;
       }
 
+      final activeGames =
+          await Game.getLocallySavedGames(gameStatusTypes: ['started']);
+      if (activeGames.isNotEmpty) {
+        if (!mounted) return;
+        final bool? proceed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Warning'),
+              content: const Text(
+                  'You already have a game in progress. Starting a new game will put your current game on hold.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Continue'),
+                ),
+              ],
+            );
+          },
+        );
+        if (proceed != true) return;
+      }
+
+      if (UserProvider().loggedInUser != null) {
+        final unstartedGames = await Game.fetchGamesForCurrentUser(
+            UserProvider().loggedInUser!.id);
+        bool hasConflict = false;
+        for (final g in unstartedGames) {
+          if (g.status == 'unstarted_game' &&
+              g.scheduledTime.difference(_scheduledTime).abs() <=
+                  const Duration(hours: 2)) {
+            hasConflict = true;
+            break;
+          }
+        }
+        if (hasConflict) {
+          if (!mounted) return;
+          final bool? doubleBook = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Scheduling Conflict'),
+                content: const Text(
+                    'You already have a game scheduled near this time. Do you want to double-book?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Double-Book'),
+                  ),
+                ],
+              );
+            },
+          );
+          if (doubleBook != true) return;
+        }
+      }
+
+
       final Game newGame = Game(
           name: name,
           course: _selectedCourse!,
