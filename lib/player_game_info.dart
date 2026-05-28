@@ -6,7 +6,9 @@ class PlayerGameInfo {
       this.playOrderPosition = 0,
       this.place = "",
       this.totalScore = 0,
-      this.strokes = 0});
+      this.strokes = 0,
+      List<String>? scoreTimestamps})
+      : scoreTimestamps = scoreTimestamps ?? [];
 
   factory PlayerGameInfo.fromJson(Map<String, dynamic> json) {
     return PlayerGameInfo(
@@ -17,6 +19,9 @@ class PlayerGameInfo {
       place: json['place'],
       totalScore: json['total_score'],
       strokes: json['strokes'] ?? 0,
+      scoreTimestamps: json['score_timestamps'] != null
+          ? List<String>.from(json['score_timestamps'])
+          : [],
     );
   }
 
@@ -25,6 +30,7 @@ class PlayerGameInfo {
   int? playOrderPosition;
   final String playerId;
   List<int> scores;
+  List<String> scoreTimestamps;
   int totalScore;
   int strokes;
 
@@ -37,6 +43,7 @@ class PlayerGameInfo {
       'place': place,
       'total_score': totalScore,
       'strokes': strokes,
+      'score_timestamps': scoreTimestamps,
     };
   }
 }

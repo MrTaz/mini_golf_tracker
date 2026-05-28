@@ -16,6 +16,7 @@ void main() {
       expect(pgi.place, '');
       expect(pgi.totalScore, 0);
       expect(pgi.strokes, 0);
+      expect(pgi.scoreTimestamps, isEmpty);
     });
 
     test('creates with all fields provided', () {
@@ -27,12 +28,14 @@ void main() {
         place: '2nd',
         totalScore: 12,
         strokes: 4,
+        scoreTimestamps: ['2024-01-01T12:00:00.000Z'],
       );
       expect(pgi.scores, [3, 4, 5]);
       expect(pgi.playOrderPosition, 2);
       expect(pgi.place, '2nd');
       expect(pgi.totalScore, 12);
       expect(pgi.strokes, 4);
+      expect(pgi.scoreTimestamps, ['2024-01-01T12:00:00.000Z']);
     });
   });
 
@@ -46,6 +49,7 @@ void main() {
         'place': '1st',
         'total_score': 9,
         'strokes': 3,
+        'score_timestamps': ['2024-01-01T12:00:00.000Z'],
       };
       final pgi = PlayerGameInfo.fromJson(json);
       expect(pgi.playerId, 'p1');
@@ -55,6 +59,7 @@ void main() {
       expect(pgi.place, '1st');
       expect(pgi.totalScore, 9);
       expect(pgi.strokes, 3);
+      expect(pgi.scoreTimestamps, ['2024-01-01T12:00:00.000Z']);
     });
 
     test('defaults strokes to 0 when not in json', () {
@@ -69,6 +74,19 @@ void main() {
       final pgi = PlayerGameInfo.fromJson(json);
       expect(pgi.strokes, 0);
     });
+
+    test('defaults scoreTimestamps to empty list when not in json', () {
+      final json = {
+        'player_id': 'p2',
+        'game_id': 'g2',
+        'scores': [],
+        'play_order_position': 0,
+        'place': '',
+        'total_score': 0,
+      };
+      final pgi = PlayerGameInfo.fromJson(json);
+      expect(pgi.scoreTimestamps, isEmpty);
+    });
   });
 
   group('PlayerGameInfo.toJson', () {
@@ -81,6 +99,7 @@ void main() {
         place: '1st',
         totalScore: 5,
         strokes: 2,
+        scoreTimestamps: ['t1'],
       );
       final json = pgi.toJson();
       expect(json['player_id'], 'p1');
@@ -90,6 +109,7 @@ void main() {
       expect(json['place'], '1st');
       expect(json['total_score'], 5);
       expect(json['strokes'], 2);
+      expect(json['score_timestamps'], ['t1']);
     });
 
     test('round-trip fromJson -> toJson preserves data', () {
@@ -101,6 +121,7 @@ void main() {
         'place': '3rd',
         'total_score': 6,
         'strokes': 2,
+        'score_timestamps': ['t1'],
       };
       final pgi = PlayerGameInfo.fromJson(original);
       final result = pgi.toJson();
@@ -109,6 +130,7 @@ void main() {
       expect(result['scores'], original['scores']);
       expect(result['total_score'], original['total_score']);
       expect(result['strokes'], original['strokes']);
+      expect(result['score_timestamps'], original['score_timestamps']);
     });
   });
 
@@ -129,6 +151,12 @@ void main() {
       final pgi = PlayerGameInfo(playerId: 'p', gameId: 'g', scores: []);
       pgi.place = '1st (tied)';
       expect(pgi.place, '1st (tied)');
+    });
+
+    test('scoreTimestamps list can be updated', () {
+      final pgi = PlayerGameInfo(playerId: 'p', gameId: 'g', scores: []);
+      pgi.scoreTimestamps = ['t1'];
+      expect(pgi.scoreTimestamps, ['t1']);
     });
   });
 }

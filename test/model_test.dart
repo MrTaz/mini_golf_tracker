@@ -122,6 +122,7 @@ void main() {
         'place': '1st',
         'total_score': 9,
         'strokes': 0,
+        'score_timestamps': [],
       });
 
       final decoded = PlayerGameInfo.fromJson(playerGameInfo.toJson());
