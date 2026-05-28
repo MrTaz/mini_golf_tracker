@@ -216,8 +216,10 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Remove Status Field:** In `player_form_widget.dart`, remove the `_statusController` and its associated `TextFormField` from the UI.
 * [x] **Dynamic Edit/Cancel Icon:** In `player_list_item.dart`, update the edit icon logic in `_buildTrailingIcons()`. If `isDropdownOpen` is true, display `Icons.close` (to indicate cancel); otherwise, display `Icons.edit`.
 * [x] **Expandable Player Details:** Update `PlayerListItem` so that if `creatingGame` is false, tapping the `ListTile` expands a read-only view of the player's saved details (Email, Phone, Total Score), satisfying the PII privacy requirements from Phase 5.6.
-* [ ] **PlayerCreateScreen Form Polish:** Redesign the embedded "Add a new player" form inputs to look modern, well-spaced, and visually cohesive with the new Material 3 card aesthetic introduced in Phase 1.3.
-* [x] **Guest Scorekeeper PII Gating:** In `PlayerForm`, detect if the user is editing the "Guest Scorekeeper" profile (`id == 'guest'`). If so, allow them to edit only their nickname. Hide the Name, Email, and Phone fields, and replace them with a freemium-style banner that navigates to the `LoginScreen` if they want to claim the profile and add contact details. Automatically sync the `playerName` to the `nickname` behind the scenes to satisfy database schema rules.
+* [x] **PlayerCreateScreen Form Polish:** Redesign the embedded "Add a new player" form inputs to look modern, well-spaced, and visually cohesive with the new Material 3 card aesthetic introduced in Phase 1.3.
+* [x] **Guest Scorekeeper PII Gating:** In `PlayerForm`, detect if the user is editing the "Guest Scorekeeper" profile (`id == 'guest'`). If so, allow them to edit only their nickname. Hide the Name, Email, and Phone fields, and replace them with a freemium-style banner that navigates to the `LoginScreen` if they want to claim the profile and add contact details. Keep `playerName` set to `"Guest"` behind the scenes to satisfy database schema rules.
+* [x] **Guest PII Gating E2E Test:** Create an integration test (`integration_test/guest_pii_gating_flow_test.dart`).
+* [x] **Auto-Inject Creator Profile:** Update `PlayersScreen` to always inject the logged-in user (or a default "Guest Scorekeeper" profile for guests) as the first item in the player selection list so creators can easily add themselves to games.
 
 #### 1.16 Auto-Resume Race Conditions & Concurrency Fixes
 
@@ -543,23 +545,20 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 5.5 Firestore Security Rules (`firestore.rules`)
 
-* [ ] Overwrite the current default `firestore.rules` configuration with strict schema enforcement.
-* [ ] `match /players/{playerId}`: Prevent `claimed_by_uid` hijacking (cannot overwrite if already claimed by a different UID).
-* [ ] `match /player_contacts/{contactId}`: Restrict visibility and mutation strictly to the owner.
-* [ ] `match /friends/{edgeId}`: Ensure only the `owner_id` or `claimed_by_uid` can mutate friend-edge records.
-* [ ] `match /games/{gameId}`: Restrict game read/write visibility to active participants and the creator.
-* [ ] Enforce verified claims: Ensure only authenticated users with verified contacts can claim matching records.
+* [ ] match /players/{playerId}: Prevent `claimed_by_uid` hijacking (cannot overwrite or modify the field if it is already populated by a different verified UID).
+* [ ] match /player_contacts/{contactId}: Prevent malicious overwrites of verified contact records (ensure a contact verified by Firebase Auth cannot be altered or deleted by a guest or unverified user).
+* [ ] Enforce verified claims: Ensure that a user can only set `claimed_by_uid` on a player record if they possess a matching, verified contact in Firebase Auth.
 
 #### 5.6 PII Privacy UI
 
-* [ ] Implement expandable cards in `PlayersScreen`.
-* [ ] Refactor `PlayerListItem` to use `ExpansionTile`.
-* [ ] Hide email and phone number fields by default.
-* [ ] Reveal PII only when the tile is expanded by the user.
-* [ ] Add a `"PII Sharing Preferences"` toggle in `PlayerProfileWidget`.
-* [ ] Update `PlayerForm` in `player_form_widget.dart` to include a `pii_sharing_prefs` toggle.
-* [ ] Use `SwitchListTile` for the PII sharing preference.
-* [ ] Respect `pii_sharing_prefs` in the UI.
+* [x] Implement expandable cards in `PlayersScreen`.
+* [x] Refactor `PlayerListItem` to use `ExpansionTile`.
+* [x] Hide email and phone number fields by default.
+* [x] Reveal PII only when the tile is expanded by the user.
+* [x] Add a `"PII Sharing Preferences"` toggle in `PlayerProfileWidget`.
+* [x] Update `PlayerForm` in `player_form_widget.dart` to include a `pii_sharing_prefs` toggle.
+* [x] Use `SwitchListTile` for the PII sharing preference.
+* [x] Respect `pii_sharing_prefs` in the UI.
 
 #### 5.7 Social Login Account Linking & Detection
 
@@ -646,9 +645,10 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
 
 ##### Phase 10 — Gamification & Advanced Player Profiles (Future)
-*  [ ] **Hall of Fame & Badges:** Create a badge gallery, trophy tracking, recent unlocks, and major medals won.
-*  [ ] **Global Rankings & Stats:** Expand the `Player` model to track global rank, total aces, best round, total games played, and an experimental "skills rating".
-*  [ ] **Profile Dashboard:** Redesign the player profile to showcase these stats, subscription details, and a quick-link to the Hall of Fame.
+
+* [ ] **Hall of Fame & Badges:** Create a badge gallery, trophy tracking, recent unlocks, and major medals won.
+* [ ] **Global Rankings & Stats:** Expand the `Player` model to track global rank, total aces, best round, total games played, and an experimental "skills rating".
+* [ ] **Profile Dashboard:** Redesign the player profile to showcase these stats, subscription details, and a quick-link to the Hall of Fame.
 
 ##### Phase 11 — Social Discovery & Matchmaking (Future)
 
@@ -676,7 +676,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Original Phase: Immediate Stability
 
-Status: **In Progress**
+Status: **Completed**
 
 Description: Hardening CRUD operations, location safety, and coordinate validation.
 
@@ -756,7 +756,7 @@ Consolidated into:
 
 #### Original Phase: Guest Walkthrough & UI/UX
 
-Status: **Planned**
+Status: **In Progress**
 
 Description: Active sprint for modernizing player selection and enforcing PII privacy.
 
@@ -820,7 +820,8 @@ Consolidated into:
 
 #### `PlayerForm`
 
-* Bypass mandatory email / phone validation when `isQuickPlay == true`.
+* Bypass strict `playerName` validation and hide PII fields when editing the Guest Scorekeeper (`id == 'guest'`).
+* Display a freemium login banner for guests to encourage account creation.
 * Use `ContactIdentity.normalizeEmail`.
 * Use `ContactIdentity.normalizePhoneNumber`.
 * Normalize before all database writes.
@@ -847,7 +848,6 @@ Consolidated into:
 
 * Preserve `playerName` and `nickname` only creation.
 * Default `ownerId` to creator UID or `'guest'`.
-* Add `isQuickPlay`.
 * Add support for:
   * `verifiedEmails`
   * `verifiedPhones`
@@ -1012,8 +1012,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * Must prevent adopting contacts already reserved by another canonical record.
 * Must prevent hijacking.
 * Must support one canonical player owning multiple verified contacts.
-* Visibility must be restricted by Firestore rules.
-* Mutations must be restricted to owner / valid claimant.
+* Reads must remain open (`allow read: if true;`) to support pre-auth collision checks.
+* Mutations must be restricted to owner / valid claimant, or protected by strict schema validation.
 
 ---
 
@@ -1021,10 +1021,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 * Enforce verified claims.
 * Prevent `claimed_by_uid` hijacking.
-* Restrict `player_contacts` visibility.
-* Restrict game visibility to participants.
-* Restrict friend-edge mutations.
-* Ensure only `owner_id` or `claimed_by_uid` can modify player metadata where appropriate.
+* Enforce strict schema validation (data types, required fields) across `games`, `players`, `player_contacts`, and `friends` to allow safe guest contributions.
+* Ensure only owner_id or claimed_by_uid can modify player metadata where appropriate.
 * Validate with `@firebase/rules-unit-testing`.
 
 ---
@@ -1093,7 +1091,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 **Pending Specific Behavioral Tests:**
 
 * [ ] Player.createPlayer nickname-only creation.
-* [ ] PlayerForm quick-play validation bypass.
+* [x] PlayerForm quick-play validation bypass.
 * [x] ContactIdentity.normalizeEmail.
 * [x] ContactIdentity.normalizePhoneNumber.
 * [x] ContactIdentity null boundary cases and reservationId methods (Needs 100% coverage).
@@ -1119,7 +1117,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `GameCreateScreen` receives returned selected players.
 * [x] `PlayerListItem` hides PII by default.
 * [x] `PlayerListItem` reveals PII on expansion.
-* [ ] `PlayerForm` shows PII sharing toggle.
+* [x] `PlayerForm` shows PII sharing toggle.
 * [ ] `GameInprogressScreen` responds to stream updates.
 * [ ] `GameInprogressScreen` avoids out-of-bounds errors.
 * [ ] `GameInprogressScreen` avoids state errors.
@@ -1133,7 +1131,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
-* [ ] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
+* [x] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
 * [x] Creator participation warning bypass flow passes (`integration_test/creator_participation_warning_test.dart`).
 * [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
 * [x] Update `integration_test/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
@@ -1183,8 +1181,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Contact normalization is applied through `ContactIdentity` before every relevant database write.
 * [ ] Legacy JSON storage is repaired.
 * [ ] Guest/local records migrate only through explicit user-approved import flows.
-* [ ] PII is hidden behind expandable widgets by default.
-* [ ] `pii_sharing_prefs` is respected in the UI.
+* [x] PII is hidden behind expandable widgets by default.
+* [x] `pii_sharing_prefs` is respected in the UI.
 * [ ] `GameCardWidget` no longer performs exhaustive `jsonDecode` iterations on `SharedPreferences`.
 * [ ] `DatabaseConnectionError` is handled without infinite loading spinners.
 * [ ] Courses can be detected as duplicates by both GPS proximity and normalized address matching.

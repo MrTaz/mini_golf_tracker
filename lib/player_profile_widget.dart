@@ -19,6 +19,13 @@ class PlayerProfileWidget extends StatefulWidget {
 
 class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
   List<String> selectedPlayerIds = [];
+  late bool piiSharingPrefs;
+
+  @override
+  void initState() {
+    super.initState();
+    piiSharingPrefs = widget.player.piiSharingPrefs;
+  }
 
   Color getRankBorderColor(int? currentRank) {
     currentRank ??= 99;
@@ -79,10 +86,11 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FittedBox(
-              child: PlayerAvatarWidget(player: widget.player)),
+          Flexible(
+              child:
+                  FittedBox(child: PlayerAvatarWidget(player: widget.player))),
           const SizedBox(
-            height: 10.0,
+            height: 4.0,
           ),
           Padding(
               padding: const EdgeInsets.all(2.0),
@@ -91,7 +99,7 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
                   child: Text(widget.player.nickname,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 24.0,
+                        fontSize: 18.0,
                       )))),
           if (widget.isSelected)
             const Chip(
@@ -101,6 +109,31 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
               ),
               backgroundColor: Colors.green,
             ),
+          Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              height: 36,
+              child: Transform.scale(
+                scale: 0.72,
+                child: SwitchListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'PII Sharing Preferences',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10),
+                  ),
+                  value: piiSharingPrefs,
+                  onChanged: (value) {
+                    setState(() {
+                      piiSharingPrefs = value;
+                      widget.player.piiSharingPrefs = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

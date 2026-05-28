@@ -454,10 +454,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // replaceRange sets only the selected players; accept whichever player the first switch selects
-    expect(game.players.length, 1);
-    // The player id should be one of the seeded players
-    expect(['p1', 'p2', 'p3'], contains(game.players.first.playerId));
+    // replaceRange sets the currently selected players; the injected creator
+    // profile is added while the original selections remain selected.
+    expect(game.players.length, 3);
+    final playerIds = game.players.map((player) => player.playerId).toList();
+    expect(playerIds, containsAll(['guest', 'p1', 'p2']));
   });
 
   // ─── 6. Remove Player + InkWell tap (lines 269-272, 403-404, 415) ───────

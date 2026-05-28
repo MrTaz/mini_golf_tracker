@@ -22,6 +22,7 @@ class Player {
       this.normalizedPhoneNumber,
       this.status,
       this.claimedByUid,
+      this.piiSharingPrefs = false,
       this.avatarImageLocation});
 
   // Factory method to create a Player object without populating fields
@@ -49,6 +50,7 @@ class Player {
             ContactIdentity.normalizePhoneNumber(json['phone_number']),
         status: json['status'],
         claimedByUid: json['claimed_by_uid'],
+        piiSharingPrefs: json['pii_sharing_prefs'] ?? false,
         totalScore: json['total_score'] ?? 0,
         avatarImageLocation: json['avatar_image_location']);
   }
@@ -63,6 +65,7 @@ class Player {
   String? normalizedEmail;
   String? normalizedPhoneNumber;
   String ownerId;
+  bool piiSharingPrefs;
   String? phoneNumber;
   String playerName;
   String? status;
@@ -80,6 +83,7 @@ class Player {
       'normalized_phone_number': normalizedPhoneNumber,
       'status': status,
       'claimed_by_uid': claimedByUid,
+      'pii_sharing_prefs': piiSharingPrefs,
       'total_score': totalScore,
       'avatar_image_location': avatarImageLocation
     };
@@ -385,9 +389,10 @@ class Player {
     final normalizedEmail = ContactIdentity.normalizeEmail(email);
     final normalizedPhoneNumber =
         ContactIdentity.normalizePhoneNumber(phoneNumber);
-    final emailMatches = (emailVerified || Utilities.isTestAccountBypass(email)) &&
-        normalizedEmail != null &&
-        normalizedEmail == player.normalizedEmail;
+    final emailMatches =
+        (emailVerified || Utilities.isTestAccountBypass(email)) &&
+            normalizedEmail != null &&
+            normalizedEmail == player.normalizedEmail;
     final phoneMatches = normalizedPhoneNumber != null &&
         normalizedPhoneNumber == player.normalizedPhoneNumber;
     return emailMatches || phoneMatches;
@@ -403,7 +408,8 @@ class Player {
     final normalizedPhoneNumber =
         ContactIdentity.normalizePhoneNumber(phoneNumber);
     Player? candidate;
-    if ((emailVerified || Utilities.isTestAccountBypass(email)) && normalizedEmail != null) {
+    if ((emailVerified || Utilities.isTestAccountBypass(email)) &&
+        normalizedEmail != null) {
       candidate = await getPlayerByEmailFromDB(normalizedEmail);
     }
     candidate ??= normalizedPhoneNumber != null

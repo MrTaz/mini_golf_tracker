@@ -31,6 +31,7 @@ class PlayerFormState extends State<PlayerForm> {
   late TextEditingController _nicknameController;
   late TextEditingController _phoneNumberController;
   late TextEditingController _playerNameController;
+  late bool _piiSharingPrefs;
 
   @override
   void dispose() {
@@ -52,6 +53,7 @@ class PlayerFormState extends State<PlayerForm> {
     _emailController = TextEditingController(text: widget.player?.email ?? '');
     _phoneNumberController =
         TextEditingController(text: widget.player?.phoneNumber ?? '');
+    _piiSharingPrefs = widget.player?.piiSharingPrefs ?? false;
   }
 
   bool get isEditing => widget.player != null;
@@ -124,7 +126,7 @@ class PlayerFormState extends State<PlayerForm> {
 
   Future<void> saveChanges() async {
     if (isGuestScorekeeper) {
-      _playerNameController.text = _nicknameController.text;
+      _playerNameController.text = 'Guest';
     }
     if (validateRequiredFields()) {
       if (widget.player != null) {
@@ -136,6 +138,7 @@ class PlayerFormState extends State<PlayerForm> {
             ContactIdentity.normalizePhoneNumber(_phoneNumberController.text);
         widget.player!.normalizedEmail = widget.player!.email;
         widget.player!.normalizedPhoneNumber = widget.player!.phoneNumber;
+        widget.player!.piiSharingPrefs = _piiSharingPrefs;
         widget.player!.ownerId = currentUser?.id ?? 'guest';
 
         if (widget.editingOrAdding == 'Add') {
@@ -216,28 +219,38 @@ class PlayerFormState extends State<PlayerForm> {
             ),
           ),
         ] else ...[
-          TextFormField(
+          _buildTextField(
             controller: _playerNameController,
-            decoration: const InputDecoration(labelText: 'Player Name'),
-            enabled: widget.allowEditing,
+            labelText: 'Player Name',
           ),
           const SizedBox(height: 10),
-          TextFormField(
+          _buildTextField(
             controller: _nicknameController,
-            decoration: const InputDecoration(labelText: 'Nickname'),
-            enabled: widget.allowEditing,
+            labelText: 'Nickname',
           ),
           const SizedBox(height: 10),
-          TextFormField(
+          _buildTextField(
             controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
-            enabled: widget.allowEditing,
+            labelText: 'Email',
           ),
           const SizedBox(height: 10),
-          TextFormField(
+          _buildTextField(
             controller: _phoneNumberController,
-            decoration: const InputDecoration(labelText: 'Phone Number'),
-            enabled: widget.allowEditing,
+            labelText: 'Phone Number',
+          ),
+          const SizedBox(height: 10),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('PII Sharing Preferences'),
+            subtitle: const Text('Allow saved contact details to be shared.'),
+            value: _piiSharingPrefs,
+            onChanged: widget.allowEditing
+                ? (value) {
+                    setState(() {
+                      _piiSharingPrefs = value;
+                    });
+                  }
+                : null,
           ),
         ],
         const SizedBox(height: 10),
@@ -250,6 +263,24 @@ class PlayerFormState extends State<PlayerForm> {
               : const Text("Add Player"),
         ),
       ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: labelText,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.85),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      enabled: widget.allowEditing,
     );
   }
 }

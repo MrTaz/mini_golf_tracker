@@ -207,11 +207,12 @@ void main() {
     );
   });
 
-  testWidgets('guest scorekeeper saves nickname as required player name',
+  testWidgets(
+      'guest scorekeeper saves editable nickname with Guest player name',
       (tester) async {
     final guest = Player(
       id: 'guest',
-      playerName: 'Guest Scorekeeper',
+      playerName: 'Guest',
       nickname: 'Guest',
       ownerId: 'guest',
       totalScore: 0,
@@ -240,6 +241,39 @@ void main() {
 
     expect(saved, isTrue);
     expect(guest.nickname, 'Scorekeeper');
-    expect(guest.playerName, 'Scorekeeper');
+    expect(guest.playerName, 'Guest');
+  });
+
+  testWidgets('standard form saves PII sharing preference', (tester) async {
+    final player = Player(
+      id: 'player-1',
+      playerName: 'Ava Guest',
+      nickname: 'Ava',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: player,
+            allowEditing: true,
+            editingOrAdding: 'Edit',
+            onSaveChanges: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(SwitchListTile), findsOneWidget);
+    expect(find.text('PII Sharing Preferences'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+
+    expect(player.piiSharingPrefs, isTrue);
   });
 }

@@ -35,6 +35,7 @@ void main() {
       totalScore: 7,
       email: 'ava@example.com',
       phoneNumber: '5551234567',
+      piiSharingPrefs: true,
     );
   }
 
@@ -133,6 +134,21 @@ void main() {
 
     expect(find.text('ava@example.com'), findsNothing);
     expect(find.text('5551234567'), findsNothing);
+  });
+
+  testWidgets('PlayerListItem respects disabled PII sharing preference',
+      (tester) async {
+    final player = testPlayer()..piiSharingPrefs = false;
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: PlayerListItem(player: player))),
+    );
+
+    await tester.tap(find.text('Ava Guest'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ava@example.com'), findsNothing);
+    expect(find.text('5551234567'), findsNothing);
+    expect(find.text('Not shared'), findsNWidgets(2));
   });
 
   testWidgets('PlayerListItem selection tap and switch tap', (tester) async {

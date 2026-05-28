@@ -40,18 +40,44 @@ class PlayerCreateScreenState extends State<PlayerCreateScreen> {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: Colors.teal.shade50,
+      color: Colors.white.withValues(alpha: 0.92),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24.0),
+        borderRadius: BorderRadius.circular(16.0),
+        side: BorderSide(color: Colors.teal.shade100),
       ),
       margin: const EdgeInsets.all(16.0),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: PlayerForm(
-          player: newPlayer,
-          allowEditing: true,
-          onSaveChanges: savePlayer,
-          editingOrAdding: "Add",
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.teal.shade50,
+                  foregroundColor: Colors.teal.shade700,
+                  child: const Icon(Icons.person_add_alt_1),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'New Player',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            PlayerForm(
+              player: newPlayer,
+              allowEditing: true,
+              onSaveChanges: savePlayer,
+              editingOrAdding: "Add",
+            ),
+          ],
         ),
       ),
     );

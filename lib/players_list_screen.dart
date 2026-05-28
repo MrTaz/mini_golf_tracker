@@ -76,15 +76,6 @@ class PlayerListItemState extends State<PlayerListItem> {
     });
   }
 
-  void toggleDetails() {
-    setState(() {
-      isDetailsOpen = !isDetailsOpen;
-      if (isDetailsOpen) {
-        isDropdownOpen = false;
-      }
-    });
-  }
-
   String getPlayerPositionSuffix(int position) {
     if (position % 10 == 1 && position % 100 != 11) {
       return "st";
@@ -98,45 +89,68 @@ class PlayerListItemState extends State<PlayerListItem> {
   }
 
   Widget _buildPlayerListItem() {
+    final children = [
+      _buildReadOnlyDetails(),
+      _buildListItemDropDownEdit(),
+    ];
     return Card(
       elevation: 0,
       color: Colors.teal.shade50,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24.0),
       ),
-      child: Column(
-        children: [
-          // orderNumberText,
-          ListTile(
+      child: widget.creatingGame == true
+          ? Column(
+              children: [
+                ListTile(
+                  title: Text(widget.player.nickname),
+                  subtitle: Text(widget.player.playerName),
+                  leading: _buildLeadingWidget(),
+                  enabled: _enabled,
+                  selected: widget.isSelected,
+                  iconColor: _iconColor(),
+                  onTap: _toggleGameSelection,
+                  trailing: _buildTrailingIcons(),
+                ),
+                _buildListItemDropDownEdit(),
+              ],
+            )
+          : ExpansionTile(
+              key: ValueKey('$isDetailsOpen-$isDropdownOpen'),
+              initiallyExpanded: isDetailsOpen || isDropdownOpen,
+              onExpansionChanged: (value) {
+                setState(() {
+                  isDetailsOpen = value;
+                  if (value) {
+                    isDropdownOpen = false;
+                  }
+                });
+              },
               title: Text(widget.player.nickname),
               subtitle: Text(widget.player.playerName),
               leading: _buildLeadingWidget(),
               enabled: _enabled,
-              selected: widget.isSelected,
-              iconColor:
-                  WidgetStateColor.resolveWith((Set<WidgetState> states) {
-                return states.contains(WidgetState.selected)
-                    ? Colors.green
-                    : Colors.teal;
-              }),
-              onTap: () {
-                if (widget.creatingGame == true) {
-                  setState(() {
-                    isSelected = !isSelected;
-                  });
-                  if (widget.onPlayerSelected != null) {
-                    widget.onPlayerSelected!(widget.player);
-                  }
-                } else {
-                  toggleDetails();
-                }
-              },
-              trailing: _buildTrailingIcons()),
-          _buildReadOnlyDetails(),
-          _buildListItemDropDownEdit()
-        ],
-      ),
+              iconColor: Colors.teal,
+              collapsedIconColor: Colors.teal,
+              trailing: _buildTrailingIcons(),
+              children: children,
+            ),
     );
+  }
+
+  WidgetStateColor _iconColor() {
+    return WidgetStateColor.resolveWith((Set<WidgetState> states) {
+      return states.contains(WidgetState.selected) ? Colors.green : Colors.teal;
+    });
+  }
+
+  void _toggleGameSelection() {
+    setState(() {
+      isSelected = !isSelected;
+    });
+    if (widget.onPlayerSelected != null) {
+      widget.onPlayerSelected!(widget.player);
+    }
   }
 
   Widget _buildLeadingWidget() {
@@ -220,7 +234,7 @@ class PlayerListItemState extends State<PlayerListItem> {
   }
 
   Widget _buildReadOnlyDetails() {
-    if (!isDetailsOpen || widget.creatingGame == true || isDropdownOpen) {
+    if (widget.creatingGame == true || isDropdownOpen) {
       return const SizedBox.shrink();
     }
 
@@ -230,12 +244,20 @@ class PlayerListItemState extends State<PlayerListItem> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(),
-          _buildDetailRow('Email', widget.player.email ?? 'Not provided'),
-          _buildDetailRow('Phone', widget.player.phoneNumber ?? 'Not provided'),
+          _buildDetailRow('Email', _sharedContactValue(widget.player.email)),
+          _buildDetailRow(
+              'Phone', _sharedContactValue(widget.player.phoneNumber)),
           _buildDetailRow('Total Score', widget.player.totalScore.toString()),
         ],
       ),
     );
+  }
+
+  String _sharedContactValue(String? value) {
+    if (!widget.player.piiSharingPrefs) {
+      return 'Not shared';
+    }
+    return value ?? 'Not provided';
   }
 
   Widget _buildDetailRow(String label, String value) {

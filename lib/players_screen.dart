@@ -93,8 +93,7 @@ class PlayersScreenState extends State<PlayersScreen> {
   }
 
   void _initializePlayers() {
-    final availablePlayers =
-        loggedInUser?.getAllPlayerFriends() ?? Player.players;
+    final availablePlayers = _playersWithCreatorProfile();
 
     if (widget.currentlySelectedPlayers != null &&
         widget.currentlySelectedPlayers!.isNotEmpty) {
@@ -129,6 +128,26 @@ class PlayersScreenState extends State<PlayersScreen> {
     }
   }
 
+  List<Player> _playersWithCreatorProfile() {
+    final sourcePlayers = loggedInUser?.getAllPlayerFriends() ?? Player.players;
+    final orderedPlayers = List<Player>.from(sourcePlayers);
+    final existingGuestProfile = orderedPlayers
+        .where((player) => player.id == 'guest')
+        .cast<Player?>()
+        .firstOrNull;
+    final creatorProfile = loggedInUser ??
+        existingGuestProfile ??
+        Player(
+          id: 'guest',
+          playerName: 'Guest',
+          nickname: 'Guest Scorekeeper',
+          ownerId: 'guest',
+          totalScore: 0,
+        );
+    orderedPlayers.removeWhere((player) => player.id == creatorProfile.id);
+    return [creatorProfile, ...orderedPlayers];
+  }
+
   Widget _buildPlayerListItem(int index, bool isSelected) {
     return PlayerListItem(
       key: Key('counter-$index'),
@@ -154,14 +173,17 @@ class PlayersScreenState extends State<PlayersScreen> {
                 ),
               ],
             )
-          : (loggedInUser == null ? AppBar(title: const Text('Friends')) : null),
+          : (loggedInUser == null
+              ? AppBar(title: const Text('Friends'))
+              : null),
       body: Stack(
         children: [
           Utilities.backdropImageContinerWidget(),
           if (_isLoading)
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32.0, vertical: 40.0),
                 margin: const EdgeInsets.symmetric(horizontal: 24.0),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.85),
@@ -244,7 +266,9 @@ class PlayersScreenState extends State<PlayersScreen> {
             )
         ],
       ),
-      bottomNavigationBar: (widget.creatingGame! && !showNewPlayerForm && !_isLoading)
+      bottomNavigationBar: (widget.creatingGame! &&
+              !showNewPlayerForm &&
+              !_isLoading)
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -258,7 +282,9 @@ class PlayersScreenState extends State<PlayersScreen> {
                       borderRadius: BorderRadius.circular(24.0),
                     ),
                   ),
-                  child: const Text('Add selected players to game.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text('Add selected players to game.',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             )

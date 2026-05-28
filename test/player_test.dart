@@ -20,6 +20,7 @@ void main() {
       expect(player.phoneNumber, isNull);
       expect(player.status, isNull);
       expect(player.avatarImageLocation, isNull);
+      expect(player.piiSharingPrefs, isFalse);
     });
 
     test('creates with all optional fields', () {
@@ -35,6 +36,7 @@ void main() {
         normalizedPhoneNumber: '5551234',
         status: 'active',
         claimedByUid: 'uid-2',
+        piiSharingPrefs: true,
         avatarImageLocation: 'https://example.com/avatar.png',
       );
       expect(player.email, 'bob@example.com');
@@ -43,6 +45,7 @@ void main() {
       expect(player.normalizedPhoneNumber, '5551234');
       expect(player.status, 'active');
       expect(player.claimedByUid, 'uid-2');
+      expect(player.piiSharingPrefs, isTrue);
       expect(player.avatarImageLocation, 'https://example.com/avatar.png');
     });
   });
@@ -71,6 +74,7 @@ void main() {
         'normalized_phone_number': '5555678',
         'status': 'active',
         'claimed_by_uid': 'uid-1',
+        'pii_sharing_prefs': true,
         'total_score': 75,
         'avatar_image_location': 'https://example.com/carol.png',
       };
@@ -85,6 +89,7 @@ void main() {
       expect(player.normalizedPhoneNumber, '5555678');
       expect(player.status, 'active');
       expect(player.claimedByUid, 'uid-1');
+      expect(player.piiSharingPrefs, isTrue);
       expect(player.totalScore, 75);
       expect(player.avatarImageLocation, 'https://example.com/carol.png');
     });
@@ -102,6 +107,7 @@ void main() {
       expect(player.phoneNumber, isNull);
       expect(player.status, isNull);
       expect(player.avatarImageLocation, isNull);
+      expect(player.piiSharingPrefs, isFalse);
     });
   });
 
@@ -119,6 +125,7 @@ void main() {
         normalizedPhoneNumber: '5559999',
         status: 'active',
         claimedByUid: 'uid-1',
+        piiSharingPrefs: true,
         avatarImageLocation: 'https://example.com/eve.png',
       );
       final json = player.toJson();
@@ -133,6 +140,7 @@ void main() {
       expect(json['normalized_phone_number'], '5559999');
       expect(json['status'], 'active');
       expect(json['claimed_by_uid'], 'uid-1');
+      expect(json['pii_sharing_prefs'], isTrue);
       expect(json['avatar_image_location'], 'https://example.com/eve.png');
     });
 

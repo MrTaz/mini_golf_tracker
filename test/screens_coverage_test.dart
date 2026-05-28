@@ -276,6 +276,9 @@ void main() {
       await tester.pump();
     }
 
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+
     Player.players = originalPlayers;
   });
 

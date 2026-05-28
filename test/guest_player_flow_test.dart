@@ -259,7 +259,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final switchWidget = tester.widget<Switch>(find.byType(Switch));
+    final switchWidget = tester.widget<Switch>(find.byType(Switch).last);
     expect(switchWidget.value, isTrue);
     expect(find.text('Morgan'), findsOneWidget);
   });
