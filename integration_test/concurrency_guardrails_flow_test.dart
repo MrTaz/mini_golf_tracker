@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,17 +7,31 @@ import 'package:mini_golf_tracker/main.dart' as app;
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+
+Future<void> pumpRoute(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 350));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     final fakeFirestore = FakeFirebaseFirestore();
+    final mockAuth = MockFirebaseAuth();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
-    SharedPreferences.setMockInitialValues({});
+    UserProvider().resetForTesting();
+    UserProvider().setAuthInstanceForTesting(mockAuth);
+    app.MainScaffold.skipPrecacheForTesting = true;
   });
 
   testWidgets('Concurrency Guardrails: active game warning dialog interrupts flow', (tester) async {
@@ -42,18 +57,53 @@ void main() {
     );
     SharedPreferences.setMockInitialValues({'active_game_1': jsonEncode(activeGame.toJson())});
 
-    app.main();
+    await tester.pumpWidget(const app.MyApp());
     await tester.pumpAndSettle();
 
     // In a fresh start with an active game, app auto-resumes to GameInprogressScreen.
-    // We want to test the Create Game flow, so we pop back to ActivityHub.
-    expect(find.text('End Game'), findsOneWidget); // Confirm we are in GameInprogress
-    await tester.tap(find.byIcon(Icons.arrow_back)); // Usually a back button exists to go to dashboard
-    await tester.pumpAndSettle();
+    expect(find.byType(GameInprogressScreen), findsOneWidget); // Confirm we are in GameInprogress
 
-    // From ActivityHub, tap FAB to create game
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
+    // We want to test the Create Game flow, so we pop back to HomeScreen by pausing the game.
+    // In our test, we can directly trigger the navigation to HomePage(skipAutoResume: true).
+    final BuildContext context = tester.element(find.byType(GameInprogressScreen));
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const app.HomePage(skipAutoResume: true)),
+      (route) => false,
+    );
+    await pumpRoute(tester);
+
+    // From HomeScreen (guest), tap to create a game
+    expect(find.text('Create a New Game'), findsOneWidget);
+    await tester.tap(find.text('Create a New Game'));
+    await pumpRoute(tester);
+
+    // Set course and players for testing in GameCreateScreenState
+    final gameCreateState =
+        tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
+    gameCreateState.setSelectedCourseForTesting(Course(
+      id: 'course_1',
+      name: 'Test Course',
+      numberOfHoles: 18,
+      parStrokes: {1: 3},
+    ));
+    gameCreateState.setSelectedPlayersForTesting([
+      Player(
+        id: 'test_player',
+        playerName: 'Test Player',
+        nickname: 'Tester',
+        ownerId: 'guest',
+        totalScore: 0,
+      ),
+      Player(
+        id: 'player_2',
+        playerName: 'Player Two',
+        nickname: 'Two',
+        ownerId: 'guest',
+        totalScore: 0,
+      ),
+    ]);
+    await tester.pump();
 
     // Enter game name
     await tester.enterText(find.byType(TextFormField).first, 'New Game Attempt');
@@ -84,6 +134,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now it should proceed to GameInprogressScreen
-    expect(find.text('End Game'), findsOneWidget);
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
   });
 }
