@@ -238,8 +238,8 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.18 Silent Pace of Play Data Collection
 
-* [ ] **Model Expansion:** Update the `PlayerGameInfo` model in `player_game_info.dart` to include a `List<String>? scoreTimestamps` field to hold ISO-8601 timestamp strings. Update the `toJson` and `fromJson` methods to safely parse this new list so it is entirely backwards compatible with existing local storage.
-* [ ] **Timestamp Injection:** Update `Game.recordScore()` (and any mid-game `setState` scoring logic in `game_inprogress_screen.dart`) to automatically capture `DateTime.now().toIso8601String()` and append it to the player's `scoreTimestamps` array whenever a score is locked in.
+* [x] **Model Expansion:** Update the `PlayerGameInfo` model in `player_game_info.dart` to include a `List<String>? scoreTimestamps` field to hold ISO-8601 timestamp strings. Update the `toJson` and `fromJson` methods to safely parse this new list so it is entirely backwards compatible with existing local storage.
+* [x] **Timestamp Injection:** Update `Game.recordScore()` (and any mid-game `setState` scoring logic in `game_inprogress_screen.dart`) to automatically capture `DateTime.now().toIso8601String()` and append it to the player's `scoreTimestamps` array whenever a score is locked in.
 
 #### 1.19 Post-1.2 Bug Fixes & UX Polish
 
@@ -301,9 +301,20 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Background Lookup Integrity:** Ensure these UI masking changes do not affect `Player.getPlayerByContactFromDB` or ContactIdentity normalization, so the system can still find and match users by email/phone in the background.
 * [x] **Update Tests:** Update `player_form_widget_test.dart` and `player_test.dart` to cover the new granular fields and ensure 100% line coverage.
 
+#### Phase 1.27 — Phase 1 Finalization & Coverage Sweep
+
+* [ ] **100% Codebase Coverage:** Write unit and widget tests for the remaining 11 uncovered files (`always_scrollable_overscroll_physics_class.dart`, `assets.dart`, `database_connection.dart`, `extra_scroll_physics_class.dart`, `firebase_options.dart`, `gravatar_image_view.dart`, `home_screen.dart`, `past_game_card_widget.dart`, `player_details_screen.dart`, `player_score_card.dart`, `player_score_data_table_card.dart`).
+* [ ] **Phase 1 Behavioral Tests:** Add tests for `Player.createPlayer` nickname-only creation, `_findConflictingCourses` Haversine threshold, and normalized address substring matching.
+* [ ] **Dead Code Cleanup:** Remove `getPlayersList` from `PastGameDetailsScreen`, legacy auth-load logic from `PlayerForm`, and commented styling from `PastGameListItem`.
+
 ---
 
 ### Phase 2 — Identity Foundation & Local Game Adoption
+
+#### Phase 2.0 — Patrol Native E2E Infrastructure & Google Sign-In Validation
+
+* [ ] **Install Patrol:** Add the Patrol testing framework to the project to support true native OS-level UI interactions.
+* [ ] **Google Sign-In E2E Test:** Write a Patrol integration test that physically interacts with the native OS account selector pop-up to validate the Google Sign-In flow and debug live device failures.
 
 #### 2.1 Preserve Nickname-Only and Quick-Play Players
 
@@ -1158,7 +1169,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Authentication and test-account verification bypass flow passes (`integration_test/auth_login_flow_test.dart`).
 * [x] Player selection, deselection, and clear-all flow passes (`integration_test/player_selection_flow_test.dart`).
 * [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
-* [ ] Google Sign-In E2E authentication flow passes (Note: requires native UI test configuration to tap system pop-ups).
+* [ ] Google Sign-In E2E authentication flow passes (Note: requires Patrol native UI test configuration to tap system pop-ups).
 * [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
 * [ ] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
