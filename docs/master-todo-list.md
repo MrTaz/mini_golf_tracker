@@ -280,14 +280,24 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### 1.24 Hotfix: Course Selection State Synchronization
 
-* [x] **CoursesScreen UI Synchronization:** In `CoursesScreen`, change the trailing course selection widget to a `Switch` that accurately reflects if the course is currently selected. 
+* [x] **CoursesScreen UI Synchronization:** In `CoursesScreen`, change the trailing course selection widget to a `Switch` that accurately reflects if the course is currently selected.
 * [x] **Clear Course Action:** Add a "Clear" button to the `CoursesScreen` AppBar when in `creatingGame` mode.
 * [x] **Handle Cleared State:** Update `GameCreateScreen._selectCourse()` to accept a sentinel `Course.empty()` object as a signal to explicitly clear the `_selectedCourse` state, distinguishing it from a standard navigator cancellation.
 
-###### 1.25 Hotfix: In-Game Course Editing & Delete UI
+#### 1.25 Hotfix: In-Game Course Editing & Delete UI
 
-*  [x] **CourseListItem Delete Toggle:** Make the `onDelete` callback in `CourseListItem` optional (`VoidCallback?`). If null, completely hide the delete icon/button from the expanded details.
-*  [x] **Active Game Course Edit:** In `GameInprogressScreen`, pass `null` to `onDelete` for the course card. Wire the `onModify` callback to navigate to `AddEditCourseScreen` with the current course. When the navigator returns an updated course, mutate `widget.currentGame.course`, call `setState()`, and trigger `_updateGame()` to instantly sync the changes.
+* [x] **CourseListItem Delete Toggle:** Make the `onDelete` callback in `CourseListItem` optional (`VoidCallback?`). If null, completely hide the delete icon/button from the expanded details.
+* [x] **Active Game Course Edit:** In `GameInprogressScreen`, pass `null` to `onDelete` for the course card. Wire the `onModify` callback to navigate to `AddEditCourseScreen` with the current course. When the navigator returns an updated course, mutate `widget.currentGame.course`, call `setState()`, and trigger `_updateGame()` to instantly sync the changes.
+
+#### Phase 1.26 (or 5.6b) — Granular Owner-Driven PII Privacy Refactor
+
+* [x] **Update Player Model:** Replace the `piiSharingPrefs` boolean in `player.dart` with granular booleans: `shareName`, `shareEmail`, and `sharePhone` (defaulting to true for backward compatibility). Update `toJson` and `fromJson`.
+* [x] **Restrict Privacy Settings Access:** In `PlayerForm`, remove the generic PII `SwitchListTile`. Replace it with a "Privacy Settings" section containing three checkboxes (Show Real Name, Show Email, Show Phone Number).
+* [x] **Enforce Owner-Only Editing:** Wrap the new privacy checkboxes in an `if (currentUser?.id == widget.player?.id)` condition so game creators cannot dictate privacy settings for friends they add.
+* [x] **Granular UI Masking (List Item):** In `PlayerListItem`'s expanded read-only view, read the granular flags. If `shareEmail` or `sharePhone` is false, mask the values (e.g., "Hidden by user").
+* [x] **Granular UI Masking (Name):** In `PlayerListItem` and `PlayersScreen`, if a user is viewing another player's profile and `shareName` is false, visually replace the `playerName` with the `nickname`.
+* [x] **Background Lookup Integrity:** Ensure these UI masking changes do not affect `Player.getPlayerByContactFromDB` or ContactIdentity normalization, so the system can still find and match users by email/phone in the background.
+* [x] **Update Tests:** Update `player_form_widget_test.dart` and `player_test.dart` to cover the new granular fields and ensure 100% line coverage.
 
 ---
 
@@ -633,7 +643,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] **Scheduling Paywall:** Enforce the rule that only users with `isPremium == true` can persist games with a `scheduled_time` in the future.
 * [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
 * [ ] **Premium Pace of Play Analytics:** Build a premium post-game summary UI that parses the historical `scoreTimestamps` data to calculate total game duration, average time per hole, and individual player pace statistics.
-*  [ ] **Premium Places Search:** Upgrade the Map Picker search bar to use the Google Places API for premium subscribers, providing instant, highly accurate business name searches and rich POI data (e.g., ratings, photos).
+* [ ] **Premium Places Search:** Upgrade the Map Picker search bar to use the Google Places API for premium subscribers, providing instant, highly accurate business name searches and rich POI data (e.g., ratings, photos).
 
 ### Phase 9 — CI/CD & Deployment
 

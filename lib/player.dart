@@ -22,7 +22,9 @@ class Player {
       this.normalizedPhoneNumber,
       this.status,
       this.claimedByUid,
-      this.piiSharingPrefs = false,
+      this.shareName = true,
+      this.shareEmail = true,
+      this.sharePhone = true,
       this.avatarImageLocation});
 
   // Factory method to create a Player object without populating fields
@@ -50,7 +52,9 @@ class Player {
             ContactIdentity.normalizePhoneNumber(json['phone_number']),
         status: json['status'],
         claimedByUid: json['claimed_by_uid'],
-        piiSharingPrefs: json['pii_sharing_prefs'] ?? false,
+        shareName: json['share_name'] ?? true,
+        shareEmail: json['share_email'] ?? true,
+        sharePhone: json['share_phone'] ?? true,
         totalScore: json['total_score'] ?? 0,
         avatarImageLocation: json['avatar_image_location']);
   }
@@ -65,7 +69,9 @@ class Player {
   String? normalizedEmail;
   String? normalizedPhoneNumber;
   String ownerId;
-  bool piiSharingPrefs;
+  bool shareName;
+  bool shareEmail;
+  bool sharePhone;
   String? phoneNumber;
   String playerName;
   String? status;
@@ -83,7 +89,9 @@ class Player {
       'normalized_phone_number': normalizedPhoneNumber,
       'status': status,
       'claimed_by_uid': claimedByUid,
-      'pii_sharing_prefs': piiSharingPrefs,
+      'share_name': shareName,
+      'share_email': shareEmail,
+      'share_phone': sharePhone,
       'total_score': totalScore,
       'avatar_image_location': avatarImageLocation
     };

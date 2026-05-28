@@ -19,13 +19,6 @@ class PlayerProfileWidget extends StatefulWidget {
 
 class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
   List<String> selectedPlayerIds = [];
-  late bool piiSharingPrefs;
-
-  @override
-  void initState() {
-    super.initState();
-    piiSharingPrefs = widget.player.piiSharingPrefs;
-  }
 
   Color getRankBorderColor(int? currentRank) {
     currentRank ??= 99;
@@ -109,31 +102,6 @@ class PlayerProfileWidgetState extends State<PlayerProfileWidget> {
               ),
               backgroundColor: Colors.green,
             ),
-          Material(
-            color: Colors.transparent,
-            child: SizedBox(
-              height: 36,
-              child: Transform.scale(
-                scale: 0.72,
-                child: SwitchListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'PII Sharing Preferences',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10),
-                  ),
-                  value: piiSharingPrefs,
-                  onChanged: (value) {
-                    setState(() {
-                      piiSharingPrefs = value;
-                      widget.player.piiSharingPrefs = value;
-                    });
-                  },
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

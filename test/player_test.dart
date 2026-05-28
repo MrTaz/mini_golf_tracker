@@ -20,7 +20,9 @@ void main() {
       expect(player.phoneNumber, isNull);
       expect(player.status, isNull);
       expect(player.avatarImageLocation, isNull);
-      expect(player.piiSharingPrefs, isFalse);
+      expect(player.shareName, isTrue);
+      expect(player.shareEmail, isTrue);
+      expect(player.sharePhone, isTrue);
     });
 
     test('creates with all optional fields', () {
@@ -36,7 +38,9 @@ void main() {
         normalizedPhoneNumber: '5551234',
         status: 'active',
         claimedByUid: 'uid-2',
-        piiSharingPrefs: true,
+        shareName: false,
+        shareEmail: false,
+        sharePhone: false,
         avatarImageLocation: 'https://example.com/avatar.png',
       );
       expect(player.email, 'bob@example.com');
@@ -45,7 +49,9 @@ void main() {
       expect(player.normalizedPhoneNumber, '5551234');
       expect(player.status, 'active');
       expect(player.claimedByUid, 'uid-2');
-      expect(player.piiSharingPrefs, isTrue);
+      expect(player.shareName, isFalse);
+      expect(player.shareEmail, isFalse);
+      expect(player.sharePhone, isFalse);
       expect(player.avatarImageLocation, 'https://example.com/avatar.png');
     });
   });
@@ -74,7 +80,9 @@ void main() {
         'normalized_phone_number': '5555678',
         'status': 'active',
         'claimed_by_uid': 'uid-1',
-        'pii_sharing_prefs': true,
+        'share_name': false,
+        'share_email': false,
+        'share_phone': false,
         'total_score': 75,
         'avatar_image_location': 'https://example.com/carol.png',
       };
@@ -89,7 +97,9 @@ void main() {
       expect(player.normalizedPhoneNumber, '5555678');
       expect(player.status, 'active');
       expect(player.claimedByUid, 'uid-1');
-      expect(player.piiSharingPrefs, isTrue);
+      expect(player.shareName, isFalse);
+      expect(player.shareEmail, isFalse);
+      expect(player.sharePhone, isFalse);
       expect(player.totalScore, 75);
       expect(player.avatarImageLocation, 'https://example.com/carol.png');
     });
@@ -107,7 +117,9 @@ void main() {
       expect(player.phoneNumber, isNull);
       expect(player.status, isNull);
       expect(player.avatarImageLocation, isNull);
-      expect(player.piiSharingPrefs, isFalse);
+      expect(player.shareName, isTrue);
+      expect(player.shareEmail, isTrue);
+      expect(player.sharePhone, isTrue);
     });
   });
 
@@ -125,7 +137,9 @@ void main() {
         normalizedPhoneNumber: '5559999',
         status: 'active',
         claimedByUid: 'uid-1',
-        piiSharingPrefs: true,
+        shareName: false,
+        shareEmail: false,
+        sharePhone: false,
         avatarImageLocation: 'https://example.com/eve.png',
       );
       final json = player.toJson();
@@ -140,7 +154,9 @@ void main() {
       expect(json['normalized_phone_number'], '5559999');
       expect(json['status'], 'active');
       expect(json['claimed_by_uid'], 'uid-1');
-      expect(json['pii_sharing_prefs'], isTrue);
+      expect(json['share_name'], isFalse);
+      expect(json['share_email'], isFalse);
+      expect(json['share_phone'], isFalse);
       expect(json['avatar_image_location'], 'https://example.com/eve.png');
     });
 
@@ -153,6 +169,9 @@ void main() {
         'email': 'frank@example.com',
         'phone_number': null,
         'status': null,
+        'share_name': false,
+        'share_email': false,
+        'share_phone': false,
         'total_score': 20,
         'avatar_image_location': null,
       };
@@ -161,6 +180,9 @@ void main() {
       expect(result['id'], 'rt1');
       expect(result['player_name'], 'Frank');
       expect(result['total_score'], 20);
+      expect(result['share_name'], isFalse);
+      expect(result['share_email'], isFalse);
+      expect(result['share_phone'], isFalse);
     });
   });
 

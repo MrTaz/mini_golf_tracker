@@ -244,14 +244,20 @@ void main() {
     expect(guest.playerName, 'Guest');
   });
 
-  testWidgets('standard form saves PII sharing preference', (tester) async {
+  testWidgets('privacy toggles render and save for profile owner',
+      (tester) async {
     final player = Player(
       id: 'player-1',
       playerName: 'Ava Guest',
       nickname: 'Ava',
-      ownerId: 'guest',
+      ownerId: 'player-1',
       totalScore: 0,
     );
+    await UserProvider().login(player);
+    await DatabaseConnection.client
+        .collection('players')
+        .doc(player.id)
+        .set(player.toJson());
 
     await tester.pumpWidget(
       MaterialApp(
@@ -266,14 +272,55 @@ void main() {
       ),
     );
 
-    expect(find.byType(SwitchListTile), findsOneWidget);
-    expect(find.text('PII Sharing Preferences'), findsOneWidget);
+    expect(find.text('Privacy Settings'), findsOneWidget);
+    expect(find.text('Show Real Name'), findsOneWidget);
+    expect(find.text('Show Email'), findsOneWidget);
+    expect(find.text('Show Phone Number'), findsOneWidget);
 
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.text('Show Real Name'));
+    await tester.tap(find.text('Show Email'));
+    await tester.tap(find.text('Show Phone Number'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
-    expect(player.piiSharingPrefs, isTrue);
+    expect(player.shareName, isFalse);
+    expect(player.shareEmail, isFalse);
+    expect(player.sharePhone, isFalse);
+  });
+
+  testWidgets('privacy toggles do not render for friend profile',
+      (tester) async {
+    await UserProvider().login(Player(
+      id: 'owner-1',
+      playerName: 'Owner',
+      nickname: 'Owner',
+      ownerId: 'owner-1',
+      totalScore: 0,
+    ));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: Player(
+              id: 'friend-1',
+              playerName: 'Friend Guest',
+              nickname: 'Friend',
+              ownerId: 'owner-1',
+              totalScore: 0,
+            ),
+            allowEditing: true,
+            editingOrAdding: 'Edit',
+            onSaveChanges: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Privacy Settings'), findsNothing);
+    expect(find.text('Show Real Name'), findsNothing);
+    expect(find.text('Show Email'), findsNothing);
+    expect(find.text('Show Phone Number'), findsNothing);
   });
 }

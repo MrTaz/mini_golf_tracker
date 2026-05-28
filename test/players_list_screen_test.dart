@@ -35,7 +35,6 @@ void main() {
       totalScore: 7,
       email: 'ava@example.com',
       phoneNumber: '5551234567',
-      piiSharingPrefs: true,
     );
   }
 
@@ -136,9 +135,8 @@ void main() {
     expect(find.text('5551234567'), findsNothing);
   });
 
-  testWidgets('PlayerListItem respects disabled PII sharing preference',
-      (tester) async {
-    final player = testPlayer()..piiSharingPrefs = false;
+  testWidgets('PlayerListItem masks email hidden by non-owner', (tester) async {
+    final player = testPlayer()..shareEmail = false;
     await tester.pumpWidget(
       MaterialApp(home: Scaffold(body: PlayerListItem(player: player))),
     );
@@ -147,8 +145,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ava@example.com'), findsNothing);
+    expect(find.text('5551234567'), findsOneWidget);
+    expect(find.text('Hidden by user'), findsOneWidget);
+  });
+
+  testWidgets('PlayerListItem masks phone and name hidden by non-owner',
+      (tester) async {
+    final player = testPlayer()
+      ..shareName = false
+      ..sharePhone = false;
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: PlayerListItem(player: player))),
+    );
+
+    expect(find.text('Ava Guest'), findsNothing);
+    expect(find.text('Ava'), findsWidgets);
+
+    await tester.tap(find.text('Ava').first);
+    await tester.pumpAndSettle();
+
     expect(find.text('5551234567'), findsNothing);
-    expect(find.text('Not shared'), findsNWidgets(2));
+    expect(find.text('Hidden by user'), findsOneWidget);
+  });
+
+  testWidgets('PlayerListItem reveals hidden fields to owner', (tester) async {
+    final player = Player(
+      id: 'owner123',
+      playerName: 'Ava Guest',
+      nickname: 'Ava',
+      ownerId: 'owner123',
+      totalScore: 7,
+      email: 'ava@example.com',
+      phoneNumber: '5551234567',
+      shareName: false,
+      shareEmail: false,
+      sharePhone: false,
+    );
+    await UserProvider().login(player);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: PlayerListItem(player: player))),
+    );
+
+    expect(find.text('Ava Guest'), findsOneWidget);
+
+    await tester.tap(find.text('Ava Guest'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ava@example.com'), findsOneWidget);
+    expect(find.text('5551234567'), findsOneWidget);
+    expect(find.text('Hidden by user'), findsNothing);
   });
 
   testWidgets('PlayerListItem selection tap and switch tap', (tester) async {
@@ -230,6 +276,11 @@ void main() {
   testWidgets(
       'PlayerListItem save edited changes closes dropdown for authenticated owner',
       (tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final owner = Player(
       id: 'owner123',
       playerName: 'Owner Player',

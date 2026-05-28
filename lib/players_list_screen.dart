@@ -38,6 +38,11 @@ class PlayerListItemState extends State<PlayerListItem> {
 
   bool _allowEditing = false;
   final bool _enabled = true;
+  bool get _isOwner =>
+      loggedInUser?.id != null && loggedInUser?.id == widget.player.id;
+  String get _visiblePlayerName => !widget.player.shareName && !_isOwner
+      ? widget.player.nickname
+      : widget.player.playerName;
 
   @override
   void initState() {
@@ -104,7 +109,7 @@ class PlayerListItemState extends State<PlayerListItem> {
               children: [
                 ListTile(
                   title: Text(widget.player.nickname),
-                  subtitle: Text(widget.player.playerName),
+                  subtitle: Text(_visiblePlayerName),
                   leading: _buildLeadingWidget(),
                   enabled: _enabled,
                   selected: widget.isSelected,
@@ -127,7 +132,7 @@ class PlayerListItemState extends State<PlayerListItem> {
                 });
               },
               title: Text(widget.player.nickname),
-              subtitle: Text(widget.player.playerName),
+              subtitle: Text(_visiblePlayerName),
               leading: _buildLeadingWidget(),
               enabled: _enabled,
               iconColor: Colors.teal,
@@ -244,18 +249,23 @@ class PlayerListItemState extends State<PlayerListItem> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(),
-          _buildDetailRow('Email', _sharedContactValue(widget.player.email)),
           _buildDetailRow(
-              'Phone', _sharedContactValue(widget.player.phoneNumber)),
+              'Email',
+              _sharedContactValue(
+                  widget.player.email, widget.player.shareEmail)),
+          _buildDetailRow(
+              'Phone',
+              _sharedContactValue(
+                  widget.player.phoneNumber, widget.player.sharePhone)),
           _buildDetailRow('Total Score', widget.player.totalScore.toString()),
         ],
       ),
     );
   }
 
-  String _sharedContactValue(String? value) {
-    if (!widget.player.piiSharingPrefs) {
-      return 'Not shared';
+  String _sharedContactValue(String? value, bool isShared) {
+    if (!isShared && !_isOwner) {
+      return 'Hidden by user';
     }
     return value ?? 'Not provided';
   }

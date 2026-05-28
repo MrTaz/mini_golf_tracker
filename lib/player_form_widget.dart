@@ -31,7 +31,9 @@ class PlayerFormState extends State<PlayerForm> {
   late TextEditingController _nicknameController;
   late TextEditingController _phoneNumberController;
   late TextEditingController _playerNameController;
-  late bool _piiSharingPrefs;
+  late bool _shareName;
+  late bool _shareEmail;
+  late bool _sharePhone;
 
   @override
   void dispose() {
@@ -53,7 +55,9 @@ class PlayerFormState extends State<PlayerForm> {
     _emailController = TextEditingController(text: widget.player?.email ?? '');
     _phoneNumberController =
         TextEditingController(text: widget.player?.phoneNumber ?? '');
-    _piiSharingPrefs = widget.player?.piiSharingPrefs ?? false;
+    _shareName = widget.player?.shareName ?? true;
+    _shareEmail = widget.player?.shareEmail ?? true;
+    _sharePhone = widget.player?.sharePhone ?? true;
   }
 
   bool get isEditing => widget.player != null;
@@ -138,7 +142,9 @@ class PlayerFormState extends State<PlayerForm> {
             ContactIdentity.normalizePhoneNumber(_phoneNumberController.text);
         widget.player!.normalizedEmail = widget.player!.email;
         widget.player!.normalizedPhoneNumber = widget.player!.phoneNumber;
-        widget.player!.piiSharingPrefs = _piiSharingPrefs;
+        widget.player!.shareName = _shareName;
+        widget.player!.shareEmail = _shareEmail;
+        widget.player!.sharePhone = _sharePhone;
         widget.player!.ownerId = currentUser?.id ?? 'guest';
 
         if (widget.editingOrAdding == 'Add') {
@@ -239,19 +245,9 @@ class PlayerFormState extends State<PlayerForm> {
             labelText: 'Phone Number',
           ),
           const SizedBox(height: 10),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('PII Sharing Preferences'),
-            subtitle: const Text('Allow saved contact details to be shared.'),
-            value: _piiSharingPrefs,
-            onChanged: widget.allowEditing
-                ? (value) {
-                    setState(() {
-                      _piiSharingPrefs = value;
-                    });
-                  }
-                : null,
-          ),
+          if (UserProvider().loggedInUser?.id != null &&
+              UserProvider().loggedInUser?.id == widget.player?.id)
+            _buildPrivacySettings(),
         ],
         const SizedBox(height: 10),
         ElevatedButton(
@@ -281,6 +277,51 @@ class PlayerFormState extends State<PlayerForm> {
         ),
       ),
       enabled: widget.allowEditing,
+    );
+  }
+
+  Widget _buildPrivacySettings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Privacy Settings'),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Show Real Name'),
+          value: _shareName,
+          onChanged: widget.allowEditing
+              ? (value) {
+                  setState(() {
+                    _shareName = value ?? true;
+                  });
+                }
+              : null,
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Show Email'),
+          value: _shareEmail,
+          onChanged: widget.allowEditing
+              ? (value) {
+                  setState(() {
+                    _shareEmail = value ?? true;
+                  });
+                }
+              : null,
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Show Phone Number'),
+          value: _sharePhone,
+          onChanged: widget.allowEditing
+              ? (value) {
+                  setState(() {
+                    _sharePhone = value ?? true;
+                  });
+                }
+              : null,
+        ),
+      ],
     );
   }
 }
