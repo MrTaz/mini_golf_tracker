@@ -3,6 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/always_scrollable_overscroll_physics_class.dart';
 
+bool isWebOverride = false;
+
 class OverscrollList extends StatelessWidget {
   OverscrollList({super.key});
 
@@ -23,7 +25,7 @@ class OverscrollList extends StatelessWidget {
       decoration: BoxDecoration(border: Border.all(width: 1)),
       child: Listener(
         onPointerSignal: (PointerSignalEvent event) {
-          if (kIsWeb) {
+          if (kIsWeb || isWebOverride) {
             GestureBinding.instance.pointerSignalResolver.register(event,
                 (event) {
               _scrollList((event as PointerScrollEvent).scrollDelta);
@@ -38,7 +40,7 @@ class OverscrollList extends StatelessWidget {
           // ),
           child: CustomScrollView(
             controller: _scrollCtrl,
-            physics: kIsWeb
+            physics: (kIsWeb || isWebOverride)
                 ? NeverScrollableOverscrollPhysics(
                     overscrollStart: _topOverscroll,
                     overscrollEnd: _bottomOverscroll,

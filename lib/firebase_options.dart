@@ -2,7 +2,11 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' as foundation;
+
+bool isWebTest = false;
+bool get isWeb => isWebTest || foundation.kIsWeb;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -16,7 +20,7 @@ import 'package:flutter/foundation.dart'
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
+    if (isWeb) {
       return web;
     }
     switch (defaultTargetPlatform) {

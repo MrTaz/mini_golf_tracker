@@ -316,7 +316,21 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Install Patrol:** Add the Patrol testing framework to the project to support true native OS-level UI interactions.
 * [ ] **Google Sign-In E2E Test:** Write a Patrol integration test that physically interacts with the native OS account selector pop-up to validate the Google Sign-In flow and debug live device failures.
 
-#### 2.1 Preserve Nickname-Only and Quick-Play Players
+#### Phase 2.1 — iOS Firebase App Distribution
+
+* [ ] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
+* [ ] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
+* [ ] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using standard GidHub Action steps) to successfully archive and sign the iOS `.ipa`.
+* [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
+
+#### Phase 2.2 — Comprehensive Social Logins & E2E Testing
+
+* [ ] **Implement Apple Sign-In:** Install `sign_in_with_apple` and configure the necessary capabilities and Service IDs in the Apple Developer portal.
+* [ ] **Implement Meta/Facebook/Instagram Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
+* [ ] **Implement Snapchat Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
+* [ ] **Social Auth E2E Tests:** Write Patrol integration tests covering the native OS-level pop-ups for Apple, Meta, and Snapchat authentications.
+
+#### 2.3 Preserve Nickname-Only and Quick-Play Players
 
 * [ ] Preserve anonymous / nickname-only users as first-class players.
 * [ ] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
@@ -326,7 +340,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Store quick-play players in the local `guest_players` `SharedPreferences` key.
 * [ ] Ensure PII independence for quick-play and guest players.
 
-#### 2.2 Normalize Contact Entry Points
+#### 2.4 Normalize Contact Entry Points
 
 * [ ] Use `ContactIdentity.normalizeEmail` in all contact write paths.
 * [ ] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
@@ -335,7 +349,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Reference `ContactIdentity` as the source of truth for all contact normalization.
 * [ ] Ensure normalization supports reservation consistency.
 
-#### 2.3 Late Contact Attribution
+#### 2.5 Late Contact Attribution
 
 * [ ] Refactor `Player.updateUnclaimedPlayer` to support post-creation contact attachment.
 * [ ] Before updating contact details, invoke:
@@ -345,7 +359,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Verify the contact is not already reserved.
 * [ ] Prevent split-identity claims where phone and email point to different canonical IDs.
 
-#### 2.4 Local Game & Guest Adoption Workflow
+#### 2.6 Local Game & Guest Adoption Workflow
 
 * [ ] Implement the migration path from `SharedPreferences` to Firestore.
 * [ ] Implement `Game.adoptLocalGames`.
@@ -374,13 +388,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Allow users to explicitly select which local IDs to sync to Firestore.
 * [ ] Include local games and local friends in the cloud import prompt.
 
-#### 2.5 Claim Baseline
+#### 2.7 Claim Baseline
 
 * [ ] Ensure `Player.claimPlayerForVerifiedAuthUser` is the exclusive entry point for guest-to-auth conversion.
 * [ ] Maintain canonical integrity during all claim flows.
 * [ ] Ensure `UserProvider` triggers `ClaimAccountScreen` when signup detects claimable history.
 
-#### 2.6 Legacy Duplicate Repair
+#### 2.8 Legacy Duplicate Repair
 
 * [ ] Develop an ID consistency migration utility.
 * [ ] Repair legacy duplicate players.
@@ -650,46 +664,65 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ### Phase 8 — Premium Features & Monetization (Future)
 
-* [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind a premium tier.
+#### Phase 8.1 — Premium Feature Paywalls
+
+* [ ] **Subscription Logic:** Plan a `UserProvider` attribute for `isPremium` to manage feature access for the $1/month subscription tier.
+* [ ] **Premium Course Services:** Research gating the "Locate Nearby Courses" (Proximity Search) behind the premium tier.
 * [ ] **Course Ratings:** Implement a premium-only "Rate and Review" system for courses.
-* [ ] **Subscription Logic:** Plan a `UserProvider` attribute for `isPremium` to manage feature access.
 * [ ] **Scheduling Paywall:** Enforce the rule that only users with `isPremium == true` can persist games with a `scheduled_time` in the future.
-* [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
+* [ ] **Tournament / Concurrent Game Mode:** Build an "Active Games Hub" that safely allows premium users (such as dedicated scorekeepers) to run multiple live games simultaneously and swap between them, bypassing the standard 1-to-1 global auto-resume logic.
 * [ ] **Premium Pace of Play Analytics:** Build a premium post-game summary UI that parses the historical `scoreTimestamps` data to calculate total game duration, average time per hole, and individual player pace statistics.
 * [ ] **Premium Places Search:** Upgrade the Map Picker search bar to use the Google Places API for premium subscribers, providing instant, highly accurate business name searches and rich POI data (e.g., ratings, photos).
 
-### Phase 9 — CI/CD & Deployment
+#### Phase 8.2 — Tiered Advertisement Integration
 
-#### 9.1 iOS Firebase App Distribution
+* [ ] **Install Google Mobile Ads SDK:** Add the `google_mobile_ads` package to `pubspec.yaml` and configure the necessary Android/iOS app IDs in the platform manifests.
+* [ ] **Guest Tier Ads (Maximum Monetization):** Implement a full-page interstitial ad that intercepts the user before reaching the `GameCreateScreen`. Add a non-intrusive static banner ad docked at the bottom of the `GameInprogressScreen` or inline within the player list.
+* [ ] **Registered Free Tier Ads (Reduced Friction):** Configure the ad service to disable the full-page interstitial ad for logged-in free users as a reward for creating an account, but retain the in-game bottom banner ad to cover server costs.
+* [ ] **Premium Ad-Free Experience:** Tie the ad rendering logic to the `isPremium` attribute, ensuring that subscribers paying the $1/month fee never initialize the ad SDK and experience a 100% ad-free UI.
 
-* [ ] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
-* [ ] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
-* [ ] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using either standard GitHub Action steps or Fastlane Match) to successfully archive and sign the iOS `.ipa`.
-* [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
-
-##### Phase 10 — Gamification & Advanced Player Profiles (Future)
+### Phase 9 — Gamification & Advanced Player Profiles (Future)
 
 * [ ] **Hall of Fame & Badges:** Create a badge gallery, trophy tracking, recent unlocks, and major medals won.
 * [ ] **Global Rankings & Stats:** Expand the `Player` model to track global rank, total aces, best round, total games played, and an experimental "skills rating".
 * [ ] **Profile Dashboard:** Redesign the player profile to showcase these stats, subscription details, and a quick-link to the Hall of Fame.
 
-##### Phase 11 — Social Discovery & Matchmaking (Future)
+### Phase 10 — Social Discovery & Matchmaking (Future)
 
 * [ ] **Live Presence:** Add online status indicators (green dots/badges) to player avatars in the `PlayersScreen`.
 * [ ] **Challenge System:** Replace the simple selection switch in the friends list with a direct "Challenge" button.
 * [ ] **Suggested Friends & Matchmaking:** Suggest friends based on past shared courses or proximity (players currently online at the same facility).
 
-##### Phase 12 — Rich Course Discovery (Future)
+### Phase 11 — Rich Course Discovery & Community Stats (Future)
 
-* [ ] **Course Search & Filtering:** Add a search bar to the top of the `CoursesScreen` to search the existing database.
-* [ ] **Rich Course Cards:** Redesign course list items to include course images, community star ratings, business name, address, par, and cost to play.
+* [ ] **Course Profile Screen:** Create a dedicated, full-screen profile for courses accessible from the `CoursesScreen` list, entirely separate from the active gameplay scoring UI.
+* [ ] **Community Rating System:** Implement a 1-5 star rating and written review system for registered users.
+* [ ] **User-Generated Galleries:** Allow users to upload and view gallery pictures of the course and individual holes using Firebase Storage.
+* [ ] **Global Analytics Aggregation:** Create backend Cloud Functions to aggregate historical game data into course-level stats (Average Par, Birdie Percentage, Last Hole-in-One).
+* [ ] **Hole-by-Hole Pace of Play:** Utilize the `scoreTimestamps` arrays collected during games to calculate and display the average play time for the overall course and identify bottleneck holes.
 
-##### Phase 13 — Active Game UI Overhaul (Future)
+### Phase 12 — Active Game UI Overhaul (Future)
 
 * [ ] **Hole & Distance Header:** Redesign the top of `GameInprogressScreen` to show the current hole, par, distance, and a game progress bar.
 * [ ] **Persistent Scorecard Layout:** Redesign the player list to be scrollable, with a dedicated, sticky score-entry card at the bottom for the selected player.
 * [ ] **Advanced Stroke Entry:** Add visual golf stroke name badges (e.g., "-1 birdie") to the stroke counter and a "Finish Hole" button.
 * [ ] **Community Tips Card:** Add a crowd-sourced "Hole Strategy / Tips" card below the scoring area for the current hole.
+
+### Phase 13 — Admin & Community Moderation Tools (Future)
+
+* [ ] **Role-Based Access Control (RBAC):** Implement Firebase Custom Claims or a `roles` collection to designate specific users as `admin` or `moderator`.
+* [ ] **Admin Dashboard UI:** Create a gated screen accessible only to authenticated admins to search, view, and manage global platform data.
+* [ ] **Course Moderation:** Build tools to hard-delete offensive/junk courses and merge duplicate courses (which requires a cascading update to modify all existing games that reference the deleted duplicate's ID so they point to the canonical course ID).
+* [ ] **User & Identity Moderation:** Build tools to manually resolve split-identity disputes, force-merge duplicate player profiles, and remove orphaned contact reservations.
+* [ ] **Privacy Enforcement:** Allow moderators to forcibly toggle off PII sharing preferences if a user inputs inappropriate content into their display name or profile.
+* [ ] **Firestore Rules Update:** Update `firestore.rules` to bypass standard ownership checks if `request.auth.token.admin == true`.
+
+### Phase 14 — Course Administration & Verified Owners (Future)
+
+* [ ] **Course Claiming Workflow:** Build a "Claim this Course" verification pipeline for real-world mini-golf business owners.
+* [ ] **Verified Owner Roles:** Implement Firestore rules giving verified owners exclusive edit rights to their course's par data, location, hours, and pricing.
+* [ ] **Official Media:** Allow verified owners to pin "Official" high-quality photos to the top of the course gallery.
+* [ ] **Owner Dashboard:** Provide course owners with a private analytics dashboard showing their course's popularity, peak play times, and aggregate community feedback.
 
 ---
 

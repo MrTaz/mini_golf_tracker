@@ -88,18 +88,6 @@ class PastGameDetailsScreenState extends State<PastGameDetailsScreen>
     });
   }
 
-  // Widget getPlayersList(BuildContext context, List<PlayerGameInfo> players) {
-  //   return ListView.builder(
-  //       padding: const EdgeInsets.all(8),
-  //       itemCount: players.length,
-  //       itemBuilder: (BuildContext context, int index) {
-  //         return ListView.builder(
-  //             itemCount: players[index].scores.length,
-  //             itemBuilder: (context, int sindex) {
-  //               return ListTile(title: Text("Hole #$sindex, score: ${players[index].scores[sindex]}"));
-  //             });
-  //       });
-  // }
 
   PlayerGameInfo? _getPlayerGameInfo(String playerId) {
     return sortedPlayerScores.firstWhere(

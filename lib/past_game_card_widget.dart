@@ -5,7 +5,8 @@ import 'package:mini_golf_tracker/past_game_list_item.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
 class PastGameCardWidget extends StatefulWidget {
-  const PastGameCardWidget({super.key});
+  final Future<List<Game?>>? gamesFuture;
+  const PastGameCardWidget({super.key, this.gamesFuture});
 
   @override
   PastGameCardWidgetState createState() => PastGameCardWidgetState();
@@ -24,7 +25,7 @@ class PastGameCardWidgetState extends State<PastGameCardWidget> {
         child: Column(children: <Widget>[
           const ListTile(title: Text('Past games')),
           FutureBuilder<List<Game?>>(
-            future: Game.getLocallySavedGames(gameStatusTypes: ["completed"]),
+            future: widget.gamesFuture ?? Game.getLocallySavedGames(gameStatusTypes: ["completed"]),
             builder: (BuildContext context,
                 AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
@@ -51,21 +52,16 @@ class PastGameCardWidgetState extends State<PastGameCardWidget> {
                         itemCount: gameSnapshot.data!.length,
                         itemBuilder: (BuildContext context, int index) {
                           Game game = gameSnapshot.data![index]!;
-                          return InkWell(
-                              onTap: () => {
-                                    Utilities.debugPrintWithCallerInfo(
-                                        "game tapped: $index"),
-                                  },
-                              child: PastGameListItem(
-                                pastGame: game,
-                                onPastGameCardTap: (value) => {
-                                  Navigator.of(context).push(
-                                      MaterialPageRoute(builder: (context) {
-                                    return PastGameDetailsScreen(
-                                        passedGame: game);
-                                  }))
-                                },
-                              ));
+                          return PastGameListItem(
+                            pastGame: game,
+                            onPastGameCardTap: (value) {
+                              Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) {
+                                return PastGameDetailsScreen(
+                                    passedGame: game);
+                              }));
+                            },
+                          );
                         }),
                   ],
                 );

@@ -1,4 +1,6 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/player.dart';
 
 void main() {
@@ -263,6 +265,31 @@ void main() {
             totalScore: 0),
       ]);
       expect(owner.getAllPlayerFriends().length, 2);
+    });
+  });
+
+  group('Player.createPlayer behavioral tests', () {
+    late FakeFirebaseFirestore fakeFirestore;
+
+    setUp(() {
+      fakeFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    tearDown(() {
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+    });
+
+    test('verifies nickname-only creation (empty playerName)', () async {
+      final player = await Player.createPlayer('', 'NickOnly', ownerId: 'owner1');
+      expect(player.playerName, '');
+      expect(player.nickname, 'NickOnly');
+      expect(player.ownerId, 'owner1');
+
+      final doc = await fakeFirestore.collection('players').doc(player.id).get();
+      expect(doc.exists, isTrue);
+      expect(doc.data()?['player_name'], '');
+      expect(doc.data()?['nickname'], 'NickOnly');
     });
   });
 }

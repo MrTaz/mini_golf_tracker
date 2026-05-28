@@ -27,11 +27,9 @@ class PastGameListItemState extends State<PastGameListItem> {
   @override
   void initState() {
     super.initState();
-    _initializeCurrentPastGame();
     isSelected = widget.isSelected;
   }
 
-  Future<void> _initializeCurrentPastGame() async {}
 
   Widget _buildPastGameListItem() {
     return Card(
@@ -84,12 +82,12 @@ class PastGameListItemState extends State<PastGameListItem> {
                   : Colors.teal;
             }),
             onTap: widget.onPastGameCardTap != null
-                ? () => {widget.onPastGameCardTap!(true)}
-                : () => {
-                      setState(() {
-                        isSelected = !isSelected;
-                      })
-                    },
+                ? () { widget.onPastGameCardTap!(true); }
+                : () {
+                    setState(() {
+                      isSelected = !isSelected;
+                    });
+                  },
           )
         ],
       ),

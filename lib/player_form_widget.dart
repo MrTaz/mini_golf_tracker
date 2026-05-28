@@ -47,7 +47,6 @@ class PlayerFormState extends State<PlayerForm> {
   @override
   void initState() {
     super.initState();
-    loadCurrentUser();
     _playerNameController =
         TextEditingController(text: widget.player?.playerName ?? '');
     _nicknameController =
@@ -63,8 +62,6 @@ class PlayerFormState extends State<PlayerForm> {
   bool get isEditing => widget.player != null;
   bool get isGuestScorekeeper =>
       currentUser == null && widget.player?.id == 'guest';
-
-  Future<void> loadCurrentUser() async {}
 
   bool validateRequiredFields() {
     final playerNameMissing =

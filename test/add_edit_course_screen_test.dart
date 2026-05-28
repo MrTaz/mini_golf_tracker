@@ -990,4 +990,86 @@ void main() {
     final savedCourses = await fakeFirestore.collection('courses').get();
     expect(savedCourses.docs.any((d) => d.get('name') == 'Chucksters Fire Tower Edited'), isTrue);
   });
+
+  group('Behavioral tests', () {
+    testWidgets('findConflictingCourses Haversine threshold triggers within 100 meters', (tester) async {
+      tester.view.physicalSize = const Size(800, 2500);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Add one course that is 99 meters away, one that is 101 meters away.
+      // Reference: 43.12345, -71.54321
+      // 1 degree lat is ~111km. 100m is ~0.0009 degrees.
+      await fakeFirestore.collection('courses').add({
+        'name': 'Course 99m',
+        'number_of_holes': 18,
+        'latitude': 43.12345 + 0.0008, // ~88 meters away
+        'longitude': -71.54321,
+        'par_strokes': {'1': 3},
+      });
+
+      await fakeFirestore.collection('courses').add({
+        'name': 'Course 101m',
+        'number_of_holes': 18,
+        'latitude': 43.12345 + 0.0010, // ~111 meters away
+        'longitude': -71.54321,
+        'par_strokes': {'1': 3},
+      });
+
+      await tester.pumpWidget(createScreen());
+
+      await tester.ensureVisible(find.text('18 Holes')); 
+      await tester.tap(find.text('18 Holes'));
+      await tester.pump();
+      await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'New Course');
+      await tester.tap(find.byIcon(Icons.my_location));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.ensureVisible(find.text('Create Course')); 
+      await tester.tap(find.text('Create Course'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Nearby Courses Found'), findsOneWidget);
+      expect(find.text('Course 99m'), findsOneWidget);
+      expect(find.text('Course 101m'), findsNothing);
+    });
+
+    testWidgets('normalized address substring matching triggers conflict', (tester) async {
+      tester.view.physicalSize = const Size(800, 2500);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await fakeFirestore.collection('courses').add({
+        'name': 'Existing Address Course',
+        'number_of_holes': 18,
+        'address': '53 Carter Hill Rd',
+        'par_strokes': {'1': 3},
+      });
+
+      await tester.pumpWidget(createScreen());
+
+      await tester.ensureVisible(find.text('18 Holes')); 
+      await tester.tap(find.text('18 Holes'));
+      await tester.pump();
+      await tester.enterText(find.widgetWithText(TextField, 'Course Name'), 'New Course');
+      await tester.enterText(find.widgetWithText(TextField, 'Address (Optional)'), '53 Carter Hill');
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      final createCourseBtn = find.text('Create Course');
+      await tester.scrollUntilVisible(createCourseBtn, 100.0, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+      await tester.tap(createCourseBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Nearby Courses Found'), findsOneWidget);
+      expect(find.text('Existing Address Course'), findsOneWidget);
+    });
+  });
 }
