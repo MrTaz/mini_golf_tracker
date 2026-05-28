@@ -487,4 +487,92 @@ void main() {
     expect(find.byType(PastGameDetailsScreen), findsOneWidget);
     expect(game.players[0].totalScore, 12); // 6 * 2
   });
+
+  testWidgets('Complete game sets 0 score for existing hole to 6',
+      (tester) async {
+    await seedPlayersAndLogin(fakeFirestore, testPlayer1, testPlayer2);
+
+    final game = createTestGame(); // 2 holes
+    // pre-populate length to test the second condition of OR (pgi.scores[currentHole - 1] == 0)
+    game.players[0].scores = [0, 0];
+    game.players[1].scores = [0, 0];
+
+    await tester.pumpWidget(createWidgetUnderTest(game));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Complete Game'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.byType(PastGameDetailsScreen), findsOneWidget);
+    expect(game.players[0].totalScore, 6); // 0 + 6
+  });
+
+  testWidgets('coach mark appears on resume and disappears on tap',
+      (tester) async {
+    final game = createTestGame();
+    await tester.pumpWidget(createWidgetUnderTest(game));
+    await tester.pumpAndSettle();
+
+    final state = tester
+        .state<GameInprogressScreenState>(find.byType(GameInprogressScreen));
+
+    // Simulate app resuming
+    state.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsOneWidget);
+
+    // Tap to dismiss
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsNothing);
+  });
+
+  testWidgets('coach mark appears after dynamic idle timer', (tester) async {
+    final game = createTestGame(); // 2 players, so timer is 2 * 3 = 6 minutes
+    await tester.pumpWidget(createWidgetUnderTest(game));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsNothing);
+
+    // Pump less than 6 minutes
+    await tester.pump(const Duration(minutes: 5));
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsNothing);
+
+    // Pump enough to cross 6 minutes
+    await tester.pump(const Duration(minutes: 2));
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsOneWidget);
+  });
+
+  testWidgets('interaction resets the idle timer', (tester) async {
+    final game = createTestGame(); // 6 min timer
+    await tester.pumpWidget(createWidgetUnderTest(game));
+    await tester.pumpAndSettle();
+
+    // Pump 4 minutes
+    await tester.pump(const Duration(minutes: 4));
+
+    // Interact to reset
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    // Pump another 4 minutes (total 8 from start)
+    await tester.pump(const Duration(minutes: 4));
+    
+    // Coach mark should not appear because timer reset
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsNothing);
+
+    // Pump 3 more minutes to cross the new 6-minute threshold
+    await tester.pump(const Duration(minutes: 3));
+    expect(find.text("Need a break? You can safely pause your game here!"),
+        findsOneWidget);
+  });
 }
