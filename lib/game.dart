@@ -115,6 +115,7 @@ class Game {
         "GameId: ${player.gameId}, Hole Number: $holeNumber, strokes: $strokes");
     scores[player]![holeNumber] = strokes;
     player.scores = scores[player]!.values.toList();
+    player.scoreTimestamps.add(DateTime.now().toIso8601String());
     calculateTotalScore(player);
     getPlayerPosition(player);
   }
@@ -356,6 +357,7 @@ class Game {
             place: playerInfo.place,
             totalScore: playerInfo.totalScore,
             strokes: playerInfo.strokes,
+            scoreTimestamps: playerInfo.scoreTimestamps,
           );
         }
       }
@@ -524,6 +526,7 @@ class Game {
           'play_order_position': player.playOrderPosition,
           'scores': player.scores,
           'total_score': player.totalScore,
+          'score_timestamps': player.scoreTimestamps,
         };
         var pgiRef = DatabaseConnection.client
             .collection('player_game_info')

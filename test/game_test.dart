@@ -163,6 +163,13 @@ void main() {
       expect(player.scores.contains(4), isTrue);
     });
 
+    test('appends a timestamp to scoreTimestamps after recording', () {
+      expect(player.scoreTimestamps, isEmpty);
+      game.recordScore(player, 1, 3);
+      expect(player.scoreTimestamps.length, 1);
+      expect(DateTime.tryParse(player.scoreTimestamps.first), isNotNull);
+    });
+
     test('throws when player is not in game', () {
       final outsider = makePlayer('stranger', 'g1');
       expect(() => game.recordScore(outsider, 1, 3), throwsException);
