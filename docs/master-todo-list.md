@@ -1076,7 +1076,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] `player_avatar_widget.dart`
 * [x] `player_create_screen.dart`
 * [ ] `player_details_screen.dart`
-* [ ] `player_form_widget.dart`
+* [x] `player_form_widget.dart`
 * [x] `player_game_info.dart`
 * [x] `player_profile_widget.dart`
 * [ ] `player_score_card.dart`
