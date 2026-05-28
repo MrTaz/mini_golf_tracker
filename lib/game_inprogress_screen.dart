@@ -96,7 +96,8 @@ class GameInprogressScreenState extends State<GameInprogressScreen>
             playOrderPosition: player.playOrderPosition ?? 0,
             scores: player.scores,
             totalScore: player.totalScore,
-            place: player.place))
+            place: player.place,
+            scoreTimestamps: player.scoreTimestamps))
         .toList();
     _playersInfo.sort(
         (a, b) => a.playOrderPosition!.compareTo(b.playOrderPosition as num));
@@ -181,6 +182,7 @@ class GameInprogressScreenState extends State<GameInprogressScreen>
     } else {
       playerGameInfo.scores[currentHole - 1] = score;
     }
+    playerGameInfo.scoreTimestamps.add(DateTime.now().toIso8601String());
     _updateGame();
   }
 

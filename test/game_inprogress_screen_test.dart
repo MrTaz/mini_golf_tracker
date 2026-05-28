@@ -247,6 +247,7 @@ void main() {
     await tester.tap(find.byType(Switch).last);
     await tester.pumpAndSettle();
     expect(game.players[1].scores, [1, 0, 6]);
+    expect(game.players[1].scoreTimestamps.isNotEmpty, isTrue);
 
     await tester.tap(find.byType(DropdownButton<int>).last);
     await tester.pumpAndSettle();
