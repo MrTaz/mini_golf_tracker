@@ -806,6 +806,7 @@ Consolidated into:
   * `Colors.teal.shade50`
 * Use `BouncyAnimation` while loading players.
 * Use rounded `LinearProgressIndicator`.
+* Auto-inject the currently logged-in user (or a default "Guest Scorekeeper" profile) at the very top of the list to ensure the creator can easily add themselves to games.
 
 ---
 
@@ -1143,7 +1144,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Player selection, deselection, and clear-all flow passes (`integration_test/player_selection_flow_test.dart`).
 * [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
 * [ ] Google Sign-In E2E authentication flow passes (Note: requires native UI test configuration to tap system pop-ups).
-*  [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
+* [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
 * [ ] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
 * [ ] Guest creates local game with matching contact.
