@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -25,7 +26,8 @@ class GameInprogressScreen extends StatefulWidget {
   GameInprogressScreenState createState() => GameInprogressScreenState();
 }
 
-class GameInprogressScreenState extends State<GameInprogressScreen> {
+class GameInprogressScreenState extends State<GameInprogressScreen>
+    with WidgetsBindingObserver {
   int currentHole = 1;
   int currentHolePar = 3;
   bool gameCompleted = false;
@@ -33,15 +35,57 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
   final Player? loggedInUser = UserProvider().loggedInUser;
 
   late List<PlayerGameInfo> _playersInfo;
+  Timer? _idleTimer;
+  bool _showCoachMark = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializePlayersInfo();
     currentHole = (widget.currentGame.players[0].scores.isEmpty)
         ? 1
         : widget.currentGame.players[0].scores.length;
     currentHolePar = widget.currentGame.course.getParValue(currentHole);
+    _resetIdleTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _idleTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _showPauseReminder();
+    }
+  }
+
+  void _resetIdleTimer() {
+    _idleTimer?.cancel();
+    final durationMinutes = widget.currentGame.players.length * 3;
+    _idleTimer = Timer(Duration(minutes: durationMinutes), () {
+      _showPauseReminder();
+    });
+  }
+
+  void _showPauseReminder() {
+    if (mounted) {
+      setState(() {
+        _showCoachMark = true;
+      });
+    }
+  }
+
+  void _hidePauseReminder() {
+    if (_showCoachMark && mounted) {
+      setState(() {
+        _showCoachMark = false;
+      });
+    }
   }
 
   void _initializePlayersInfo() {
@@ -473,14 +517,22 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-        canPop: true,
-        onPopInvokedWithResult: (bool didPop, dynamic result) {
-          if (didPop) {
-            _updateGame(); // Save the current game
-          }
-        },
-        child: Scaffold(
+    return Listener(
+      onPointerDown: (_) => _resetIdleTimer(),
+      behavior: HitTestBehavior.translucent,
+      child: GestureDetector(
+        onTap: _hidePauseReminder,
+        behavior: HitTestBehavior.translucent,
+        child: PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (bool didPop, dynamic result) {
+              if (didPop) {
+                _updateGame(); // Save the current game
+              }
+            },
+            child: Stack(
+              children: [
+                Scaffold(
             backgroundColor: Colors.white,
             extendBodyBehindAppBar: false,
             appBar: AppBar(
@@ -627,6 +679,42 @@ class GameInprogressScreenState extends State<GameInprogressScreen> {
                   ),
                 ),
               ),
-            ])));
+            ]),
+                ),
+                if (_showCoachMark)
+                  Positioned(
+                    top: kToolbarHeight + MediaQuery.of(context).padding.top + 10,
+                    right: 16,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Need a break? You can safely pause your game here!",
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            )),
+      ),
+    );
   }
 }
