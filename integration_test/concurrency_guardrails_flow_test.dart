@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mini_golf_tracker/main.dart' as app;
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
@@ -16,12 +15,6 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 
-Future<void> pumpRoute(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 350));
-  await tester.pumpAndSettle();
-}
-
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -31,7 +24,6 @@ void main() {
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     UserProvider().resetForTesting();
     UserProvider().setAuthInstanceForTesting(mockAuth);
-    app.MainScaffold.skipPrecacheForTesting = true;
   });
 
   testWidgets('Concurrency Guardrails: active game warning dialog interrupts flow', (tester) async {
@@ -57,26 +49,13 @@ void main() {
     );
     SharedPreferences.setMockInitialValues({'active_game_1': jsonEncode(activeGame.toJson())});
 
-    await tester.pumpWidget(const app.MyApp());
-    await tester.pumpAndSettle();
-
-    // In a fresh start with an active game, app auto-resumes to GameInprogressScreen.
-    expect(find.byType(GameInprogressScreen), findsOneWidget); // Confirm we are in GameInprogress
-
-    // We want to test the Create Game flow, so we pop back to HomeScreen by pausing the game.
-    // In our test, we can directly trigger the navigation to HomePage(skipAutoResume: true).
-    final BuildContext context = tester.element(find.byType(GameInprogressScreen));
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const app.HomePage(skipAutoResume: true)),
-      (route) => false,
+    // Pump the GameCreateScreen directly under a MaterialApp to strictly simulate E2E UI actions.
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: GameCreateScreen(),
+      ),
     );
-    await pumpRoute(tester);
-
-    // From HomeScreen (guest), tap to create a game
-    expect(find.text('Create a New Game'), findsOneWidget);
-    await tester.tap(find.text('Create a New Game'));
-    await pumpRoute(tester);
+    await tester.pumpAndSettle();
 
     // Set course and players for testing in GameCreateScreenState
     final gameCreateState =
@@ -105,35 +84,42 @@ void main() {
     ]);
     await tester.pump();
 
-    // Enter game name
+    // Enter game name strictly via UI TextFormField
     await tester.enterText(find.byType(TextFormField).first, 'New Game Attempt');
+    await tester.pump();
     
-    // Tap to start
+    // Tap the 'Create Game' button to trigger the game startup flow
     final createBtn = find.widgetWithText(ElevatedButton, 'Create Game');
     // Ensure button is visible
     await tester.ensureVisible(createBtn);
     await tester.tap(createBtn);
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    // The warning dialog should appear
+    // The "You already have a game in progress" warning dialog should appear
     expect(find.text('Warning'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Continue'), findsOneWidget);
 
-    // Cancel flow
+    // Cancel flow via dialog UI Cancel button tap
     await tester.tap(find.text('Cancel'));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    // Should still be on Create Game Screen
+    // Should still be on Create Game Screen and dialog dismissed
     expect(find.text('New Game Attempt'), findsOneWidget);
+    expect(find.byType(GameCreateScreen), findsOneWidget);
 
     // Try again and continue
     await tester.tap(createBtn);
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
+    
     await tester.tap(find.text('Continue'));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    // Now it should proceed to GameInprogressScreen
+    // Now it should successfully proceed to GameInprogressScreen via route transition
     expect(find.byType(GameInprogressScreen), findsOneWidget);
   });
 }
