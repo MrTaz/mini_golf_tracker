@@ -18,6 +18,7 @@ void main() {
       final fakeFirestore = FakeFirebaseFirestore();
       DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
       UserProvider().setAuthInstanceForTesting(mockAuth);
+      // ignore: invalid_use_of_visible_for_testing_member
       SharedPreferences.setMockInitialValues({});
 
       // Create an unclaimed player in the database for the test account
