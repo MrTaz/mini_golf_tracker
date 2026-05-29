@@ -56,6 +56,8 @@ dev_dependencies:
   plugin_platform_interface: any
   google_sign_in_platform_interface: any
   provider: any
+  patrol_mcp: ^0.1.4
+  patrol: ^4.6.1
 flutter:
   uses-material-design: true
   assets:
