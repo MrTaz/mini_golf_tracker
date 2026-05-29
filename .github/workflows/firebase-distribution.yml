@@ -136,9 +136,33 @@ jobs:
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp $PP_PATH "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
 
+          # Extract Team ID
+          TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin <<< $(security cms -D -i $PP_PATH))
+
+          # Create ExportOptions.plist dynamically inside the ios directory
+          cat <<EOF > ios/ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>ad-hoc</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>org.dahome.miniGolfScoreTracker</key>
+                  <string>$UUID</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
       - name: Build iOS IPA
         if: matrix.platform == 'ios'
-        run: flutter build ipa --release --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }} --export-method ad-hoc
+        run: flutter build ipa --release --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }} --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload IPA Artifact
         if: matrix.platform == 'ios'
@@ -196,5 +220,5 @@ jobs:
         run: |
           # Delete temporary keychain
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
-          # Securely remove temporary P12 certificate and provisioning profile files
-          rm -f $RUNNER_TEMP/build_certificate.p12 $RUNNER_TEMP/build_pp.mobileprovision
+          # Securely remove temporary P12 certificate, provisioning profile, and ExportOptions files
+          rm -f $RUNNER_TEMP/build_certificate.p12 $RUNNER_TEMP/build_pp.mobileprovision ios/ExportOptions.plist
