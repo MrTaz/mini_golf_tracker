@@ -227,6 +227,16 @@ jobs:
             --groups "testers" \
             --release-notes "${{ env.RELEASE_NOTES }}"
 
+      - name: Upload to Apple Store Connect
+        if: matrix.platform == 'ios' && success()
+        uses: Apple-Actions/upload-release-to-app-store@v1
+        with:
+          ipa-path: build/ios/ipa/*.ipa
+          is-format-ipa: true
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          api-key-content: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+
       - name: Clean up keychain & temp signing files
         if: ${{ always() && matrix.platform == 'ios' }}
         run: |
