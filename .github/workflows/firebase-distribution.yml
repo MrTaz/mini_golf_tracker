@@ -247,10 +247,13 @@ jobs:
           # Safely ensure the private key file and temp files are wiped when the script exits
           trap "rm -rf ~/private_keys temp_key.txt" EXIT
 
-          # Write the secret exactly as stored to a temp file, preserving all formatting/newlines
+          # Write the secret with YAML indentation to keep the parser happy
           cat << 'EOF' > temp_key.txt
-${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-EOF
+          ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          EOF
+
+          # Strip any leading indentation spaces introduced by YAML alignment
+          sed -i '' -e 's/^[[:space:]]*//' temp_key.txt 2>/dev/null || sed -i -e 's/^[[:space:]]*//' temp_key.txt
 
           # Auto-detect if the secret is plain PEM or Base64 encoded and copy/decode accordingly
           if grep -q "BEGIN" temp_key.txt; then
