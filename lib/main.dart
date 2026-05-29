@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Mini Golf Tracker',
+        title: 'Putt Scorer',
         theme: ThemeData(
           canvasColor: const Color(0xFFfafafa),
           fontFamily: 'Merriweather',
@@ -169,7 +169,7 @@ class MainScaffold extends State<HomePage> with RouteAware {
             return Scaffold(
               key: const Key('home-page-scaffold'),
               appBar: AppBar(
-                title: const Text('Mini Golf Tracker'),
+                title: const Text('Putt Scorer'),
               ),
               drawer: AppDrawer(
                 key: ValueKey(_drawerRefreshVersion),

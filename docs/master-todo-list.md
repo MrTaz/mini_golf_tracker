@@ -343,10 +343,10 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.4 — Global App Renaming ("Putt Scorer")
 
-* [ ] **Android App Name:** Update `android:label="Putt Scorer"` inside the `<application>` tag in `android/app/src/main/AndroidManifest.xml`.
-* [ ] **iOS App Name:** Update the `<key>CFBundleDisplayName</key>` and `<key>CFBundleName</key>` string values to "Putt Scorer" in `ios/Runner/Info.plist`.
-* [ ] **Flutter UI Branding:** Update `MaterialApp(title: 'Putt Scorer')` and the primary `AppBar` title in `lib/main.dart` (currently "Mini Golf Tracker").
-* [ ] **Pubspec & Patrol Config:** Update the `app_name` to "Putt Scorer" under the `patrol:` block in `pubspec.yaml`, and update the project `description`.
+* [x] **Android App Name:** Update `android:label="Putt Scorer"` inside the `<application>` tag in `android/app/src/main/AndroidManifest.xml`.
+* [x] **iOS App Name:** Update the `<key>CFBundleDisplayName</key>` and `<key>CFBundleName</key>` string values to "Putt Scorer" in `ios/Runner/Info.plist`.
+* [x] **Flutter UI Branding:** Update `MaterialApp(title: 'Putt Scorer')` and the primary `AppBar` title in `lib/main.dart` (currently "Mini Golf Tracker").
+* [x] **Pubspec & Patrol Config:** Update the `app_name` to "Putt Scorer" under the `patrol:` block in `pubspec.yaml`, and update the project `description`.
 
 #### Phase 2.5 — App Store & Google Play Publishing Prep
 

@@ -273,7 +273,7 @@ class LoginScreenState extends State<LoginScreen> {
       key: _scaffoldMessengerKey,
       child: Scaffold(
           appBar: AppBar(
-            title: const Text('Mini Golf Tracker - Please login'),
+            title: const Text('Putt Scorer - Please login'),
           ),
           body: Container(
             decoration: const BoxDecoration(

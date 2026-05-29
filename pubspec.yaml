@@ -1,5 +1,5 @@
 name: mini_golf_tracker
-description: A new Flutter project.
+description: A mini golf score tracker app - Putt Scorer.
 
 publish_to: 'none'
 
@@ -65,7 +65,7 @@ flutter:
     - assets/images/
 
 patrol:
-  app_name: "Mini Golf Score Tracker"
+  app_name: "Putt Scorer"
   test_directory: patrol_test
   android:
     package_name: "org.dahome.mini_golf_tracker"

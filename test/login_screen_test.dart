@@ -57,7 +57,7 @@ void main() {
     await tester.pumpWidget(createLoginScreen());
     await tester.pumpAndSettle();
 
-    expect(find.text('Mini Golf Tracker - Please login'), findsOneWidget);
+    expect(find.text('Putt Scorer - Please login'), findsOneWidget);
     // Find by type instead of text to avoid    // The test framework will complain about pending timers from FlutterLogin's intro animations
     // We pump a few times to let them settle or at least progress.
     await tester.pump(const Duration(seconds: 1));

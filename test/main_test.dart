@@ -332,7 +332,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Mini Golf Tracker'), findsOneWidget);
+    expect(find.text('Putt Scorer'), findsOneWidget);
 
     final context = tester.element(find.byType(HomePage));
     Navigator.pushNamed(context, '/players');
@@ -359,7 +359,7 @@ void main() {
     });
     await tester.pump();
 
-    expect(find.text('Mini Golf Tracker'), findsOneWidget);
+    expect(find.text('Putt Scorer'), findsOneWidget);
 
     MainScaffold.skipPrecacheForTesting = true;
   });
