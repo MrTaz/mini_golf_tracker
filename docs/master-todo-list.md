@@ -347,7 +347,14 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Flutter UI Branding:** Update `MaterialApp(title: 'Putt Scorer')` and the primary `AppBar` title in `lib/main.dart` (currently "Mini Golf Tracker").
 * [ ] **Pubspec & Patrol Config:** Update the `app_name` to "Putt Scorer" under the `patrol:` block in `pubspec.yaml`, and update the project `description`.
 
-#### 2.5 Preserve Nickname-Only and Quick-Play Players
+#### Phase 2.5 — App Store & Google Play Publishing Prep
+
+* [ ] **Google Play CI/CD Integration:** Update the GitHub Actions workflow to automatically upload the Android `.aab` release build to the Google Play Console (e.g., to the Internal Testing track).
+* [ ] **Google Play API Config:** Configure the Google Play Service Account key securely in GitHub Secrets to authenticate the automated upload.
+* [ ] **Capture Store Screenshots:** Capture high-resolution screenshots of key application screens (Dashboard, Game Setup, Active Scorecard, Past Games, Friends List) across required iOS (6.5" & 6.7" displays) and Android device sizes.
+* [ ] **Store Listing Metadata:** Draft and input the "Putt Scorer" App Title, Short Description/Subtitle, Full Description, Promotional Text, and Privacy Policy URL into both App Store Connect and the Google Play Console.
+
+#### 2.6 Preserve Nickname-Only and Quick-Play Players
 
 * [ ] Preserve anonymous / nickname-only users as first-class players.
 * [ ] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
@@ -357,7 +364,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Store quick-play players in the local `guest_players` `SharedPreferences` key.
 * [ ] Ensure PII independence for quick-play and guest players.
 
-#### 2.6 Normalize Contact Entry Points
+#### 2.7 Normalize Contact Entry Points
 
 * [ ] Use `ContactIdentity.normalizeEmail` in all contact write paths.
 * [ ] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
@@ -366,7 +373,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Reference `ContactIdentity` as the source of truth for all contact normalization.
 * [ ] Ensure normalization supports reservation consistency.
 
-#### 2.7 Late Contact Attribution
+#### 2.8 Late Contact Attribution
 
 * [ ] Refactor `Player.updateUnclaimedPlayer` to support post-creation contact attachment.
 * [ ] Before updating contact details, invoke:
@@ -376,7 +383,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Verify the contact is not already reserved.
 * [ ] Prevent split-identity claims where phone and email point to different canonical IDs.
 
-#### 2.8 Local Game & Guest Adoption Workflow
+#### 2.9 Local Game & Guest Adoption Workflow
 
 * [ ] Implement the migration path from `SharedPreferences` to Firestore.
 * [ ] Implement `Game.adoptLocalGames`.
@@ -405,13 +412,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Allow users to explicitly select which local IDs to sync to Firestore.
 * [ ] Include local games and local friends in the cloud import prompt.
 
-#### 2.9 Claim Baseline
+#### 2.10 Claim Baseline
 
 * [ ] Ensure `Player.claimPlayerForVerifiedAuthUser` is the exclusive entry point for guest-to-auth conversion.
 * [ ] Maintain canonical integrity during all claim flows.
 * [ ] Ensure `UserProvider` triggers `ClaimAccountScreen` when signup detects claimable history.
 
-#### 2.10 Legacy Duplicate Repair
+#### 2.11 Legacy Duplicate Repair
 
 * [ ] Develop an ID consistency migration utility.
 * [ ] Repair legacy duplicate players.
