@@ -466,10 +466,31 @@ void main() {
       uid: 'google-no-player-uid',
       email: 'google-no-player@example.com',
       emailVerified: false,
+      photoURL: 'https://example.com/avatar.jpg',
+      displayName: 'Google No Player Name',
     ));
     final googleNoPlayerResult = await googleState.handleGoogleLogin();
+    expect(googleNoPlayerResult, isNull);
+
+    // If there is an existing unclaimed candidate and email is not verified, it should require verification.
+    await Player.createPlayer(
+      'Existing Guest',
+      'guest',
+      email: 'google-unverified-guest@example.com',
+      ownerId: 'some-owner-id',
+    );
+    MockGoogleSignIn.setMockUser(
+      id: 'google-unverified-guest-uid',
+      email: 'google-unverified-guest@example.com',
+    );
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'google-unverified-guest-uid',
+      email: 'google-unverified-guest@example.com',
+      emailVerified: false,
+    ));
+    final googleUnverifiedGuestResult = await googleState.handleGoogleLogin();
     expect(
-      googleNoPlayerResult,
+      googleUnverifiedGuestResult,
       equals('Verify an email or phone number to claim your player history.'),
     );
     await tester.pump(const Duration(seconds: 2));
@@ -617,6 +638,8 @@ class CustomUser implements User {
     required this.email,
     this.emailVerified = true,
     this.phoneNumber,
+    this.displayName,
+    this.photoURL,
   });
 
   @override
@@ -627,6 +650,10 @@ class CustomUser implements User {
   final bool emailVerified;
   @override
   final String? phoneNumber;
+  @override
+  final String? displayName;
+  @override
+  final String? photoURL;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -648,12 +675,16 @@ class GoogleHappyFirebaseAuth implements FirebaseAuth {
     this.email = 'google@example.com',
     this.emailVerified = true,
     this.phoneNumber,
+    this.displayName,
+    this.photoURL,
   });
 
   final String uid;
   final String? email;
   final bool emailVerified;
   final String? phoneNumber;
+  final String? displayName;
+  final String? photoURL;
 
   @override
   User? get currentUser => null;
@@ -668,6 +699,8 @@ class GoogleHappyFirebaseAuth implements FirebaseAuth {
       email: email,
       emailVerified: emailVerified,
       phoneNumber: phoneNumber,
+      displayName: displayName,
+      photoURL: photoURL,
     ));
   }
 

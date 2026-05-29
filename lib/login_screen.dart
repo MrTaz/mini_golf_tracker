@@ -156,7 +156,7 @@ class LoginScreenState extends State<LoginScreen> {
 
       if (userCredential.user != null) {
         final authUser = userCredential.user!;
-        final loggedInPlayer =
+        var loggedInPlayer =
             await Player.fetchPlayerForAuthUid(authUser.uid) ??
                 await Player.claimPlayerForVerifiedAuthUser(
                   uid: authUser.uid,
@@ -164,11 +164,32 @@ class LoginScreenState extends State<LoginScreen> {
                   emailVerified: authUser.emailVerified,
                   phoneNumber: authUser.phoneNumber,
                 );
-        if (loggedInPlayer != null) {
-          await UserProvider().login(loggedInPlayer);
-        } else {
-          return 'Verify an email or phone number to claim your player history.';
+        if (loggedInPlayer == null) {
+          final existingCandidate = await Player.getPlayerByContactFromDB(
+            authUser.email,
+            authUser.phoneNumber,
+          );
+          if (existingCandidate != null) {
+            UserProvider().beginPendingClaim(existingCandidate);
+            return 'Verify an email or phone number to claim your player history.';
+          }
+
+          Utilities.debugPrintWithCallerInfo(
+              'Creating new player profile for social user: ${authUser.email}');
+          loggedInPlayer = await Player.createPlayer(
+            authUser.displayName ?? 'New User',
+            authUser.displayName ?? 'user_${authUser.uid.substring(0, 5)}',
+            email: authUser.email ?? '',
+            phoneNumber: authUser.phoneNumber,
+            id: authUser.uid,
+          );
+
+          if (authUser.photoURL != null) {
+            loggedInPlayer.avatarImageLocation = authUser.photoURL;
+          }
         }
+
+        await UserProvider().login(loggedInPlayer);
       }
       return null;
     } catch (e) {
