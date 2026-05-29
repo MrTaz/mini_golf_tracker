@@ -329,7 +329,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 #### Phase 2.2 — Comprehensive Social Logins & E2E Testing
 
 * [x] **Fix Google Sign-In Verification Race Condition:** Update the social login flow in `login_screen.dart` or `userprovider.dart` to await `user.reload()` or gracefully delay the claim routing on initial account creation so the `emailVerified` flag has time to accurately sync before routing the user to the `ClaimAccountScreen`.
-* [ ] **Implement Apple Sign-In:** Install `sign_in_with_apple` and configure the necessary capabilities and Service IDs in the Apple Developer portal.
+* [x] **Implement Apple Sign-In:** Install `sign_in_with_apple` and configure the necessary capabilities and Service IDs in the Apple Developer portal.
 * [ ] **Implement Meta/Facebook/Instagram Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
 * [ ] **Implement Snapchat Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
 * [ ] **Social Auth E2E Tests:** Write Patrol integration tests covering the native OS-level pop-ups for Apple, Meta, and Snapchat authentications.

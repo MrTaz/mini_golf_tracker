@@ -12,6 +12,8 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:sign_in_with_apple_platform_interface/sign_in_with_apple_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 Finder findIconByCodePoint(int codePoint) {
   return find.byWidgetPredicate((widget) {
@@ -33,6 +35,8 @@ void main() {
     UserProvider().setAuthInstanceForTesting(mockAuth);
     SharedPreferences.setMockInitialValues({});
     timeDilation = 1.0; // Reset timeDilation
+    MockSignInWithApplePlatform.register();
+    MockSignInWithApplePlatform.reset();
   });
 
   tearDown(() {
@@ -510,6 +514,202 @@ void main() {
     expect(result, equals('Google Sign-In failed.'));
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('Apple Sign-In: successful login with existing Firestore player', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Setup an existing player in firestore
+    await fakeFirestore.collection('players').doc('apple-uid').set({
+      'player_name': 'Apple User',
+      'owner_id': 'apple-uid',
+      'email': 'apple@example.com',
+    });
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'apple-uid',
+      email: 'apple@example.com',
+    ));
+
+    final result = await state.handleAppleLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'apple@example.com');
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: successful login and creates new social profile when no player exists', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'new-apple-uid',
+      email: 'new-apple@example.com',
+    ));
+
+    final result = await state.handleAppleLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'new-apple@example.com');
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: handles existing unclaimed player matching contact email (pending claim)', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Create an unclaimed player in Firestore
+    await Player.createPlayer(
+      'Unclaimed Apple Player',
+      'unclaimedapple',
+      email: 'unclaimed-apple@example.com',
+      ownerId: 'unclaimed-apple-owner-id',
+    );
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'new-apple-uid',
+      email: 'unclaimed-apple@example.com',
+      emailVerified: false,
+    ));
+
+    final result = await state.handleAppleLogin();
+    expect(result, equals('Verify an email or phone number to claim your player history.'));
+    expect(userProvider.loggedInUser, isNull);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: graceful cancellation handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Configure the mock to throw cancellation exception
+    final mockPlatform = SignInWithApplePlatform.instance as MockSignInWithApplePlatform;
+    mockPlatform.shouldCancel = true;
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleAppleLogin();
+    expect(result, equals('Apple Sign-In was cancelled.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: non-cancellation exception handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Configure the mock to throw other authorization exception
+    final mockPlatform = SignInWithApplePlatform.instance as MockSignInWithApplePlatform;
+    mockPlatform.shouldThrowError = true;
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleAppleLogin();
+    expect(result, equals('Apple Sign-In failed: Apple Sign-In failed.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: generic/other error handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Set FirebaseAuth to throw a generic error
+    userProvider.setAuthInstanceForTesting(GenericThrowingFirebaseAuth());
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleAppleLogin();
+    expect(result, equals('Apple Sign-In failed.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: fallback to New User when names are null', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Set mock Apple details to null
+    final mockPlatform = SignInWithApplePlatform.instance as MockSignInWithApplePlatform;
+    mockPlatform.givenName = null;
+    mockPlatform.familyName = null;
+    mockPlatform.email = 'apple-fallback@example.com';
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'fallback-apple-uid',
+      email: 'apple-fallback@example.com',
+      photoURL: 'https://example.com/apple_avatar.jpg',
+    ));
+
+    final result = await state.handleAppleLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.playerName, equals('New User'));
+    expect(userProvider.loggedInUser!.avatarImageLocation, equals('https://example.com/apple_avatar.jpg'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Apple Sign-In: fallback to user_id when displayName is empty', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Set mock Apple details to empty/null
+    final mockPlatform = SignInWithApplePlatform.instance as MockSignInWithApplePlatform;
+    mockPlatform.givenName = '';
+    mockPlatform.familyName = '';
+    mockPlatform.email = 'apple-empty@example.com';
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'empty-apple-uid',
+      email: 'apple-empty@example.com',
+      displayName: '',
+    ));
+
+    final result = await state.handleAppleLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.nickname, equals('user_empty'));
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
 
 class FakeGoogleSignInAccount implements GoogleSignInAccount {
@@ -740,3 +940,66 @@ class EmailSignInFirebaseAuth implements FirebaseAuth {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+class MockSignInWithApplePlatform extends SignInWithApplePlatform
+    with MockPlatformInterfaceMixin {
+  static MockSignInWithApplePlatform? _instance;
+
+  static void register() {
+    _instance ??= MockSignInWithApplePlatform();
+    SignInWithApplePlatform.instance = _instance!;
+  }
+
+  static void reset() {
+    if (_instance != null) {
+      _instance!.shouldCancel = false;
+      _instance!.shouldThrowError = false;
+      _instance!.email = 'apple@example.com';
+      _instance!.givenName = 'Apple';
+      _instance!.familyName = 'User';
+      _instance!.authorizationCode = 'mock_code';
+      _instance!.identityToken = 'mock_token';
+      _instance!.userIdentifier = 'mock_user';
+    }
+  }
+
+  bool shouldCancel = false;
+  bool shouldThrowError = false;
+  String email = 'apple@example.com';
+  String? givenName = 'Apple';
+  String? familyName = 'User';
+  String authorizationCode = 'mock_code';
+  String identityToken = 'mock_token';
+  String userIdentifier = 'mock_user';
+
+  @override
+  Future<AuthorizationCredentialAppleID> getAppleIDCredential({
+    required List<AppleIDAuthorizationScopes> scopes,
+    WebAuthenticationOptions? webAuthenticationOptions,
+    String? nonce,
+    String? state,
+  }) async {
+    if (shouldCancel) {
+      throw SignInWithAppleAuthorizationException(
+        code: AuthorizationErrorCode.canceled,
+        message: 'The user canceled the authorization attempt.',
+      );
+    }
+    if (shouldThrowError) {
+      throw SignInWithAppleAuthorizationException(
+        code: AuthorizationErrorCode.unknown,
+        message: 'Apple Sign-In failed.',
+      );
+    }
+    return AuthorizationCredentialAppleID(
+      authorizationCode: authorizationCode,
+      identityToken: identityToken,
+      userIdentifier: userIdentifier,
+      email: email,
+      givenName: givenName,
+      familyName: familyName,
+      state: state,
+    );
+  }
+}
+

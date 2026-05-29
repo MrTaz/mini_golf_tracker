@@ -9,6 +9,7 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends StatefulWidget {
   final GoogleSignIn? googleSignIn;
@@ -199,6 +200,85 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   @visibleForTesting
+  Future<String?> handleAppleLogin() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
+      );
+
+      final userCredential =
+          await UserProvider().auth.signInWithCredential(oauthCredential);
+
+      if (userCredential.user != null) {
+        final authUser = userCredential.user!;
+        var loggedInPlayer =
+            await Player.fetchPlayerForAuthUid(authUser.uid) ??
+                await Player.claimPlayerForVerifiedAuthUser(
+                  uid: authUser.uid,
+                  email: authUser.email ?? credential.email,
+                  emailVerified: authUser.emailVerified,
+                  phoneNumber: authUser.phoneNumber,
+                );
+        if (loggedInPlayer == null) {
+          final emailToUse = authUser.email ?? credential.email;
+          final existingCandidate = await Player.getPlayerByContactFromDB(
+            emailToUse,
+            authUser.phoneNumber,
+          );
+          if (existingCandidate != null) {
+            UserProvider().beginPendingClaim(existingCandidate);
+            return 'Verify an email or phone number to claim your player history.';
+          }
+
+          final String defaultName = [credential.givenName, credential.familyName]
+              .where((s) => s != null && s.isNotEmpty)
+              .join(' ');
+          final String displayName = defaultName.isNotEmpty
+              ? defaultName
+              : (authUser.displayName ?? 'New User');
+
+          Utilities.debugPrintWithCallerInfo(
+              'Creating new player profile for social user: $emailToUse');
+          loggedInPlayer = await Player.createPlayer(
+            displayName,
+            displayName.isNotEmpty
+                ? displayName
+                : 'user_${authUser.uid.substring(0, 5)}',
+            email: emailToUse ?? '',
+            phoneNumber: authUser.phoneNumber,
+            id: authUser.uid,
+          );
+
+          if (authUser.photoURL != null) {
+            loggedInPlayer.avatarImageLocation = authUser.photoURL;
+          }
+        }
+
+        await UserProvider().login(loggedInPlayer);
+      }
+      return null;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      Utilities.debugPrintWithCallerInfo(
+          'Apple Sign-In cancelled or failed: ${e.code} - ${e.message}');
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return 'Apple Sign-In was cancelled.';
+      }
+      return 'Apple Sign-In failed: ${e.message}';
+    } catch (e) {
+      Utilities.debugPrintWithCallerInfo('Apple Sign-In Error: $e');
+      return 'Apple Sign-In failed.';
+    }
+  }
+
+  @visibleForTesting
   Future<String?> handleNotImplementedLogin() async {
     return 'Not implemented yet';
   }
@@ -332,6 +412,10 @@ class LoginScreenState extends State<LoginScreen> {
                     cardTheme: CardTheme(color: Colors.white.withAlpha(240)),
                     logoWidth: 0),
                 loginProviders: <LoginProvider>[
+                  LoginProvider(
+                    icon: FontAwesomeIcons.apple,
+                    callback: handleAppleLogin,
+                  ),
                   LoginProvider(
                     icon: FontAwesomeIcons.google,
                     callback: handleGoogleLogin,
