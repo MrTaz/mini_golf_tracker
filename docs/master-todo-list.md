@@ -328,6 +328,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.2 — Comprehensive Social Logins & E2E Testing
 
+* [x] **Fix Google Sign-In Verification Race Condition:** Update the social login flow in `login_screen.dart` or `userprovider.dart` to await `user.reload()` or gracefully delay the claim routing on initial account creation so the `emailVerified` flag has time to accurately sync before routing the user to the `ClaimAccountScreen`.
 * [ ] **Implement Apple Sign-In:** Install `sign_in_with_apple` and configure the necessary capabilities and Service IDs in the Apple Developer portal.
 * [ ] **Implement Meta/Facebook/Instagram Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
 * [ ] **Implement Snapchat Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
@@ -354,7 +355,15 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Capture Store Screenshots:** Capture high-resolution screenshots of key application screens (Dashboard, Game Setup, Active Scorecard, Past Games, Friends List) across required iOS (6.5" & 6.7" displays) and Android device sizes.
 * [ ] **Store Listing Metadata:** Draft and input the "Putt Scorer" App Title, Short Description/Subtitle, Full Description, Promotional Text, and Privacy Policy URL into both App Store Connect and the Google Play Console.
 
-#### 2.6 Preserve Nickname-Only and Quick-Play Players
+#### Phase 2.6 — Post-Login UX & State Fixes
+
+* [ ] **Guest Data Adoption:** Debug and fix `Game.adoptLocalGames` and `Player.adoptLocalGuestPlayers` during `UserProvider().login()`. Ensure local active games, past games, and guest players are correctly migrated to the authenticated account and immediately visible in the UI.
+* [ ] **Side Menu & Dashboard Routing:** Fix the navigation trap for logged-in users accessing "Friends" or "Past Games" from the `AppDrawer`. (Either update the `AppDrawer` to change the `DashboardScreen` tab index, or use `Navigator.canPop(context)` to conditionally render the `AppBar` with a back button).
+* [ ] **Self-Profile Editing Access:** Provide an entry point for the logged-in user to edit their own profile. Make the `UserAccountsDrawerHeader` in `AppDrawer` tappable to route to `PlayerDetailsScreen` (or `PlayerForm`), and ensure the current user's edit icon functions properly in the Friends list.
+* [ ] **Disable FlutterLogin Debug UI:** In `lib/login_screen.dart`, locate the `FlutterLogin` widget and set its `debug` property to `false` (or gate it behind `kDebugMode` from `package:flutter/foundation.dart`) to hide the debug toolbars.
+* [ ] **Optimize Gravatar Caching & Logs:** In `lib/gravatar_image_view.dart`, remove the `FutureBuilder` and make `getFriendAvatarImage()` synchronous since URL generation is just a local string hash. Move the debug logs inside the cache-miss block to prevent console spam on every widget rebuild.
+
+#### Phase 2.7 Preserve Nickname-Only and Quick-Play Players
 
 * [ ] Preserve anonymous / nickname-only users as first-class players.
 * [ ] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
@@ -364,7 +373,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Store quick-play players in the local `guest_players` `SharedPreferences` key.
 * [ ] Ensure PII independence for quick-play and guest players.
 
-#### 2.7 Normalize Contact Entry Points
+#### Phase 2.8 Normalize Contact Entry Points
 
 * [ ] Use `ContactIdentity.normalizeEmail` in all contact write paths.
 * [ ] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
@@ -373,7 +382,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Reference `ContactIdentity` as the source of truth for all contact normalization.
 * [ ] Ensure normalization supports reservation consistency.
 
-#### 2.8 Late Contact Attribution
+#### Phase 2.9 Late Contact Attribution
 
 * [ ] Refactor `Player.updateUnclaimedPlayer` to support post-creation contact attachment.
 * [ ] Before updating contact details, invoke:
@@ -383,7 +392,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Verify the contact is not already reserved.
 * [ ] Prevent split-identity claims where phone and email point to different canonical IDs.
 
-#### 2.9 Local Game & Guest Adoption Workflow
+#### Phase 2.10 Local Game & Guest Adoption Workflow
 
 * [ ] Implement the migration path from `SharedPreferences` to Firestore.
 * [ ] Implement `Game.adoptLocalGames`.
@@ -412,13 +421,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Allow users to explicitly select which local IDs to sync to Firestore.
 * [ ] Include local games and local friends in the cloud import prompt.
 
-#### 2.10 Claim Baseline
+#### Phase 2.11 Claim Baseline
 
 * [ ] Ensure `Player.claimPlayerForVerifiedAuthUser` is the exclusive entry point for guest-to-auth conversion.
 * [ ] Maintain canonical integrity during all claim flows.
 * [ ] Ensure `UserProvider` triggers `ClaimAccountScreen` when signup detects claimable history.
 
-#### 2.11 Legacy Duplicate Repair
+#### Phase 2.12 Legacy Duplicate Repair
 
 * [ ] Develop an ID consistency migration utility.
 * [ ] Repair legacy duplicate players.
@@ -433,7 +442,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ### Phase 3 — Real-Time Synchronization & Data Integrity
 
-#### 3.1 Firestore Listener Architecture
+#### Phase 3.1 Firestore Listener Architecture
 
 * [ ] Replace `SharedPreferences` lookups in `GameInprogressScreen` with real-time Firestore listeners.
 * [ ] Modify the `Game` model to support a `fromSnapshot(DocumentSnapshot)` factory.
