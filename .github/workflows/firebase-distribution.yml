@@ -139,6 +139,18 @@ jobs:
           # Extract Team ID
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin <<< $(security cms -D -i $PP_PATH))
 
+          # Determine the export method dynamically based on the profile entitlements
+          GET_TASK_ALLOW=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:get-task-allow" /dev/stdin <<< $(security cms -D -i $PP_PATH) 2>/dev/null || true)
+          PROVISIONED_DEVICES=$(/usr/libexec/PlistBuddy -c "Print :ProvisionedDevices" /dev/stdin <<< $(security cms -D -i $PP_PATH) 2>/dev/null || true)
+
+          if [ "$GET_TASK_ALLOW" == "true" ]; then
+              METHOD="development"
+          elif [ -n "$PROVISIONED_DEVICES" ]; then
+              METHOD="ad-hoc"
+          else
+              METHOD="app-store"
+          fi
+
           # Create ExportOptions.plist dynamically inside the ios directory
           cat <<EOF > ios/ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
@@ -146,7 +158,7 @@ jobs:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>ad-hoc</string>
+              <string>$METHOD</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
               <key>signingStyle</key>
