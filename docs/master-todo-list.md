@@ -324,7 +324,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Secure Artifact Cleanup:** Implement a dedicated `if: always()` cleanup step to wipe `google-credentials.json`, `upload-keystore.jks`, and temporary iOS signing files to prevent credential leakage.
 * [x] **Firebase Upload:** Use the native `firebase-tools` CLI to distribute the `.ipa` safely on the macOS runner, utilizing the `FIREBASE_IOS_APP_ID` secret.
 * [x] **App Store Connect API Config:** Configure App Store Connect API keys (Key ID, Issuer ID, P8 Key Content) securely in GitHub Secrets.
-* [x] **Automated TestFlight Upload:** Dynamically resolve the built `.ipa` path via step outputs and push the release directly to Apple using `apple-actions/upload-testflight-build@v4`.
+* [x] **Automated TestFlight Upload:** Dynamically resolve the built .ipa path via step outputs and push the release directly to Apple using native macOS execution of xcrun altool.
 
 #### Phase 2.2 — Comprehensive Social Logins & E2E Testing
 
