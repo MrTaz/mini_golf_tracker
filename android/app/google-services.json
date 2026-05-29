@@ -12,7 +12,36 @@
           "package_name": "org.dahome.mini_golf_tracker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "114725116317-4m21t17gnls0uo6i9t1h7e6s0mlrt311.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.dahome.mini_golf_tracker",
+            "certificate_hash": "dae42c9b92a647b60149b12c06230c7dd3c16dae"
+          }
+        },
+        {
+          "client_id": "114725116317-8oc0kpajbdldoptkgj04k8hjek05oj5p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.dahome.mini_golf_tracker",
+            "certificate_hash": "83c83169f4383cd2042fe356a047743fc6200703"
+          }
+        },
+        {
+          "client_id": "114725116317-ikj2f44pjep17lho46v1b8iabeklo5oh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.dahome.mini_golf_tracker",
+            "certificate_hash": "6933c73dde84a6b3b0ecb201e755d4320481b72e"
+          }
+        },
+        {
+          "client_id": "114725116317-hcrn2kms85skt1kb0q4c73sgrj9fkc3u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCEydUasAiDm-RcK4nLYPWBCXcZomz8Eac"
@@ -20,7 +49,20 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "114725116317-hcrn2kms85skt1kb0q4c73sgrj9fkc3u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "114725116317-f81g44jabiom6rrcpcbimoi3ii2r3djl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.dahome.miniGolfScoreTracker",
+                "app_store_id": "6774438975"
+              }
+            }
+          ]
         }
       }
     }
