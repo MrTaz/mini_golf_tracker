@@ -313,8 +313,8 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.0 — Patrol Native E2E Infrastructure & Google Sign-In Validation
 
-* [ ] **Install Patrol:** Add the Patrol testing framework to the project to support true native OS-level UI interactions.
-* [ ] **Google Sign-In E2E Test:** Write a Patrol integration test that physically interacts with the native OS account selector pop-up to validate the Google Sign-In flow and debug live device failures.
+* [x] **Install Patrol:** Add the Patrol testing framework to the project to support true native OS-level UI interactions.
+* [x] **Google Sign-In E2E Test:** Write a Patrol integration test that physically interacts with the native OS account selector pop-up to validate the Google Sign-In flow and debug live device failures.
 
 #### Phase 2.1 — iOS Firebase App Distribution
 
@@ -1202,7 +1202,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Authentication and test-account verification bypass flow passes (`integration_test/auth_login_flow_test.dart`).
 * [x] Player selection, deselection, and clear-all flow passes (`integration_test/player_selection_flow_test.dart`).
 * [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
-* [ ] Google Sign-In E2E authentication flow passes (Note: requires Patrol native UI test configuration to tap system pop-ups).
+* [x] Google Sign-In E2E authentication flow passes (Note: requires Patrol native UI test configuration to tap system pop-ups).
 * [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
 * [ ] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
