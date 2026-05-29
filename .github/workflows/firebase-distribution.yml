@@ -29,6 +29,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Select latest stable Xcode
+        if: matrix.platform == 'ios'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Setup Java
         if: matrix.platform == 'android'
         uses: actions/setup-java@v5
@@ -171,6 +177,19 @@ jobs:
           </dict>
           </plist>
           EOF
+
+      - name: Strip Alpha Channel from Large App Icon
+        if: matrix.platform == 'ios'
+        run: |
+          ICON_PATH="ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
+          if [ -f "$ICON_PATH" ]; then
+            sips -s format jpeg "$ICON_PATH" --out temp.jpg
+            sips -s format png temp.jpg --out "$ICON_PATH"
+            rm -f temp.jpg
+            echo "Successfully stripped alpha channel from Large App Icon."
+          else
+            echo "Large App Icon not found at $ICON_PATH, skipping."
+          fi
 
       - name: Build iOS IPA
         if: matrix.platform == 'ios'
