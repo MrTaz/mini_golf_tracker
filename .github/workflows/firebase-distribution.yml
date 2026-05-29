@@ -164,7 +164,7 @@ jobs:
         if: matrix.platform == 'ios'
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-          appId: '1:114725116317:ios:61765a6d7b137631903774'
+          appId: '1:114725116317:ios:61ada96ee60b0667903774'
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
           file: build/ios/ipa/*.ipa
