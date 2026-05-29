@@ -318,10 +318,10 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.1 — iOS Firebase App Distribution
 
-* [ ] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
-* [ ] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
-* [ ] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using standard GidHub Action steps) to successfully archive and sign the iOS `.ipa`.
-* [ ] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
+* [x] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
+* [x] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
+* [x] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using standard GidHub Action steps) to successfully archive and sign the iOS `.ipa`.
+* [x] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
 
 #### Phase 2.2 — Comprehensive Social Logins & E2E Testing
 
