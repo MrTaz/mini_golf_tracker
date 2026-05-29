@@ -316,12 +316,15 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] **Install Patrol:** Add the Patrol testing framework to the project to support true native OS-level UI interactions.
 * [x] **Google Sign-In E2E Test:** Write a Patrol integration test that physically interacts with the native OS account selector pop-up to validate the Google Sign-In flow and debug live device failures.
 
-#### Phase 2.1 — iOS Firebase App Distribution
+#### Phase 2.1 — iOS Firebase & App Store Distribution
 
-* [x] **macOS Runner Setup:** Update the `.github/workflows/firebase-distribution.yml` to include a `macos-latest` job (or matrix) alongside the existing `ubuntu-latest` Android job.
-* [x] **Shared Versioning:** Ensure the iOS build job reads from the exact same versioning mechanism/script currently used by the Android build to keep cross-platform version numbers perfectly synced.
-* [x] **Apple Code Signing:** Configure GitHub Action secrets for Apple certificates and provisioning profiles (using standard GidHub Action steps) to successfully archive and sign the iOS `.ipa`.
-* [x] **Firebase Upload:** Add the Firebase App Distribution upload step for the iOS artifact, utilizing the existing iOS App ID (`1:114725116317:ios:61765a6d7b137631903774`).
+* [x] **macOS Runner Setup:** Update `.github/workflows/firebase-distribution.yml` to run a `macos-latest` job alongside the `ubuntu-latest` Android job using a `fail-fast: false` matrix strategy.
+* [x] **Shared Versioning:** Ensure the iOS build job reads from the exact same semantic versioning script used by the Android build to keep cross-platform version numbers perfectly synced.
+* [x] **Apple Code Signing & Dynamic Export:** Decode Apple certificates and provisioning profiles into a temporary keychain. Dynamically extract the Team ID and export method to generate a strict `ExportOptions.plist` for headless Xcode signing.
+* [x] **Secure Artifact Cleanup:** Implement a dedicated `if: always()` cleanup step to wipe `google-credentials.json`, `upload-keystore.jks`, and temporary iOS signing files to prevent credential leakage.
+* [x] **Firebase Upload:** Use the native `firebase-tools` CLI to distribute the `.ipa` safely on the macOS runner, utilizing the `FIREBASE_IOS_APP_ID` secret.
+* [x] **App Store Connect API Config:** Configure App Store Connect API keys (Key ID, Issuer ID, P8 Key Content) securely in GitHub Secrets.
+* [x] **Automated TestFlight Upload:** Dynamically resolve the built `.ipa` path via step outputs and push the release directly to Apple using `apple-actions/upload-testflight-build@v4`.
 
 #### Phase 2.2 — Comprehensive Social Logins & E2E Testing
 
@@ -330,7 +333,14 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Implement Snapchat Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
 * [ ] **Social Auth E2E Tests:** Write Patrol integration tests covering the native OS-level pop-ups for Apple, Meta, and Snapchat authentications.
 
-#### 2.3 Preserve Nickname-Only and Quick-Play Players
+#### Phase 2.3 — Native App Branding & Launch Screens
+
+* [x] **Native App Icons:** Generate and set Android and iOS app icons using a tightly cropped version of `play_store_icon_512.png` to ensure it fills platform icon masks correctly.
+* [x] **Custom Launch Artwork:** Generate a "Putt Scorer" static launch screen artwork from `play_store_feature_1024x500.jpeg` to replace the default Flutter launch background.
+* [x] **Android Adaptive Icons & Splash Theme:** Implement Android adaptive icon resources (API 26+) and configure the Android 12+ (API 31+) splash screen theme (`values-v31/styles.xml`) to display the branded artwork cleanly on a green background without circular masking.
+* [x] **iOS Launch Images:** Regenerate iOS launch image densities and update `LaunchScreen.storyboard` metadata to properly display the new launch artwork.
+
+#### 2.4 Preserve Nickname-Only and Quick-Play Players
 
 * [ ] Preserve anonymous / nickname-only users as first-class players.
 * [ ] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
@@ -340,7 +350,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Store quick-play players in the local `guest_players` `SharedPreferences` key.
 * [ ] Ensure PII independence for quick-play and guest players.
 
-#### 2.4 Normalize Contact Entry Points
+#### 2.5 Normalize Contact Entry Points
 
 * [ ] Use `ContactIdentity.normalizeEmail` in all contact write paths.
 * [ ] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
@@ -349,7 +359,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Reference `ContactIdentity` as the source of truth for all contact normalization.
 * [ ] Ensure normalization supports reservation consistency.
 
-#### 2.5 Late Contact Attribution
+#### 2.6 Late Contact Attribution
 
 * [ ] Refactor `Player.updateUnclaimedPlayer` to support post-creation contact attachment.
 * [ ] Before updating contact details, invoke:
@@ -359,7 +369,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] Verify the contact is not already reserved.
 * [ ] Prevent split-identity claims where phone and email point to different canonical IDs.
 
-#### 2.6 Local Game & Guest Adoption Workflow
+#### 2.7 Local Game & Guest Adoption Workflow
 
 * [ ] Implement the migration path from `SharedPreferences` to Firestore.
 * [ ] Implement `Game.adoptLocalGames`.
@@ -388,13 +398,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Allow users to explicitly select which local IDs to sync to Firestore.
 * [ ] Include local games and local friends in the cloud import prompt.
 
-#### 2.7 Claim Baseline
+#### 2.8 Claim Baseline
 
 * [ ] Ensure `Player.claimPlayerForVerifiedAuthUser` is the exclusive entry point for guest-to-auth conversion.
 * [ ] Maintain canonical integrity during all claim flows.
 * [ ] Ensure `UserProvider` triggers `ClaimAccountScreen` when signup detects claimable history.
 
-#### 2.8 Legacy Duplicate Repair
+#### 2.9 Legacy Duplicate Repair
 
 * [ ] Develop an ID consistency migration utility.
 * [ ] Repair legacy duplicate players.

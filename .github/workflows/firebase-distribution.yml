@@ -235,12 +235,27 @@ jobs:
 
       - name: Upload to Apple Store Connect
         if: matrix.platform == 'ios' && success()
-        uses: apple-actions/upload-testflight-build@v4
-        with:
-          app-path: ${{ steps.find_ipa.outputs.ipa_path }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        env:
+          IPA_PATH: ${{ steps.find_ipa.outputs.ipa_path }}
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          # Create standard private keys folder recognized by Apple tools
+          mkdir -p ~/private_keys
+
+          # Safely ensure the private key file is wiped when the script exits (success or failure)
+          trap "rm -rf ~/private_keys" EXIT
+
+          # Auto-detect if the secret is plain PEM or Base64 encoded and write/decode accordingly
+          if [[ "$API_KEY_CONTENT" == *"-----BEGIN"* ]]; then
+            echo "$API_KEY_CONTENT" > ~/private_keys/AuthKey_$API_KEY_ID.p8
+          else
+            echo "$API_KEY_CONTENT" | base64 --decode > ~/private_keys/AuthKey_$API_KEY_ID.p8
+          fi
+
+          # Upload app using native Apple command line tool (xcrun altool)
+          xcrun altool --upload-app -f "$IPA_PATH" -t ios --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
 
       - name: Clean up keychain & temp signing files
         if: ${{ always() && matrix.platform == 'ios' }}
