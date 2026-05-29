@@ -167,8 +167,17 @@ jobs:
       - name: Upload iOS to Firebase App Distribution
         if: matrix.platform == 'ios'
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          CREDENTIAL_FILE_CONTENT: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
         run: |
+          # Safely ensure the credentials file is deleted when the script exits (success or failure)
+          trap "rm -f google-credentials.json" EXIT
+
+          # Write the JSON credential secret to a temporary file
+          echo "$CREDENTIAL_FILE_CONTENT" > google-credentials.json
+
+          # Tell the Firebase CLI where to find the auth file
+          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/google-credentials.json
+
           firebase appdistribution:distribute build/ios/ipa/*.ipa \
             --app "${{ secrets.FIREBASE_IOS_APP_ID || '1:114725116317:ios:61ada96ee60b0667903774' }}" \
             --groups "testers" \
