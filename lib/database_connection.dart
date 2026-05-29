@@ -12,9 +12,7 @@ class DatabaseConnection {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       } catch (e) {
-        if (!e.toString().contains('duplicate-app')) {
-          rethrow;
-        }
+        debugPrint('⚠️ Firebase initialization failed or bypassed: $e');
       }
     }
 

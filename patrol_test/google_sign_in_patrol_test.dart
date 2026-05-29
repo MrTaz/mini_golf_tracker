@@ -54,7 +54,7 @@ void main() {
 
       // Tap the "Sign in with Google" button
       // FlutterLogin uses standard icons for social buttons
-      await $(FontAwesomeIcons.google).tap();
+      await $(find.byWidgetPredicate((widget) => widget is FaIcon && widget.icon?.codePoint == FontAwesomeIcons.google.codePoint)).tap();
       await $.pumpAndSettle();
 
       // Interact with the native OS Google account selector pop-up
