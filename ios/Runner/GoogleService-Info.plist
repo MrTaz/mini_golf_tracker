@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>114725116317-f81g44jabiom6rrcpcbimoi3ii2r3djl.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.114725116317-f81g44jabiom6rrcpcbimoi3ii2r3djl</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>114725116317-8oc0kpajbdldoptkgj04k8hjek05oj5p.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyC108oyI_oyCAFPERH1DlXs_5xHF-g4kLw</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.miniGolfTracker</string>
+	<string>org.dahome.miniGolfScoreTracker</string>
 	<key>PROJECT_ID</key>
 	<string>mini-golf-tracker-dahome</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:114725116317:ios:61765a6d7b137631903774</string>
+	<string>1:114725116317:ios:61ada96ee60b0667903774</string>
 </dict>
 </plist>

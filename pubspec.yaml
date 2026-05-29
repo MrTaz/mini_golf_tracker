@@ -70,4 +70,4 @@ patrol:
   android:
     package_name: "org.dahome.mini_golf_tracker"
   ios:
-    bundle_id: "com.example.miniGolfTracker"
+    bundle_id: "org.dahome.miniGolfScoreTracker"

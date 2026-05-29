@@ -54,10 +54,10 @@ class DefaultFirebaseOptions {
 
   static final FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyC108oyI_oyCAFPERH1DlXs_5xHF-g4kLw',
-    appId: '1:114725116317:ios:61765a6d7b137631903774',
+    appId: '1:114725116317:ios:61ada96ee60b0667903774',
     messagingSenderId: '114725116317',
     projectId: 'mini-golf-tracker-dahome',
     storageBucket: 'mini-golf-tracker-dahome.firebasestorage.app',
-    iosBundleId: 'com.example.miniGolfTracker',
+    iosBundleId: 'org.dahome.miniGolfScoreTracker',
   );
 }
