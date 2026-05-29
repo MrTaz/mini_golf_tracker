@@ -229,14 +229,15 @@ jobs:
 
       - name: Find IPA File
         if: matrix.platform == 'ios'
+        id: find_ipa
         run: |
-          echo "IPA_PATH=$(find build/ios/ipa -name '*.ipa' | head -n 1)" >> $GITHUB_ENV
+          echo "ipa_path=$(find build/ios/ipa -name '*.ipa' | head -n 1)" >> $GITHUB_OUTPUT
 
       - name: Upload to Apple Store Connect
         if: matrix.platform == 'ios' && success()
         uses: apple-actions/upload-testflight-build@v4
         with:
-          app-path: ${{ env.IPA_PATH }}
+          app-path: ${{ steps.find_ipa.outputs.ipa_path }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
