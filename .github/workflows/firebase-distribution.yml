@@ -178,19 +178,6 @@ jobs:
           </plist>
           EOF
 
-      - name: Strip Alpha Channel from Large App Icon
-        if: matrix.platform == 'ios'
-        run: |
-          ICON_PATH="ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
-          if [ -f "$ICON_PATH" ]; then
-            sips -s format jpeg "$ICON_PATH" --out temp.jpg
-            sips -s format png temp.jpg --out "$ICON_PATH"
-            rm -f temp.jpg
-            echo "Successfully stripped alpha channel from Large App Icon."
-          else
-            echo "Large App Icon not found at $ICON_PATH, skipping."
-          fi
-
       - name: Build iOS IPA
         if: matrix.platform == 'ios'
         run: flutter build ipa --release --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }} --export-options-plist=ios/ExportOptions.plist
