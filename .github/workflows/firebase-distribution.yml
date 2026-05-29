@@ -87,6 +87,12 @@ jobs:
         if: matrix.platform == 'android'
         run: flutter build appbundle --build-name=${{ steps.semver.outputs.version }} --build-number=${{ github.run_number }}
 
+      - name: Secure clean up Android signing credentials
+        if: ${{ always() && matrix.platform == 'android' }}
+        run: |
+          # Securely wipe sensitive signing files upon completion
+          rm -f android/app/upload-keystore.jks android/key.properties
+
       - name: Upload AAB Artifact
         if: matrix.platform == 'android'
         uses: actions/upload-artifact@v4
@@ -185,7 +191,10 @@ jobs:
             --groups "testers" \
             --release-notes "${{ env.RELEASE_NOTES }}"
 
-      - name: Clean up keychain
+      - name: Clean up keychain & temp signing files
         if: ${{ always() && matrix.platform == 'ios' }}
         run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+          # Delete temporary keychain
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          # Securely remove temporary P12 certificate and provisioning profile files
+          rm -f $RUNNER_TEMP/build_certificate.p12 $RUNNER_TEMP/build_pp.mobileprovision
