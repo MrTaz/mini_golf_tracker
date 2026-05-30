@@ -202,11 +202,22 @@ class LoginScreenState extends State<LoginScreen> {
   @visibleForTesting
   Future<String?> handleAppleLogin() async {
     try {
+      WebAuthenticationOptions? webAuthenticationOptions;
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        webAuthenticationOptions = WebAuthenticationOptions(
+          clientId: 'org.dahome.miniGolfScoreTracker',
+          redirectUri: Uri.parse(
+            'https://mini-golf-tracker-dahome.firebaseapp.com/__/auth/handler',
+          ),
+        );
+      }
+
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        webAuthenticationOptions: webAuthenticationOptions,
       );
 
       final oauthCredential = OAuthProvider('apple.com').credential(
