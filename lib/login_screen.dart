@@ -205,7 +205,7 @@ class LoginScreenState extends State<LoginScreen> {
       WebAuthenticationOptions? webAuthenticationOptions;
       if (defaultTargetPlatform == TargetPlatform.android) {
         webAuthenticationOptions = WebAuthenticationOptions(
-          clientId: 'org.dahome.miniGolfScoreTracker',
+          clientId: 'org.dahome.miniGolfScoreTracker.signin',
           redirectUri: Uri.parse(
             'https://mini-golf-tracker-dahome.firebaseapp.com/__/auth/handler',
           ),
