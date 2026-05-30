@@ -353,6 +353,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [ ] **Google Play API Config:** Configure the Google Play Service Account key securely in GitHub Secrets to authenticate the automated upload.
 * [ ] **Capture Store Screenshots:** Capture high-resolution screenshots of key application screens (Dashboard, Game Setup, Active Scorecard, Past Games, Friends List) across required iOS (6.5" & 6.7" displays) and Android device sizes.
 * [ ] **Store Listing Metadata:** Draft and input the "Putt Scorer" App Title, Short Description/Subtitle, Full Description, Promotional Text, and Privacy Policy URL into both App Store Connect and the Google Play Console.
+* [ ] **Meta Developer App Review (Facebook Login):** Complete the Meta portal publishing requirements to switch the Facebook Login app from "Development" to "Live" mode (Upload 1024x1024 App Icon, provide a Privacy Policy URL, provide User Data Deletion instructions, and select an App Category).
 
 #### Phase 2.6 — Post-Login UX & State Fixes
 
