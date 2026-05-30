@@ -14,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:sign_in_with_apple_platform_interface/sign_in_with_apple_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+// ignore: depend_on_referenced_packages
+import 'package:flutter_facebook_auth_platform_interface/flutter_facebook_auth_platform_interface.dart';
+
 
 Finder findIconByCodePoint(int codePoint) {
   return find.byWidgetPredicate((widget) {
@@ -37,6 +40,8 @@ void main() {
     timeDilation = 1.0; // Reset timeDilation
     MockSignInWithApplePlatform.register();
     MockSignInWithApplePlatform.reset();
+    MockFacebookAuthPlatform.register();
+    MockFacebookAuthPlatform.reset();
   });
 
   tearDown(() {
@@ -710,6 +715,147 @@ void main() {
     expect(userProvider.loggedInUser!.nickname, equals('user_empty'));
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('Facebook Sign-In: successful login with existing Firestore player', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Setup an existing player in firestore
+    await fakeFirestore.collection('players').doc('facebook-uid').set({
+      'player_name': 'Facebook User',
+      'owner_id': 'facebook-uid',
+      'email': 'facebook@example.com',
+    });
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'facebook-uid',
+      email: 'facebook@example.com',
+    ));
+
+    final result = await state.handleFacebookLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'facebook@example.com');
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Facebook Sign-In: successful login and creates new social profile when no player exists', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'new-facebook-uid',
+      email: 'new-facebook@example.com',
+      displayName: 'FB User',
+      photoURL: 'https://example.com/avatar.jpg',
+    ));
+
+    final result = await state.handleFacebookLogin();
+    expect(result, isNull);
+    expect(userProvider.loggedInUser, isNotNull);
+    expect(userProvider.loggedInUser!.email, 'new-facebook@example.com');
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Facebook Sign-In: handles existing unclaimed player matching contact email (pending claim)', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Create an unclaimed player in Firestore
+    await Player.createPlayer(
+      'Unclaimed FB Player',
+      'unclaimedfb',
+      email: 'unclaimed-fb@example.com',
+      ownerId: 'unclaimed-fb-owner-id',
+    );
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
+      uid: 'new-facebook-uid',
+      email: 'unclaimed-fb@example.com',
+      emailVerified: false,
+    ));
+
+    final result = await state.handleFacebookLogin();
+    expect(result, equals('Verify an email or phone number to claim your player history.'));
+    expect(userProvider.loggedInUser, isNull);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Facebook Sign-In: graceful cancellation handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Configure the mock to throw cancellation exception/status
+    MockFacebookAuthPlatform.reset();
+    MockFacebookAuthPlatform._instance!.status = LoginStatus.cancelled;
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleFacebookLogin();
+    expect(result, equals('Facebook Sign-In was cancelled.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Facebook Sign-In: non-cancellation / failed status handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Configure the mock to return failed status
+    MockFacebookAuthPlatform.reset();
+    MockFacebookAuthPlatform._instance!.status = LoginStatus.failed;
+    MockFacebookAuthPlatform._instance!.errorMessage = 'Custom FB Error';
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleFacebookLogin();
+    expect(result, equals('Custom FB Error'));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Facebook Sign-In: generic / exception error handling', (tester) async {
+    final userProvider = UserProvider();
+    userProvider.resetForTesting();
+    userProvider.setAuthInstanceForTesting(mockAuth);
+    await userProvider.initialize();
+
+    // Configure the mock to throw an exception
+    MockFacebookAuthPlatform.reset();
+    MockFacebookAuthPlatform._instance!.shouldThrow = true;
+
+    await tester.pumpWidget(createLoginScreen());
+    await tester.pumpAndSettle();
+
+    final state = tester.state<LoginScreenState>(find.byType(LoginScreen));
+    final result = await state.handleFacebookLogin();
+    expect(result, equals('Facebook Sign-In failed.'));
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
 
 class FakeGoogleSignInAccount implements GoogleSignInAccount {
@@ -1001,5 +1147,68 @@ class MockSignInWithApplePlatform extends SignInWithApplePlatform
       state: state,
     );
   }
+}
+
+class MockFacebookAuthPlatform extends FacebookAuthPlatform {
+  MockFacebookAuthPlatform();
+
+  static MockFacebookAuthPlatform? _instance;
+
+  static void register() {
+    _instance ??= MockFacebookAuthPlatform();
+    FacebookAuthPlatform.instance = _instance!;
+  }
+
+  static void reset() {
+    if (_instance != null) {
+      _instance!.status = LoginStatus.success;
+      _instance!.shouldThrow = false;
+      _instance!.tokenString = 'mock_fb_token';
+      _instance!.errorMessage = null;
+    }
+  }
+
+  LoginStatus status = LoginStatus.success;
+  bool shouldThrow = false;
+  String tokenString = 'mock_fb_token';
+  String? errorMessage;
+
+  @override
+  Future<LoginResult> login({
+    dynamic loginBehavior,
+    dynamic loginTracking,
+    String? nonce,
+    List<String> permissions = const ['email', 'public_profile'],
+  }) async {
+    if (shouldThrow) {
+      throw Exception('Simulated Facebook Exception');
+    }
+    if (status == LoginStatus.success) {
+      return LoginResult(
+        status: LoginStatus.success,
+        accessToken: MockAccessToken(tokenString: tokenString),
+      );
+    } else if (status == LoginStatus.cancelled) {
+      return LoginResult(status: LoginStatus.cancelled);
+    } else {
+      return LoginResult(
+        status: LoginStatus.failed,
+        message: errorMessage ?? 'Facebook Sign-In failed.',
+      );
+    }
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockAccessToken implements AccessToken {
+  @override
+  final String tokenString;
+
+  MockAccessToken({required this.tokenString});
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

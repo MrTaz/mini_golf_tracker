@@ -10,6 +10,8 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+
 
 class LoginScreen extends StatefulWidget {
   final GoogleSignIn? googleSignIn;
@@ -290,6 +292,67 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   @visibleForTesting
+  Future<String?> handleFacebookLogin() async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        final credential = FacebookAuthProvider.credential(accessToken.tokenString);
+
+        final userCredential =
+            await UserProvider().auth.signInWithCredential(credential);
+
+        if (userCredential.user != null) {
+          final authUser = userCredential.user!;
+          var loggedInPlayer =
+              await Player.fetchPlayerForAuthUid(authUser.uid) ??
+                  await Player.claimPlayerForVerifiedAuthUser(
+                    uid: authUser.uid,
+                    email: authUser.email,
+                    emailVerified: authUser.emailVerified,
+                    phoneNumber: authUser.phoneNumber,
+                  );
+          if (loggedInPlayer == null) {
+            final existingCandidate = await Player.getPlayerByContactFromDB(
+              authUser.email,
+              authUser.phoneNumber,
+            );
+            if (existingCandidate != null) {
+              UserProvider().beginPendingClaim(existingCandidate);
+              return 'Verify an email or phone number to claim your player history.';
+            }
+
+            Utilities.debugPrintWithCallerInfo(
+                'Creating new player profile for social user: ${authUser.email}');
+            loggedInPlayer = await Player.createPlayer(
+              authUser.displayName ?? 'New User',
+              authUser.displayName ?? 'user_${authUser.uid.substring(0, 5)}',
+              email: authUser.email ?? '',
+              phoneNumber: authUser.phoneNumber,
+              id: authUser.uid,
+            );
+
+            if (authUser.photoURL != null) {
+              loggedInPlayer.avatarImageLocation = authUser.photoURL;
+            }
+          }
+
+          await UserProvider().login(loggedInPlayer);
+        }
+        return null;
+      } else if (result.status == LoginStatus.cancelled) {
+        return 'Facebook Sign-In was cancelled.';
+      } else {
+        return result.message ?? 'Facebook Sign-In failed.';
+      }
+    } catch (e) {
+      Utilities.debugPrintWithCallerInfo('Facebook Sign-In Error: $e');
+      return 'Facebook Sign-In failed.';
+    }
+  }
+
+  @visibleForTesting
   Future<String?> handleNotImplementedLogin() async {
     return 'Not implemented yet';
   }
@@ -433,7 +496,7 @@ class LoginScreenState extends State<LoginScreen> {
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.facebookF,
-                    callback: handleNotImplementedLogin,
+                    callback: handleFacebookLogin,
                   ),
                   LoginProvider(
                     icon: FontAwesomeIcons.snapchat,
