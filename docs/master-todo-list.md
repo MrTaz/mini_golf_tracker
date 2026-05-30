@@ -330,8 +330,7 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 * [x] **Fix Google Sign-In Verification Race Condition:** Update the social login flow in `login_screen.dart` or `userprovider.dart` to await `user.reload()` or gracefully delay the claim routing on initial account creation so the `emailVerified` flag has time to accurately sync before routing the user to the `ClaimAccountScreen`.
 * [x] **Implement Apple Sign-In:** Install `sign_in_with_apple` and configure the necessary capabilities and Service IDs in the Apple Developer portal.
-* [ ] **Implement Meta/Facebook/Instagram Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
-* [ ] **Implement Snapchat Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
+* [ ] **Implement Meta/Facebook Sign-In:** Replace the "Not implemented yet" placeholder with the actual SDK integration.
 * [ ] **Social Auth E2E Tests:** Write Patrol integration tests covering the native OS-level pop-ups for Apple, Meta, and Snapchat authentications.
 
 #### Phase 2.3 — Native App Branding & Launch Screens
@@ -713,6 +712,13 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] **Guest Tier Ads (Maximum Monetization):** Implement a full-page interstitial ad that intercepts the user before reaching the `GameCreateScreen`. Add a non-intrusive static banner ad docked at the bottom of the `GameInprogressScreen` or inline within the player list.
 * [ ] **Registered Free Tier Ads (Reduced Friction):** Configure the ad service to disable the full-page interstitial ad for logged-in free users as a reward for creating an account, but retain the in-game bottom banner ad to cover server costs.
 * [ ] **Premium Ad-Free Experience:** Tie the ad rendering logic to the `isPremium` attribute, ensuring that subscribers paying the $1/month fee never initialize the ad SDK and experience a 100% ad-free UI.
+
+#### Phase 8.3 — Advanced Social Logins (Identity Platform)
+
+* [ ] **Upgrade Firebase Authentication:** Upgrade the Firebase project to use Identity Platform to support Custom OIDC (OpenID Connect) providers.
+* [ ] **Implement TikTok Sign-In:** Integrate the TikTok Developer SDK and configure the custom OIDC endpoints securely in the Firebase Console.
+* [ ] **Implement Snapchat Sign-In:** Integrate the Snap Kit Login SDK and configure the custom OIDC endpoints in the Firebase Console.
+* [ ] **Update UI & Tests:** Restore the TikTok and Snapchat buttons to the `LoginScreen` UI and write the corresponding Patrol native E2E tests for their authentication flows.
 
 ### Phase 9 — Gamification & Advanced Player Profiles (Future)
 
