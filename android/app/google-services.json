@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "114725116317-77jue7kmmioafp9vdi3gfk0j490dotm0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.dahome.mini_golf_tracker",
+            "certificate_hash": "bbdd719e4a74f148891848dec5db2ad710f0bb45"
+          }
+        },
+        {
           "client_id": "114725116317-8oc0kpajbdldoptkgj04k8hjek05oj5p.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
