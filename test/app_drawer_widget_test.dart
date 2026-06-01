@@ -70,6 +70,7 @@ void main() {
     ValueChanged<Widget>? onChangeBody,
     VoidCallback? onLogout,
     VoidCallback? onRefresh,
+    ValueChanged<int>? onTabSelected,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -77,6 +78,7 @@ void main() {
           changeBodyCallback: onChangeBody,
           onLogout: onLogout,
           onRefreshRequested: onRefresh,
+          onTabSelected: onTabSelected,
         ),
         body: const Text('Body'),
       ),
@@ -319,5 +321,33 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     final loginScreen = tester.widget<LoginScreen>(find.byType(LoginScreen));
     expect(loginScreen.promptMessage, "Login or register to view your past game details and save your history to the cloud.");
+  });
+
+  testWidgets('logged in drawer invokes onTabSelected callback when tapping Friends and Past Games',
+      (tester) async {
+    final player = Player(
+      id: 'p1',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p1',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    await UserProvider().login(player);
+
+    int? selectedTab;
+    await tester.pumpWidget(buildHarness(
+      onTabSelected: (index) => selectedTab = index,
+    ));
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-friends')));
+    await tester.pumpAndSettle();
+    expect(selectedTab, equals(1));
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-past-games')));
+    await tester.pumpAndSettle();
+    expect(selectedTab, equals(2));
   });
 }

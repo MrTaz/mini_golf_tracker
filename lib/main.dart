@@ -176,6 +176,9 @@ class MainScaffold extends State<HomePage> with RouteAware {
                 changeBodyCallback: changeBodyCallback,
                 onLogout: logout,
                 onRefreshRequested: refreshDrawerState,
+                onTabSelected: (index) {
+                  DashboardScreen.onTabSelect?.call(index);
+                },
               ),
               body: body,
             );

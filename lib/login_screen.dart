@@ -137,6 +137,61 @@ class LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  Future<String?> _processSocialCredential(
+    AuthCredential credential, {
+    String? fallbackEmail,
+    String? defaultDisplayName,
+  }) async {
+    final userCredential =
+        await UserProvider().auth.signInWithCredential(credential);
+
+    if (userCredential.user != null) {
+      final authUser = userCredential.user!;
+      final emailToUse = authUser.email ?? fallbackEmail;
+      var loggedInPlayer =
+          await Player.fetchPlayerForAuthUid(authUser.uid) ??
+              await Player.claimPlayerForVerifiedAuthUser(
+                uid: authUser.uid,
+                email: emailToUse,
+                emailVerified: authUser.emailVerified,
+                phoneNumber: authUser.phoneNumber,
+              );
+      if (loggedInPlayer == null) {
+        final existingCandidate = await Player.getPlayerByContactFromDB(
+          emailToUse,
+          authUser.phoneNumber,
+        );
+        if (existingCandidate != null) {
+          UserProvider().beginPendingClaim(existingCandidate);
+          return 'Verify an email or phone number to claim your player history.';
+        }
+
+        Utilities.debugPrintWithCallerInfo(
+            'Creating new player profile for social user: $emailToUse');
+        final String displayName = (defaultDisplayName != null && defaultDisplayName.isNotEmpty)
+            ? defaultDisplayName
+            : (authUser.displayName ?? 'New User');
+
+        loggedInPlayer = await Player.createPlayer(
+          displayName,
+          displayName.isNotEmpty && displayName != 'New User'
+              ? displayName
+              : 'user_${authUser.uid.substring(0, 5)}',
+          email: emailToUse ?? '',
+          phoneNumber: authUser.phoneNumber,
+          id: authUser.uid,
+        );
+
+        if (authUser.photoURL != null) {
+          loggedInPlayer.avatarImageLocation = authUser.photoURL;
+        }
+      }
+
+      await UserProvider().login(loggedInPlayer);
+    }
+    return null;
+  }
+
   @visibleForTesting
   Future<String?> handleGoogleLogin() async {
     try {
@@ -154,47 +209,7 @@ class LoginScreenState extends State<LoginScreen> {
         idToken: googleAuth.idToken,
       );
 
-      final userCredential =
-          await UserProvider().auth.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        final authUser = userCredential.user!;
-        var loggedInPlayer =
-            await Player.fetchPlayerForAuthUid(authUser.uid) ??
-                await Player.claimPlayerForVerifiedAuthUser(
-                  uid: authUser.uid,
-                  email: authUser.email,
-                  emailVerified: authUser.emailVerified,
-                  phoneNumber: authUser.phoneNumber,
-                );
-        if (loggedInPlayer == null) {
-          final existingCandidate = await Player.getPlayerByContactFromDB(
-            authUser.email,
-            authUser.phoneNumber,
-          );
-          if (existingCandidate != null) {
-            UserProvider().beginPendingClaim(existingCandidate);
-            return 'Verify an email or phone number to claim your player history.';
-          }
-
-          Utilities.debugPrintWithCallerInfo(
-              'Creating new player profile for social user: ${authUser.email}');
-          loggedInPlayer = await Player.createPlayer(
-            authUser.displayName ?? 'New User',
-            authUser.displayName ?? 'user_${authUser.uid.substring(0, 5)}',
-            email: authUser.email ?? '',
-            phoneNumber: authUser.phoneNumber,
-            id: authUser.uid,
-          );
-
-          if (authUser.photoURL != null) {
-            loggedInPlayer.avatarImageLocation = authUser.photoURL;
-          }
-        }
-
-        await UserProvider().login(loggedInPlayer);
-      }
-      return null;
+      return await _processSocialCredential(credential);
     } catch (e) {
       Utilities.debugPrintWithCallerInfo('Google Sign-In Error: $e');
       return 'Google Sign-In failed.';
@@ -227,57 +242,15 @@ class LoginScreenState extends State<LoginScreen> {
         accessToken: credential.authorizationCode,
       );
 
-      final userCredential =
-          await UserProvider().auth.signInWithCredential(oauthCredential);
+      final String defaultName = [credential.givenName, credential.familyName]
+          .where((s) => s != null && s.isNotEmpty)
+          .join(' ');
 
-      if (userCredential.user != null) {
-        final authUser = userCredential.user!;
-        var loggedInPlayer =
-            await Player.fetchPlayerForAuthUid(authUser.uid) ??
-                await Player.claimPlayerForVerifiedAuthUser(
-                  uid: authUser.uid,
-                  email: authUser.email ?? credential.email,
-                  emailVerified: authUser.emailVerified,
-                  phoneNumber: authUser.phoneNumber,
-                );
-        if (loggedInPlayer == null) {
-          final emailToUse = authUser.email ?? credential.email;
-          final existingCandidate = await Player.getPlayerByContactFromDB(
-            emailToUse,
-            authUser.phoneNumber,
-          );
-          if (existingCandidate != null) {
-            UserProvider().beginPendingClaim(existingCandidate);
-            return 'Verify an email or phone number to claim your player history.';
-          }
-
-          final String defaultName = [credential.givenName, credential.familyName]
-              .where((s) => s != null && s.isNotEmpty)
-              .join(' ');
-          final String displayName = defaultName.isNotEmpty
-              ? defaultName
-              : (authUser.displayName ?? 'New User');
-
-          Utilities.debugPrintWithCallerInfo(
-              'Creating new player profile for social user: $emailToUse');
-          loggedInPlayer = await Player.createPlayer(
-            displayName,
-            displayName.isNotEmpty
-                ? displayName
-                : 'user_${authUser.uid.substring(0, 5)}',
-            email: emailToUse ?? '',
-            phoneNumber: authUser.phoneNumber,
-            id: authUser.uid,
-          );
-
-          if (authUser.photoURL != null) {
-            loggedInPlayer.avatarImageLocation = authUser.photoURL;
-          }
-        }
-
-        await UserProvider().login(loggedInPlayer);
-      }
-      return null;
+      return await _processSocialCredential(
+        oauthCredential,
+        fallbackEmail: credential.email,
+        defaultDisplayName: defaultName,
+      );
     } on SignInWithAppleAuthorizationException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Apple Sign-In cancelled or failed: ${e.code} - ${e.message}');
@@ -300,47 +273,7 @@ class LoginScreenState extends State<LoginScreen> {
         final AccessToken accessToken = result.accessToken!;
         final credential = FacebookAuthProvider.credential(accessToken.tokenString);
 
-        final userCredential =
-            await UserProvider().auth.signInWithCredential(credential);
-
-        if (userCredential.user != null) {
-          final authUser = userCredential.user!;
-          var loggedInPlayer =
-              await Player.fetchPlayerForAuthUid(authUser.uid) ??
-                  await Player.claimPlayerForVerifiedAuthUser(
-                    uid: authUser.uid,
-                    email: authUser.email,
-                    emailVerified: authUser.emailVerified,
-                    phoneNumber: authUser.phoneNumber,
-                  );
-          if (loggedInPlayer == null) {
-            final existingCandidate = await Player.getPlayerByContactFromDB(
-              authUser.email,
-              authUser.phoneNumber,
-            );
-            if (existingCandidate != null) {
-              UserProvider().beginPendingClaim(existingCandidate);
-              return 'Verify an email or phone number to claim your player history.';
-            }
-
-            Utilities.debugPrintWithCallerInfo(
-                'Creating new player profile for social user: ${authUser.email}');
-            loggedInPlayer = await Player.createPlayer(
-              authUser.displayName ?? 'New User',
-              authUser.displayName ?? 'user_${authUser.uid.substring(0, 5)}',
-              email: authUser.email ?? '',
-              phoneNumber: authUser.phoneNumber,
-              id: authUser.uid,
-            );
-
-            if (authUser.photoURL != null) {
-              loggedInPlayer.avatarImageLocation = authUser.photoURL;
-            }
-          }
-
-          await UserProvider().login(loggedInPlayer);
-        }
-        return null;
+        return await _processSocialCredential(credential);
       } else if (result.status == LoginStatus.cancelled) {
         return 'Facebook Sign-In was cancelled.';
       } else {

@@ -21,11 +21,13 @@ class AppDrawer extends StatelessWidget {
     this.changeBodyCallback,
     this.onLogout,
     this.onRefreshRequested,
+    this.onTabSelected,
   });
 
   final ValueChanged<Widget>? changeBodyCallback;
   final VoidCallback? onLogout;
   final VoidCallback? onRefreshRequested;
+  final ValueChanged<int>? onTabSelected;
 
   void _showHome(BuildContext context) {
     Navigator.of(context).pop();
@@ -179,12 +181,16 @@ class AppDrawer extends StatelessWidget {
                 onTap: () {
                   final navigator = Navigator.of(context);
                   navigator.pop();
-                  navigator
-                      .push(
-                        MaterialPageRoute(
-                            builder: (context) => const PlayersScreen()),
-                      )
-                      .then((_) => onRefreshRequested?.call());
+                  if (user != null && onTabSelected != null) {
+                    onTabSelected?.call(1);
+                  } else {
+                    navigator
+                        .push(
+                          MaterialPageRoute(
+                              builder: (context) => const PlayersScreen()),
+                        )
+                        .then((_) => onRefreshRequested?.call());
+                  }
                 },
               ),
               const Divider(),
@@ -195,12 +201,16 @@ class AppDrawer extends StatelessWidget {
                 onTap: () {
                   final navigator = Navigator.of(context);
                   navigator.pop();
-                  navigator
-                      .push(
-                        MaterialPageRoute(
-                            builder: (context) => const PastGamesScreen()),
-                      )
-                      .then((_) => onRefreshRequested?.call());
+                  if (user != null && onTabSelected != null) {
+                    onTabSelected?.call(2);
+                  } else {
+                    navigator
+                        .push(
+                          MaterialPageRoute(
+                              builder: (context) => const PastGamesScreen()),
+                        )
+                        .then((_) => onRefreshRequested?.call());
+                  }
                 },
               ),
               if (topRecent.isNotEmpty)

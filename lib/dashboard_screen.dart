@@ -16,6 +16,8 @@ import 'package:mini_golf_tracker/player_avatar_widget.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
+  static void Function(int)? onTabSelect;
+
   @override
   DashBoardScreenState createState() => DashBoardScreenState();
 }
@@ -33,7 +35,16 @@ class DashBoardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    DashboardScreen.onTabSelect = _onBottomNavigationButtonTapped;
     _updateBody();
+  }
+
+  @override
+  void dispose() {
+    if (DashboardScreen.onTabSelect == _onBottomNavigationButtonTapped) {
+      DashboardScreen.onTabSelect = null;
+    }
+    super.dispose();
   }
 
   void _updateBody() {
