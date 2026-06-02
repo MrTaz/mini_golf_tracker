@@ -459,4 +459,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(UserProvider().loggedInUser, isNull);
   });
+
+  testWidgets('MainScaffold drawer onTabSelected callback works',
+      (tester) async {
+    final player = Player(
+      id: 'p123',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p123',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    await UserProvider().login(player);
+
+    await tester.pumpWidget(createMyApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await openHomePageDrawer(tester);
+
+    final friendsTile = find.byKey(const Key('drawer-friends'));
+    await tester.tap(friendsTile);
+    await tester.pumpAndSettle();
+
+    final bottomNavBar =
+        tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
+    expect(bottomNavBar.currentIndex, equals(1));
+  });
 }

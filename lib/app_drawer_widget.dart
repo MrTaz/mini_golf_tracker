@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
@@ -181,8 +182,21 @@ class AppDrawer extends StatelessWidget {
                 onTap: () {
                   final navigator = Navigator.of(context);
                   navigator.pop();
-                  if (user != null && onTabSelected != null) {
-                    onTabSelected?.call(1);
+                  if (user != null) {
+                    navigator.popUntil((route) => route.isFirst);
+                    if (onTabSelected != null) {
+                      onTabSelected?.call(1);
+                    }
+                    if (DashboardScreen.onTabSelect == null &&
+                        changeBodyCallback != null) {
+                      changeBodyCallback?.call(const DashboardScreen());
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        DashboardScreen.onTabSelect?.call(1);
+                      });
+                    } else if (onTabSelected == null &&
+                        DashboardScreen.onTabSelect != null) {
+                      DashboardScreen.onTabSelect?.call(1);
+                    }
                   } else {
                     navigator
                         .push(
@@ -201,8 +215,21 @@ class AppDrawer extends StatelessWidget {
                 onTap: () {
                   final navigator = Navigator.of(context);
                   navigator.pop();
-                  if (user != null && onTabSelected != null) {
-                    onTabSelected?.call(2);
+                  if (user != null) {
+                    navigator.popUntil((route) => route.isFirst);
+                    if (onTabSelected != null) {
+                      onTabSelected?.call(2);
+                    }
+                    if (DashboardScreen.onTabSelect == null &&
+                        changeBodyCallback != null) {
+                      changeBodyCallback?.call(const DashboardScreen());
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        DashboardScreen.onTabSelect?.call(2);
+                      });
+                    } else if (onTabSelected == null &&
+                        DashboardScreen.onTabSelect != null) {
+                      DashboardScreen.onTabSelect?.call(2);
+                    }
                   } else {
                     navigator
                         .push(

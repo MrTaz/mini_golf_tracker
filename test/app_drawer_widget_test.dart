@@ -12,6 +12,7 @@ import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
+import 'package:mini_golf_tracker/dashboard_screen.dart';
 import 'package:mini_golf_tracker/past_game_details_screen.dart';
 import 'package:mini_golf_tracker/past_games_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
@@ -349,5 +350,80 @@ void main() {
     await tester.tap(find.byKey(const Key('drawer-past-games')));
     await tester.pumpAndSettle();
     expect(selectedTab, equals(2));
+  });
+
+  testWidgets('logged in drawer changes body when DashboardScreen.onTabSelect is null but changeBodyCallback is provided',
+      (tester) async {
+    final player = Player(
+      id: 'p1',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p1',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    await UserProvider().login(player);
+
+    Widget? nextBody;
+    DashboardScreen.onTabSelect = null;
+
+    int? selectedIndexCalled;
+    await tester.pumpWidget(buildHarness(
+      onChangeBody: (widget) {
+        nextBody = widget;
+        DashboardScreen.onTabSelect = (idx) => selectedIndexCalled = idx;
+      },
+    ));
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-friends')));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(nextBody, isA<DashboardScreen>());
+    expect(selectedIndexCalled, equals(1));
+
+    nextBody = null;
+    selectedIndexCalled = null;
+    DashboardScreen.onTabSelect = null;
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-past-games')));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(nextBody, isA<DashboardScreen>());
+    expect(selectedIndexCalled, equals(2));
+  });
+
+  testWidgets('logged in drawer calls static DashboardScreen.onTabSelect when onTabSelected is null',
+      (tester) async {
+    final player = Player(
+      id: 'p1',
+      playerName: 'Jane Doe',
+      nickname: 'Janie',
+      ownerId: 'p1',
+      totalScore: 0,
+      email: 'jane@example.com',
+    );
+    await UserProvider().login(player);
+
+    int? selectedIndexCalled;
+    DashboardScreen.onTabSelect = (idx) => selectedIndexCalled = idx;
+
+    await tester.pumpWidget(buildHarness(
+      onTabSelected: null,
+    ));
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-friends')));
+    await tester.pumpAndSettle();
+    expect(selectedIndexCalled, equals(1));
+
+    selectedIndexCalled = null;
+    await openDrawer(tester);
+    await tester.tap(find.byKey(const Key('drawer-past-games')));
+    await tester.pumpAndSettle();
+    expect(selectedIndexCalled, equals(2));
   });
 }

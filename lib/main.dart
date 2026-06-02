@@ -75,7 +75,7 @@ class MainScaffold extends State<HomePage> with RouteAware {
       routeObserver.subscribe(this, route);
     }
     if (skipPrecacheForTesting) {
-      _precacheFuture = Future.value(<void>[]);
+      _precacheFuture ??= Future.value(<void>[]);
     } else {
       _precacheFuture ??= Future.wait([
         precacheImage(AppImages.backgroundMainScreens, context),
