@@ -137,17 +137,13 @@ class LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<String?> _processSocialCredential(
-    AuthCredential credential, {
-    String? fallbackEmail,
-    String? defaultDisplayName,
-  }) async {
+  Future<String?> _processSocialCredential(AuthCredential credential) async {
     final userCredential =
         await UserProvider().auth.signInWithCredential(credential);
 
     if (userCredential.user != null) {
       final authUser = userCredential.user!;
-      final emailToUse = authUser.email ?? fallbackEmail;
+      final emailToUse = authUser.email;
       var loggedInPlayer =
           await Player.fetchPlayerForAuthUid(authUser.uid) ??
               await Player.claimPlayerForVerifiedAuthUser(
@@ -168,13 +164,13 @@ class LoginScreenState extends State<LoginScreen> {
 
         Utilities.debugPrintWithCallerInfo(
             'Creating new player profile for social user: $emailToUse');
-        final String displayName = (defaultDisplayName != null && defaultDisplayName.isNotEmpty)
-            ? defaultDisplayName
-            : (authUser.displayName ?? 'New User');
+        final String displayName = (authUser.displayName != null && authUser.displayName!.isNotEmpty)
+            ? authUser.displayName!
+            : 'New User';
 
         loggedInPlayer = await Player.createPlayer(
           displayName,
-          displayName.isNotEmpty && displayName != 'New User'
+          displayName != 'New User'
               ? displayName
               : 'user_${authUser.uid.substring(0, 5)}',
           email: emailToUse ?? '',
@@ -242,15 +238,7 @@ class LoginScreenState extends State<LoginScreen> {
         accessToken: credential.authorizationCode,
       );
 
-      final String defaultName = [credential.givenName, credential.familyName]
-          .where((s) => s != null && s.isNotEmpty)
-          .join(' ');
-
-      return await _processSocialCredential(
-        oauthCredential,
-        fallbackEmail: credential.email,
-        defaultDisplayName: defaultName,
-      );
+      return await _processSocialCredential(oauthCredential);
     } on SignInWithAppleAuthorizationException catch (e) {
       Utilities.debugPrintWithCallerInfo(
           'Apple Sign-In cancelled or failed: ${e.code} - ${e.message}');

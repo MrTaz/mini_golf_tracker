@@ -562,6 +562,7 @@ void main() {
     userProvider.setAuthInstanceForTesting(GoogleHappyFirebaseAuth(
       uid: 'new-apple-uid',
       email: 'new-apple@example.com',
+      displayName: 'Apple User',
     ));
 
     final result = await state.handleAppleLogin();
