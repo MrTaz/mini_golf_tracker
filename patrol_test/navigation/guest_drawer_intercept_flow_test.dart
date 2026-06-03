@@ -1,7 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/app_drawer_widget.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
@@ -15,8 +16,6 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() async {
     UserProvider().resetForTesting();
     UserProvider().setAuthInstanceForTesting(MockFirebaseAuth());
@@ -38,34 +37,38 @@ void main() {
     });
   });
 
-  testWidgets('Guest drawer intercept displays prompt message on LoginScreen', (tester) async {
+  tearDown(() {
+    DatabaseConnection.setFirestoreInstanceForTesting(null);
+    UserProvider().resetForTesting();
+  });
+
+  patrolTest('Guest drawer intercept displays prompt message on LoginScreen', ($) async {
     // Pump a mock app shell with drawer
-    await tester.pumpWidget(MaterialApp(
+    await $.pumpWidgetAndSettle(MaterialApp(
       home: Scaffold(
         drawer: const AppDrawer(),
         body: const HomeScreen(),
       ),
     ));
-    await tester.pumpAndSettle();
 
-    // Open the drawer
-    final scaffoldState = tester.firstState<ScaffoldState>(find.byType(Scaffold));
+    // Open the drawer programmatically via ScaffoldState
+    final scaffoldState = $.tester.firstState<ScaffoldState>(find.byType(Scaffold));
     scaffoldState.openDrawer();
-    await tester.pumpAndSettle();
+    await $.pumpAndSettle();
 
     // Find the recent game in the drawer
-    final recentGameTile = find.byKey(const Key('drawer-recent-recent_game_123'));
+    final recentGameTile = $(find.byKey(const Key('drawer-recent-recent_game_123')));
     expect(recentGameTile, findsOneWidget);
 
     // Tap it to trigger the intercept
-    await tester.tap(recentGameTile);
-    await tester.pumpAndSettle();
+    await recentGameTile.tap();
+    await $.pumpAndSettle();
 
     // Verify it navigates to LoginScreen
-    expect(find.byType(LoginScreen), findsOneWidget);
+    expect($(LoginScreen), findsOneWidget);
 
     // Verify the specific context message banner is visible
-    expect(find.text("Login or register to view your past game details and save your history to the cloud."), findsOneWidget);
-    expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    expect($("Login or register to view your past game details and save your history to the cloud."), findsOneWidget);
+    expect($(Icons.info_outline), findsOneWidget);
   });
 }
