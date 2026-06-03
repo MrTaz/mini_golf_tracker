@@ -216,6 +216,8 @@ class MockFacebookAuthPlatform extends FacebookAuthPlatform with MockPlatformInt
         message: errorMessage ?? 'Facebook Sign-In failed.',
       );
     }
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
