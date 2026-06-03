@@ -53,7 +53,7 @@ void main() {
 
     expect(find.text("Need a break? You can safely pause your game here!"), findsOneWidget);
 
-    await tester.tapAt(const Offset(100, 100));
+    await tester.tap(find.text("Need a break? You can safely pause your game here!"));
     await tester.pumpAndSettle();
 
     expect(find.text("Need a break? You can safely pause your game here!"), findsNothing);
