@@ -1,7 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -13,8 +14,6 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     DatabaseConnection.setFirestoreInstanceForTesting(FakeFirebaseFirestore());
@@ -28,6 +27,12 @@ void main() {
         totalScore: 0,
       ),
     ];
+  });
+
+  tearDown(() {
+    DatabaseConnection.setFirestoreInstanceForTesting(null);
+    UserProvider().resetForTesting();
+    Player.players = [];
   });
 
   Game makeGame({String status = 'started'}) {
@@ -55,33 +60,34 @@ void main() {
     );
   }
 
-  testWidgets('active game plus button increments zero score to one',
-      (tester) async {
+  patrolTest('Active game score increments and past game details exposes drawer', ($) async {
+    // 1. Test: active game plus button increments zero score to one
     final game = makeGame();
-
-    await tester.pumpWidget(MaterialApp(
+    await $.pumpWidgetAndSettle(MaterialApp(
       home: GameInprogressScreen(currentGame: game),
     ));
-    await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.add).first);
-    await tester.pumpAndSettle();
+    await $(Icons.add).first.tap();
+    await $.pumpAndSettle();
 
     expect(game.players.single.scores, [1]);
-  });
 
-  testWidgets('past game details exposes shared drawer for guests',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
+    // Clear SharedPreferences before the second step to prevent the active game
+    // saved in step 1 from showing up as an active game in the drawer.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    // 2. Test: past game details exposes shared drawer for guests
+    await $.pumpWidgetAndSettle(MaterialApp(
       home: PastGameDetailsScreen(passedGame: makeGame(status: 'completed')),
     ));
-    await tester.pumpAndSettle();
 
-    tester.firstState<ScaffoldState>(find.byType(Scaffold)).openDrawer();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    final scaffoldState = $.tester.firstState<ScaffoldState>(find.byType(Scaffold));
+    scaffoldState.openDrawer();
+    await $.pump();
+    await $.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Guest Profile'), findsOneWidget);
-    expect(find.text('No current game'), findsOneWidget);
+    expect($('Guest Profile'), findsOneWidget);
+    expect($('No current game'), findsOneWidget);
   });
 }
