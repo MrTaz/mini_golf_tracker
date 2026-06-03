@@ -50,7 +50,7 @@ void main() {
       );
 
       // Verify we are on the login screen
-      expect($('Mini Golf Tracker - Please login'), findsOneWidget);
+      expect($('Putt Scorer - Please login'), findsOneWidget);
 
       // Tap the "Sign in with Google" button
       // FlutterLogin uses standard icons for social buttons

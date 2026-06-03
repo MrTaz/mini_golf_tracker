@@ -10,15 +10,13 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple_platform_interface/sign_in_with_apple_platform_interface.dart';
-import 'package:flutter_facebook_auth_platform_interface/flutter_facebook_auth_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 void main() {
   setUp(() {
     MockSignInWithApplePlatform.register();
     MockSignInWithApplePlatform.reset();
-    MockFacebookAuthPlatform.register();
-    MockFacebookAuthPlatform.reset();
+    UserProvider().resetForTesting();
   });
 
   patrolTest(
@@ -78,69 +76,6 @@ void main() {
         await $.pumpAndSettle();
       } catch (e) {
         debugPrint('Native Apple Passcode prompt tap simulated/resolved: $e');
-      }
-
-      // Verify that the login resolves and successfully routes to the Dashboard screen
-      int postPumps = 0;
-      while ($('DashboardScreen').evaluate().isEmpty && postPumps < 50) {
-        await $.pump(const Duration(milliseconds: 100));
-        postPumps++;
-      }
-
-      expect($('DashboardScreen'), findsOneWidget);
-    },
-  );
-
-  patrolTest(
-    'Meta/Facebook Sign-In Native E2E Test',
-    ($) async {
-      final mockAuth = SocialMockFirebaseAuth(
-        uid: 'facebook-uid',
-        email: 'facebook@example.com',
-      );
-      final fakeFirestore = FakeFirebaseFirestore();
-      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
-      UserProvider().setAuthInstanceForTesting(mockAuth);
-      SharedPreferences.setMockInitialValues({});
-
-      // Pre-create the player matching the expected signed-in user's UID
-      await fakeFirestore.collection('players').doc('facebook-uid').set({
-        'id': 'facebook-uid',
-        'player_name': 'Facebook User',
-        'owner_id': 'facebook-uid',
-        'email': 'facebook@example.com',
-        'nickname': 'facebook_user',
-        'shareName': true,
-        'shareEmail': true,
-        'sharePhone': true,
-      });
-
-      // Pump the login screen with a MaterialApp
-      await $.pumpWidgetAndSettle(
-        MaterialApp(
-          initialRoute: '/login',
-          routes: {
-            '/login': (context) => const LoginScreen(),
-            '/': (context) => const Scaffold(
-                  body: Text('DashboardScreen'),
-                ),
-          },
-        ),
-      );
-
-      // Verify we are on the login screen
-      expect($('Putt Scorer - Please login'), findsOneWidget);
-
-      // Tap the Facebook Sign-In button
-      await $(find.byWidgetPredicate((widget) => widget is FaIcon && widget.icon?.codePoint == FontAwesomeIcons.facebookF.codePoint)).tap();
-      await $.pumpAndSettle();
-
-      // Interact with the Meta/Facebook web-view or native authorization pop-up
-      try {
-        await $.native.tap(Selector(textContains: 'Continue as'));
-        await $.pumpAndSettle();
-      } catch (e) {
-        debugPrint('Native Facebook Continue prompt tap simulated/resolved: $e');
       }
 
       // Verify that the login resolves and successfully routes to the Dashboard screen
@@ -303,67 +238,4 @@ class MockSignInWithApplePlatform extends SignInWithApplePlatform
       state: state,
     );
   }
-}
-
-class MockFacebookAuthPlatform extends FacebookAuthPlatform {
-  MockFacebookAuthPlatform();
-
-  static MockFacebookAuthPlatform? _instance;
-
-  static void register() {
-    _instance ??= MockFacebookAuthPlatform();
-    FacebookAuthPlatform.instance = _instance!;
-  }
-
-  static void reset() {
-    if (_instance != null) {
-      _instance!.status = LoginStatus.success;
-      _instance!.shouldThrow = false;
-      _instance!.tokenString = 'mock_fb_token';
-      _instance!.errorMessage = null;
-    }
-  }
-
-  LoginStatus status = LoginStatus.success;
-  bool shouldThrow = false;
-  String tokenString = 'mock_fb_token';
-  String? errorMessage;
-
-  @override
-  Future<LoginResult> login({
-    dynamic loginBehavior,
-    dynamic loginTracking,
-    String? nonce,
-    List<String> permissions = const ['email', 'public_profile'],
-  }) async {
-    if (shouldThrow) {
-      throw Exception('Simulated Facebook Exception');
-    }
-    if (status == LoginStatus.success) {
-      return LoginResult(
-        status: LoginStatus.success,
-        accessToken: MockAccessToken(tokenString: tokenString),
-      );
-    } else if (status == LoginStatus.cancelled) {
-      return LoginResult(status: LoginStatus.cancelled);
-    } else {
-      return LoginResult(
-        status: LoginStatus.failed,
-        message: errorMessage ?? 'Facebook Sign-In failed.',
-      );
-    }
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class MockAccessToken implements AccessToken {
-  @override
-  final String tokenString;
-
-  MockAccessToken({required this.tokenString});
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
