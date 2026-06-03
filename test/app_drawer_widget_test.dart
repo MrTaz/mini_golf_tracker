@@ -22,6 +22,9 @@ import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/scheduled_games_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'test_helper.dart';
+
 
 void main() {
   setUp(() {
@@ -30,6 +33,7 @@ void main() {
     DatabaseConnection.setFirestoreInstanceForTesting(FakeFirebaseFirestore());
     SharedPreferences.setMockInitialValues({});
     Player.players = [];
+    MainScaffold.skipPrecacheForTesting = true;
   });
 
   Game makeGame(
@@ -61,8 +65,8 @@ void main() {
       scheduledTime: scheduledTime ?? DateTime(2026),
       completedTime: completedTime ??
           (useDefaultCompletedTime && status == 'completed'
-              ? DateTime(2026, 1, 2)
-              : null),
+               ? DateTime(2026, 1, 2)
+               : null),
       status: status,
     );
   }
@@ -73,18 +77,22 @@ void main() {
     VoidCallback? onRefresh,
     ValueChanged<int>? onTabSelected,
   }) {
-    return MaterialApp(
-      home: Scaffold(
-        drawer: AppDrawer(
-          changeBodyCallback: onChangeBody,
-          onLogout: onLogout,
-          onRefreshRequested: onRefresh,
-          onTabSelected: onTabSelected,
+    return DefaultAssetBundle(
+      bundle: FakeAssetBundle(),
+      child: MaterialApp(
+        home: Scaffold(
+          drawer: AppDrawer(
+            changeBodyCallback: onChangeBody,
+            onLogout: onLogout,
+            onRefreshRequested: onRefresh,
+            onTabSelected: onTabSelected,
+          ),
+          body: const Text('Body'),
         ),
-        body: const Text('Body'),
       ),
     );
   }
+
 
   Future<void> openDrawer(WidgetTester tester) async {
     final scaffoldState =

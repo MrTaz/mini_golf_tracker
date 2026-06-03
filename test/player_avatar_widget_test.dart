@@ -3,15 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/gravatar_image_view.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_avatar_widget.dart';
+import 'test_helper.dart';
 
 void main() {
   Widget buildAvatar(Player player) {
-    return MaterialApp(
-      home: Scaffold(
-        body: PlayerAvatarWidget(player: player, radius: 24),
+    return DefaultAssetBundle(
+      bundle: FakeAssetBundle(),
+      child: MaterialApp(
+        home: Scaffold(
+          body: PlayerAvatarWidget(player: player, radius: 24),
+        ),
       ),
     );
   }
+
 
   testWidgets('uses asset fallback for players without email', (tester) async {
     final player = Player(

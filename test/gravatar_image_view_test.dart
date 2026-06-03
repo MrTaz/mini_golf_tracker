@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/gravatar_image_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'test_helper.dart';
 
 void main() {
+  setUp(() {
+    MainScaffold.skipPrecacheForTesting = true;
+  });
   testWidgets('GravatarImageView renders fading image with correct url', (WidgetTester tester) async {
     // We mock CachedNetworkImage by not actually loading the network since we can just check if widget is there
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: GravatarImageView(email: 'test@example.com', width: 100, height: 100),
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: 'test@example.com', width: 100, height: 100),
+        ),
       ),
     ));
 
@@ -35,7 +43,10 @@ void main() {
   testWidgets('GravatarImageView renders with empty email', (WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: GravatarImageView(email: ''),
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: ''),
+        ),
       ),
     ));
 
@@ -49,7 +60,10 @@ void main() {
   testWidgets('GravatarImageView uses cache on second call', (WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: GravatarImageView(email: 'test_cache@example.com'),
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: 'test_cache@example.com'),
+        ),
       ),
     ));
     await tester.pumpAndSettle();
@@ -57,7 +71,10 @@ void main() {
     // Pump a second one with same email
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: GravatarImageView(email: 'test_cache@example.com'),
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: 'test_cache@example.com'),
+        ),
       ),
     ));
     await tester.pumpAndSettle();

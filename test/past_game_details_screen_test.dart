@@ -10,6 +10,8 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'test_helper.dart';
 
 void main() {
   setUp(() {
@@ -25,6 +27,7 @@ void main() {
         totalScore: 0,
       )
     ];
+    MainScaffold.skipPrecacheForTesting = true;
   });
 
   Game makePastGame() {
@@ -55,7 +58,10 @@ void main() {
   testWidgets('past game details exposes the shared app drawer',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: PastGameDetailsScreen(passedGame: makePastGame())),
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: MaterialApp(home: PastGameDetailsScreen(passedGame: makePastGame())),
+      ),
     );
     await tester.pumpAndSettle();
 

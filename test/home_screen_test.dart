@@ -6,11 +6,14 @@ import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'test_helper.dart';
 
 void main() {
   setUp(() {
     UserProvider().setAuthInstanceForTesting(MockFirebaseAuth());
     UserProvider().loggedInUser = null;
+    MainScaffold.skipPrecacheForTesting = true;
   });
 
   tearDown(() {
@@ -18,7 +21,12 @@ void main() {
   });
 
   testWidgets('HomeScreen renders logged out view', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text("Welcome, Guest"), findsOneWidget);
@@ -44,7 +52,12 @@ void main() {
       totalScore: 0,
     );
     // trigger notifyListeners somehow, but since we recreate the widget it will pick up the new state
-    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text("Welcome, Tester"), findsOneWidget);
@@ -69,7 +82,12 @@ void main() {
       totalScore: 0,
       email: 'tester@example.com',
     );
-    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: FakeAssetBundle(),
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text("Welcome, Tester"), findsOneWidget);

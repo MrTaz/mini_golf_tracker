@@ -12,6 +12,8 @@ import 'package:mini_golf_tracker/gravatar_image_view.dart';
 import 'package:mini_golf_tracker/player_avatar_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mini_golf_tracker/main.dart';
+import 'test_helper.dart';
 
 class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
@@ -87,6 +89,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     GeolocatorPlatform.instance = SimpleMockGeolocator();
     UserProvider().resetForTesting();
+    MainScaffold.skipPrecacheForTesting = true;
   });
 
   tearDown(() {
@@ -94,10 +97,14 @@ void main() {
   });
 
   Widget createDashboardScreen() {
-    return const MaterialApp(
-      home: DashboardScreen(),
+    return DefaultAssetBundle(
+      bundle: FakeAssetBundle(),
+      child: const MaterialApp(
+        home: DashboardScreen(),
+      ),
     );
   }
+
 
   testWidgets('renders BottomNavigationBar for logged-in users', (tester) async {
     final player = Player(

@@ -19,9 +19,17 @@ import 'package:mini_golf_tracker/player_profile_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'test_helper.dart';
 
 void main() {
   late UrlLauncherPlatform originalUrlLauncherPlatform;
+
+  Widget buildTestApp(Widget child) {
+    return DefaultAssetBundle(
+      bundle: FakeAssetBundle(),
+      child: MaterialApp(home: child),
+    );
+  }
 
   setUp(() {
     originalUrlLauncherPlatform = UrlLauncherPlatform.instance;
@@ -53,7 +61,7 @@ void main() {
 
   testWidgets('Coverage for PlayersScreen lines', (tester) async {
     await tester
-        .pumpWidget(MaterialApp(home: PlayersScreen(creatingGame: true)));
+        .pumpWidget(buildTestApp(PlayersScreen(creatingGame: true)));
     await tester.pumpAndSettle();
 
     // Tap FAB to open PlayerCreateScreen
@@ -87,7 +95,7 @@ void main() {
         status: 'completed');
     await Game.saveLocalGame(game);
 
-    await tester.pumpWidget(MaterialApp(home: PastGamesScreen()));
+    await tester.pumpWidget(buildTestApp(PastGamesScreen()));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Past Game'));
@@ -109,7 +117,7 @@ void main() {
         startTime: DateTime(2026, 1, 1),
         status: 'completed');
     await tester
-        .pumpWidget(MaterialApp(home: PastGameDetailsScreen(passedGame: game)));
+        .pumpWidget(buildTestApp(PastGameDetailsScreen(passedGame: game)));
     await tester.pumpAndSettle();
 
     // Tap to select, then unselect
@@ -164,8 +172,7 @@ void main() {
         nickname: 'Ava',
         ownerId: 'guest',
         totalScore: 0);
-    await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
             body: PlayerListItem(
                 player: player,
                 creatingGame: false,
@@ -202,8 +209,7 @@ void main() {
         completedTime: DateTime(2026, 1, 1),
         status: 'completed');
 
-    await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
             body: PastGameListItem(
                 pastGame: pastGame, onPastGameCardTap: null))));
 
@@ -254,8 +260,7 @@ void main() {
           totalScore: 0),
     ];
 
-    await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
             body: ListView(children: [
       PlayersCard(onTap: (Player p) {}), // Card without sortedPlayerIds
       PlayersCard(sortedPlayerIds: ['p2', 'p1']), // Card with sortedPlayerIds
@@ -296,8 +301,7 @@ void main() {
       locationName: 'Awesome Location',
       address: '123 Mini Golf Lane',
     );
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
         body: CourseListItem(
           course: course,
           onDelete: () {},
@@ -350,8 +354,7 @@ void main() {
       address: '404 Nowhere Road',
     );
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
         body: CourseListItem(
           course: course,
           onDelete: () {},
@@ -376,8 +379,7 @@ void main() {
       parStrokes: {for (var i = 1; i <= 9; i++) i: 3},
     );
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
+    await tester.pumpWidget(buildTestApp(Scaffold(
         body: CourseListItem(
           course: course,
           onModify: () {},
