@@ -1,7 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -13,8 +14,6 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   late Player creator;
   late Game unstartedGame;
 
@@ -86,43 +85,42 @@ void main() {
     Player.players = [];
   });
 
-  testWidgets(
+  patrolTest(
     'Creator participation warning: Cancel dismisses dialog, Start Anyway navigates to GameInprogressScreen',
-    (tester) async {
-      await tester.pumpWidget(
+    ($) async {
+      await $.pumpWidgetAndSettle(
         MaterialApp(
           home: GameStartScreen(unstartedGame: unstartedGame),
         ),
       );
-      await tester.pumpAndSettle();
 
       // Step 1: Tap "Start the game!" FAB.
-      await tester.tap(find.widgetWithText(FloatingActionButton, 'Start the game!'));
-      await tester.pumpAndSettle();
+      await $(find.widgetWithText(FloatingActionButton, 'Start the game!')).tap();
+      await $.pump(const Duration(milliseconds: 350));
 
       // Step 2: Verify the warning dialog appears.
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('You are not playing!'), findsOneWidget);
+      expect($(AlertDialog), findsOneWidget);
+      expect($('You are not playing!'), findsOneWidget);
 
       // Step 3: Tap "Cancel" and verify dialog dismisses.
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
-      await tester.pumpAndSettle();
+      await $(find.widgetWithText(TextButton, 'Cancel')).tap();
+      await $.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.byType(GameStartScreen), findsOneWidget);
+      expect($(AlertDialog), findsNothing);
+      expect($(GameStartScreen), findsOneWidget);
 
       // Step 4: Tap "Start the game!" again to re-trigger the dialog.
-      await tester.tap(find.widgetWithText(FloatingActionButton, 'Start the game!'));
-      await tester.pumpAndSettle();
+      await $(find.widgetWithText(FloatingActionButton, 'Start the game!')).tap();
+      await $.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('You are not playing!'), findsOneWidget);
+      expect($(AlertDialog), findsOneWidget);
+      expect($('You are not playing!'), findsOneWidget);
 
       // Step 5: Tap "Start Anyway" and verify navigation to GameInprogressScreen.
-      await tester.tap(find.byKey(const Key('btnStartAnyway')));
-      await tester.pumpAndSettle();
+      await $(find.byKey(const Key('btnStartAnyway'))).tap();
+      await $.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(GameInprogressScreen), findsOneWidget);
+      expect($(GameInprogressScreen), findsOneWidget);
     },
   );
 }
