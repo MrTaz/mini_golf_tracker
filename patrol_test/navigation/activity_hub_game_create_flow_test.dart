@@ -1,7 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -12,14 +13,14 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> pumpRoute(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 350));
-  await tester.pumpAndSettle();
+Future<void> pumpRoute(dynamic $) async {
+  await $.pump();
+  await $.pump(const Duration(milliseconds: 350));
+  await $.pumpAndSettle();
 }
 
 Future<void> pumpUntilFound(
-  WidgetTester tester,
+  dynamic $,
   Finder finder, {
   int attempts = 30,
 }) async {
@@ -27,13 +28,11 @@ Future<void> pumpUntilFound(
     if (finder.evaluate().isNotEmpty) {
       return;
     }
-    await tester.pump(const Duration(milliseconds: 100));
+    await $.pump(const Duration(milliseconds: 100));
   }
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -48,21 +47,21 @@ void main() {
     UserProvider().resetForTesting();
   });
 
-  testWidgets('created active game is resumable from the Activity Hub drawer',
-      (tester) async {
-    await tester.pumpWidget(
+  patrolTest('created active game is resumable from the Activity Hub drawer',
+      ($) async {
+    await $.pumpWidgetAndSettle(
       const MaterialApp(
         home: HomePage(skipAutoResume: true),
       ),
     );
-    await pumpRoute(tester);
+    await pumpRoute($);
 
-    expect(find.text('Create a New Game'), findsOneWidget);
-    await tester.tap(find.text('Create a New Game'));
-    await pumpRoute(tester);
+    expect($('Create a New Game'), findsOneWidget);
+    await $('Create a New Game').tap();
+    await pumpRoute($);
 
     final gameCreateState =
-        tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
+        $.tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
     gameCreateState.setSelectedCourseForTesting(Course(
       id: 'integration_course',
       name: 'Integration Course',
@@ -85,32 +84,32 @@ void main() {
         totalScore: 0,
       ),
     ]);
-    await tester.pump();
+    await $.pump();
 
-    await tester.enterText(find.byType(TextFormField), 'Integration Game');
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
-    await pumpRoute(tester);
+    await $(TextFormField).enterText('Integration Game');
+    await $(find.widgetWithText(ElevatedButton, 'Create Game')).tap();
+    await pumpRoute($);
 
-    expect(find.byType(GameInprogressScreen), findsOneWidget);
-    final createdGame = tester
+    expect($(GameInprogressScreen), findsOneWidget);
+    final createdGame = $.tester
         .widget<GameInprogressScreen>(find.byType(GameInprogressScreen))
         .currentGame;
 
-    Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
-    await pumpRoute(tester);
+    Navigator.of($.tester.element(find.byType(GameInprogressScreen))).pop();
+    await pumpRoute($);
     await Game.saveLocalGame(createdGame);
     final savedGames =
         await Game.getLocallySavedGames(gameStatusTypes: ['started']);
     expect(savedGames, isNotEmpty);
 
-    await tester.pumpWidget(
+    await $.pumpWidgetAndSettle(
       MaterialApp(
         home: GameInprogressScreen(currentGame: savedGames.first!),
       ),
     );
-    await pumpUntilFound(tester, find.byType(GameInprogressScreen));
+    await pumpUntilFound($, $(GameInprogressScreen));
 
-    expect(find.byType(GameInprogressScreen), findsOneWidget);
-    expect(find.textContaining('Integration Course'), findsOneWidget);
+    expect($(GameInprogressScreen), findsOneWidget);
+    expect($(find.textContaining('Integration Course')), findsOneWidget);
   });
 }
