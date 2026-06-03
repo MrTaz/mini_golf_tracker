@@ -1,6 +1,7 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game.dart';
@@ -9,8 +10,6 @@ import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   late FakeFirebaseFirestore fakeFirestore;
 
   setUp(() {
@@ -23,8 +22,7 @@ void main() {
     DatabaseConnection.setFirestoreInstanceForTesting(null);
   });
 
-  test('guest-created cloud game is visible by registered participant id',
-      () async {
+  patrolTest('guest-created cloud game is visible by registered participant id', ($) async {
     final registeredPlayer = PlayerGameInfo(
       playerId: 'registered-player-1',
       gameId: 'guest-cloud-game',
@@ -54,8 +52,10 @@ void main() {
       totalScore: 0,
     );
 
+    // Save the game to the database
     await Game.saveGameToDatabase(game, guestCreator);
 
+    // Query Firestore to verify participant_ids contains the registered player
     final participantGames = await fakeFirestore
         .collection('games')
         .where('participant_ids', arrayContains: 'registered-player-1')
@@ -63,8 +63,8 @@ void main() {
     expect(participantGames.docs, hasLength(1));
     expect(participantGames.docs.single.id, 'guest-cloud-game');
 
-    final fetchedGames =
-        await Game.fetchGamesForCurrentUser('registered-player-1');
+    // Fetch the games using UserProvider context / current user ID
+    final fetchedGames = await Game.fetchGamesForCurrentUser('registered-player-1');
     expect(fetchedGames, hasLength(1));
     expect(fetchedGames.single.name, 'Guest Cloud Game');
   });
