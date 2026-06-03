@@ -1,6 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/main.dart' as app;
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
@@ -8,16 +10,13 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Pause reminder coach mark appears on app resume and is dismissible', (WidgetTester tester) async {
+  patrolTest('Pause reminder coach mark appears on app resume and is dismissible', ($) async {
     app.MainScaffold.skipPrecacheForTesting = true;
 
     final testGame = Game(
@@ -41,21 +40,22 @@ void main() {
       'guest_players': jsonEncode(Player.players.map((p) => p.toJson()).toList()),
     });
 
-    await tester.pumpWidget(const app.MyApp());
-    await tester.pumpAndSettle();
+    await $.pumpWidgetAndSettle(const app.MyApp());
 
-    expect(find.byType(GameInprogressScreen), findsOneWidget);
+    expect($(GameInprogressScreen), findsOneWidget);
 
-    expect(find.text("Need a break? You can safely pause your game here!"), findsNothing);
+    expect($("Need a break? You can safely pause your game here!"), findsNothing);
 
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pumpAndSettle();
+    // Simulate app resume
+    $.tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await $.pumpAndSettle();
 
-    expect(find.text("Need a break? You can safely pause your game here!"), findsOneWidget);
+    expect($("Need a break? You can safely pause your game here!"), findsOneWidget);
 
-    await tester.tap(find.text("Need a break? You can safely pause your game here!"));
-    await tester.pumpAndSettle();
+    // Tap on the coach mark to dismiss it
+    await $("Need a break? You can safely pause your game here!").tap();
+    await $.pumpAndSettle();
 
-    expect(find.text("Need a break? You can safely pause your game here!"), findsNothing);
+    expect($("Need a break? You can safely pause your game here!"), findsNothing);
   });
 }
