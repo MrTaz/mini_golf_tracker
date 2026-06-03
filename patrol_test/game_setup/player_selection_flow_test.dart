@@ -1,7 +1,8 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
@@ -9,14 +10,7 @@ import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> pumpRoute(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 350));
-}
-
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     DatabaseConnection.setFirestoreInstanceForTesting(FakeFirebaseFirestore());
@@ -45,53 +39,51 @@ void main() {
     Player.players = [];
   });
 
-  testWidgets('Player selection flow: select and clear players',
-      (tester) async {
-    // We use a Navigator to allow pushing/popping routes
-    await tester.pumpWidget(
+  patrolTest('Player selection flow: select and clear players', ($) async {
+    await $.pumpWidgetAndSettle(
       const MaterialApp(
         home: GameCreateScreen(),
       ),
     );
-    await pumpRoute(tester);
+    await $.pump(const Duration(milliseconds: 350));
 
     // Initial state: 0 players
-    expect(find.text('0 players selected'), findsOneWidget);
+    expect($('0 players selected'), findsOneWidget);
 
     // Open Player Selection screen
-    await tester.tap(find.text('Players'));
-    await pumpRoute(tester);
+    await $('Players').tap();
+    await $.pump(const Duration(milliseconds: 350));
 
-    expect(find.byType(PlayersScreen), findsOneWidget);
+    expect($(PlayersScreen), findsOneWidget);
 
     // Select Ava by tapping the Switch
-    await tester.tap(find.byType(Switch).first);
-    await tester.pumpAndSettle();
+    await $(Switch).first.tap();
+    await $.pumpAndSettle();
 
     // Confirm selection (Add selected players to game.)
-    await tester.tap(find.text('Add selected players to game.'));
-    await pumpRoute(tester);
+    await $('Add selected players to game.').tap();
+    await $.pump(const Duration(milliseconds: 350));
 
     // Should be back on Create Game
-    expect(find.byType(GameCreateScreen), findsOneWidget);
-    expect(find.text('1 player selected'), findsOneWidget);
+    expect($(GameCreateScreen), findsOneWidget);
+    expect($('1 player selected'), findsOneWidget);
 
     // Open Player Selection screen again
-    await tester.tap(find.text('Players'));
-    await pumpRoute(tester);
+    await $('Players').tap();
+    await $.pump(const Duration(milliseconds: 350));
 
-    expect(find.byType(PlayersScreen), findsOneWidget);
+    expect($(PlayersScreen), findsOneWidget);
 
     // Clear selections using AppBar action "Clear All"
-    await tester.tap(find.text('Clear All'));
-    await tester.pumpAndSettle();
+    await $('Clear All').tap();
+    await $.pumpAndSettle();
 
     // Confirm selection (Add selected players to game.)
-    await tester.tap(find.text('Add selected players to game.'));
-    await pumpRoute(tester);
+    await $('Add selected players to game.').tap();
+    await $.pump(const Duration(milliseconds: 350));
 
     // Verifies the Create Game screen correctly updates to show 0 players selected.
-    expect(find.byType(GameCreateScreen), findsOneWidget);
-    expect(find.text('0 players selected'), findsOneWidget);
+    expect($(GameCreateScreen), findsOneWidget);
+    expect($('0 players selected'), findsOneWidget);
   });
 }
