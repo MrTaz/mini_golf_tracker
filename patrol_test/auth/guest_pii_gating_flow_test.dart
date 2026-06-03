@@ -1,8 +1,9 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/login_screen.dart';
 import 'package:mini_golf_tracker/player.dart';
@@ -11,8 +12,6 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     DatabaseConnection.setFirestoreInstanceForTesting(FakeFirebaseFirestore());
@@ -36,34 +35,29 @@ void main() {
     Player.players = [];
   });
 
-  testWidgets('guest scorekeeper PII banner routes to login', (tester) async {
-    await tester.pumpWidget(
+  patrolTest('guest scorekeeper PII banner routes to login', ($) async {
+    await $.pumpWidgetAndSettle(
       const MaterialApp(home: PlayersScreen()),
     );
-    await tester.pumpAndSettle();
 
-    expect(find.text('Guest Scorekeeper'), findsOneWidget);
+    expect($('Guest Scorekeeper'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.edit));
-    await tester.pumpAndSettle();
+    await $(Icons.edit).tap();
+    await $.pumpAndSettle();
 
-    expect(find.widgetWithText(TextFormField, 'Nickname'), findsOneWidget);
+    expect($(find.widgetWithText(TextFormField, 'Nickname')), findsOneWidget);
     expect(
-      find.text(
-        'Log in or sign up to set your real name, email, and phone number!',
-      ),
+      $('Log in or sign up to set your real name, email, and phone number!'),
       findsOneWidget,
     );
 
-    await tester.tap(find.byIcon(Icons.lock_outline));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(seconds: 1));
+    await $(Icons.lock_outline).tap();
+    await $.pumpAndSettle();
+    await $.pump(const Duration(seconds: 1));
 
-    expect(find.byType(LoginScreen), findsOneWidget);
+    expect($(LoginScreen), findsOneWidget);
     expect(
-      find.text(
-        'Log in or sign up to set your real name, email, and phone number!',
-      ),
+      $('Log in or sign up to set your real name, email, and phone number!'),
       findsOneWidget,
     );
   });
