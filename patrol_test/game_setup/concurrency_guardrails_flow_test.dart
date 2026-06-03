@@ -1,8 +1,8 @@
-// ignore_for_file: avoid_print, use_build_context_synchronously
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
@@ -16,8 +16,6 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() async {
     final fakeFirestore = FakeFirebaseFirestore();
     final mockAuth = MockFirebaseAuth();
@@ -26,7 +24,7 @@ void main() {
     UserProvider().setAuthInstanceForTesting(mockAuth);
   });
 
-  testWidgets('Concurrency Guardrails: active game warning dialog interrupts flow', (tester) async {
+  patrolTest('Concurrency Guardrails: active game warning dialog interrupts flow', ($) async {
     // Inject an active game
     final activeGame = Game(
       id: 'active_game_1',
@@ -50,16 +48,15 @@ void main() {
     SharedPreferences.setMockInitialValues({'active_game_1': jsonEncode(activeGame.toJson())});
 
     // Pump the GameCreateScreen directly under a MaterialApp to strictly simulate E2E UI actions.
-    await tester.pumpWidget(
+    await $.pumpWidgetAndSettle(
       const MaterialApp(
         home: GameCreateScreen(),
       ),
     );
-    await tester.pumpAndSettle();
 
     // Set course and players for testing in GameCreateScreenState
     final gameCreateState =
-        tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
+        $.tester.state<GameCreateScreenState>(find.byType(GameCreateScreen));
     gameCreateState.setSelectedCourseForTesting(Course(
       id: 'course_1',
       name: 'Test Course',
@@ -82,44 +79,44 @@ void main() {
         totalScore: 0,
       ),
     ]);
-    await tester.pump();
+    await $.pump();
 
     // Enter game name strictly via UI TextFormField
-    await tester.enterText(find.byType(TextFormField).first, 'New Game Attempt');
-    await tester.pump();
+    await $(TextFormField).at(0).enterText('New Game Attempt');
+    await $.pump();
     
     // Tap the 'Create Game' button to trigger the game startup flow
     final createBtn = find.widgetWithText(ElevatedButton, 'Create Game');
     // Ensure button is visible
-    await tester.ensureVisible(createBtn);
-    await tester.tap(createBtn);
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+    await $.tester.ensureVisible(createBtn);
+    await $(createBtn).tap();
+    await $.pump(const Duration(milliseconds: 500));
+    await $.pumpAndSettle();
 
     // The "You already have a game in progress" warning dialog should appear
-    expect(find.text('Warning'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    expect($('Warning'), findsOneWidget);
+    expect($('Cancel'), findsOneWidget);
+    expect($('Continue'), findsOneWidget);
 
     // Cancel flow via dialog UI Cancel button tap
-    await tester.tap(find.text('Cancel'));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+    await $('Cancel').tap();
+    await $.pump(const Duration(milliseconds: 500));
+    await $.pumpAndSettle();
 
     // Should still be on Create Game Screen and dialog dismissed
-    expect(find.text('New Game Attempt'), findsOneWidget);
-    expect(find.byType(GameCreateScreen), findsOneWidget);
+    expect($('New Game Attempt'), findsOneWidget);
+    expect($(GameCreateScreen), findsOneWidget);
 
     // Try again and continue
-    await tester.tap(createBtn);
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+    await $(createBtn).tap();
+    await $.pump(const Duration(milliseconds: 500));
+    await $.pumpAndSettle();
     
-    await tester.tap(find.text('Continue'));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+    await $('Continue').tap();
+    await $.pump(const Duration(milliseconds: 500));
+    await $.pumpAndSettle();
 
     // Now it should successfully proceed to GameInprogressScreen via route transition
-    expect(find.byType(GameInprogressScreen), findsOneWidget);
+    expect($(GameInprogressScreen), findsOneWidget);
   });
 }
