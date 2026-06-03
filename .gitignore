@@ -62,4 +62,5 @@ skills-lock.json
 # Node modules for cloud functions
 /functions/node_modules
 patrol_test/test_bundle.dart
+integration_test/patrol_test_bundle.dart
 *.p8
