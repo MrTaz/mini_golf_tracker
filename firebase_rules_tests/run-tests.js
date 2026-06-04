@@ -176,7 +176,7 @@ const firebaseCmd = [
 console.log(`[run-tests] Running: ${firebaseCmd}\n`);
 
 try {
-  execSync(firebaseCmd, { stdio: 'inherit', env });
+  execSync(firebaseCmd, { stdio: 'inherit', env, windowsHide: true });
   process.exit(0);
 } catch (err) {
   process.exit(typeof err.status === 'number' ? err.status : 1);
