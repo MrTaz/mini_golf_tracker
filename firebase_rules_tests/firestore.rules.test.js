@@ -520,4 +520,160 @@ describe('Firestore Security Rules', () => {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // courses collection — security rules tests
+  // -------------------------------------------------------------------------
+
+  describe('courses collection', () => {
+    const COURSE_ID = 'test-course-1';
+
+    /** Minimal valid course document that satisfies firestore.rules rules. */
+    function validCourse() {
+      return {
+        name: 'Sunset Mini Golf',
+        number_of_holes: 18,
+        par_strokes: {
+          '1': 3,
+          '2': 2,
+          '3': 4,
+        },
+      };
+    }
+
+    beforeEach(async () => {
+      // Seed a course document via admin context
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'courses', COURSE_ID), validCourse());
+      });
+    });
+
+    describe('reads', () => {
+      it('allows an UNAUTHENTICATED user to read a course document (allow read: if true)', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', COURSE_ID);
+        await assertSucceeds(getDoc(courseRef));
+      });
+
+      it('allows an AUTHENTICATED user to read a course document', async () => {
+        const authedCtx = testEnv.authenticatedContext('uid-alice');
+        const courseRef = doc(authedCtx.firestore(), 'courses', COURSE_ID);
+        await assertSucceeds(getDoc(courseRef));
+      });
+
+      it('allows an UNAUTHENTICATED user to list the courses collection', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const coursesRef = collection(unauthedCtx.firestore(), 'courses');
+        await assertSucceeds(getDocs(coursesRef));
+      });
+    });
+
+    describe('creates', () => {
+      it('allows any guest user to create a course with a valid schema', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertSucceeds(setDoc(courseRef, validCourse()));
+      });
+
+      it('DENIES creation if name is missing', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        const { name, ...invalidPayload } = validCourse();
+        await assertFails(setDoc(courseRef, invalidPayload));
+      });
+
+      it('DENIES creation if name is not a string', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), name: 123 }));
+      });
+
+      it('DENIES creation if name is empty', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), name: '' }));
+      });
+
+      it('DENIES creation if name exceeds 100 characters', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), name: 'a'.repeat(101) }));
+      });
+
+      it('DENIES creation if number_of_holes is missing', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        const { number_of_holes, ...invalidPayload } = validCourse();
+        await assertFails(setDoc(courseRef, invalidPayload));
+      });
+
+      it('DENIES creation if number_of_holes is not an integer', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), number_of_holes: 18.5 }));
+        await assertFails(setDoc(courseRef, { ...validCourse(), number_of_holes: '18' }));
+      });
+
+      it('DENIES creation if number_of_holes is less than 1', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), number_of_holes: 0 }));
+      });
+
+      it('DENIES creation if number_of_holes is greater than 36', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), number_of_holes: 37 }));
+      });
+
+      it('DENIES creation if par_strokes is missing', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        const { par_strokes, ...invalidPayload } = validCourse();
+        await assertFails(setDoc(courseRef, invalidPayload));
+      });
+
+      it('DENIES creation if par_strokes is not a map', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', 'new-course');
+        await assertFails(setDoc(courseRef, { ...validCourse(), par_strokes: [3, 4, 2] }));
+      });
+    });
+
+    describe('updates', () => {
+      it('allows any guest user to update a course with a valid schema', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', COURSE_ID);
+        await assertSucceeds(
+          updateDoc(courseRef, {
+            name: 'Updated Sunset Mini Golf',
+            number_of_holes: 9,
+            par_strokes: { '1': 3 },
+          })
+        );
+      });
+
+      it('DENIES update if schema rules are violated', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', COURSE_ID);
+        await assertFails(
+          updateDoc(courseRef, {
+            number_of_holes: 0,
+          })
+        );
+      });
+    });
+
+    describe('deletes', () => {
+      it('DENIES deleting a course for any user (allow delete: if false)', async () => {
+        const unauthedCtx = testEnv.unauthenticatedContext();
+        const courseRef = doc(unauthedCtx.firestore(), 'courses', COURSE_ID);
+        await assertFails(deleteDoc(courseRef));
+
+        const authedCtx = testEnv.authenticatedContext('uid-alice');
+        const courseRefAuthed = doc(authedCtx.firestore(), 'courses', COURSE_ID);
+        await assertFails(deleteDoc(courseRefAuthed));
+      });
+    });
+  });
 });

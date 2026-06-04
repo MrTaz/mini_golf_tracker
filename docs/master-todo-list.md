@@ -585,9 +585,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 ##### Phase 4.6.1 — Course Security Rules Tests (Technical Debt)
 
-* [ ] Write Jest tests to verify public read access for the `courses` collection.
-* [ ] Write Jest tests to verify guest create/update operations only succeed with a strictly valid data schema.
-* [ ] Write Jest tests to verify malformed course data (invalid schemas) is explicitly denied by Firestore.
+* [x] Write Jest tests to verify public read access for the `courses` collection.
+* [x] Write Jest tests to verify guest create/update operations only succeed with a strictly valid data schema.
+* [x] Write Jest tests to verify malformed course data (invalid schemas) is explicitly denied by Firestore.
 
 #### 4.7 Native Auth E2E Tests
 
@@ -1316,6 +1316,6 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Offline writes are queued and replayed in FIFO order.
 * [x] Double-claiming is prevented.
 * [x] Split-identity conflicts are caught during claim flow.
-* [ ] Multi-contact ownership is supported.
+* [x] Multi-contact ownership is supported.
 * [ ] Account merge requires challenged owner approval.
 * [ ] Firestore rules enforce claim, contact, game, and friend-edge restrictions.
