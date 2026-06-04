@@ -175,9 +175,27 @@ const firebaseCmd = [
 
 console.log(`[run-tests] Running: ${firebaseCmd}\n`);
 
-try {
-  execSync(firebaseCmd, { stdio: 'inherit', env, windowsHide: true });
-  process.exit(0);
-} catch (err) {
-  process.exit(typeof err.status === 'number' ? err.status : 1);
-}
+const { spawn } = require('child_process');
+const child = spawn(firebaseCmd, {
+  shell: true,
+  stdio: ['ignore', 'pipe', 'pipe'],
+  env,
+  windowsHide: true
+});
+
+child.stdout.on('data', (data) => {
+  process.stdout.write(data);
+});
+
+child.stderr.on('data', (data) => {
+  process.stderr.write(data);
+});
+
+child.on('close', (code) => {
+  process.exit(code ?? 0);
+});
+
+child.on('error', (err) => {
+  console.error('[run-tests] Failed to start process:', err);
+  process.exit(1);
+});
