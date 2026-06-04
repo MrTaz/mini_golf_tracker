@@ -19,6 +19,8 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_core_platform_interface/test.dart';
+import 'package:mini_golf_tracker/utilities.dart';
+import 'package:marionette_flutter/marionette_flutter.dart';
 import 'package:mini_golf_tracker/claim_account_screen.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
@@ -329,7 +331,21 @@ void main() {
 
   testWidgets('defaultBindingInitializer attempts to use MarionetteBinding when not in test env', (tester) async {
     isFlutterTestEnvironment = false;
-    expect(() => defaultBindingInitializer(), throwsAssertionError);
+    final originalInit = initializeMarionetteBinding;
+    initializeMarionetteBinding = (collector) {};
+
+    expect(() => defaultBindingInitializer(), returnsNormally);
+
+    // Trigger log message to run the anonymous function inside defaultBindingInitializer
+    Utilities.debugPrintWithCallerInfo('test logging for coverage');
+
+    initializeMarionetteBinding = originalInit;
+    isFlutterTestEnvironment = true;
+  });
+
+  testWidgets('initializeMarionetteBinding throws AssertionError when called in test env', (tester) async {
+    final collector = PrintLogCollector();
+    expect(() => initializeMarionetteBinding(collector), throwsAssertionError);
   });
 
   testWidgets('MyApp routes and builds MaterialApp correctly', (tester) async {

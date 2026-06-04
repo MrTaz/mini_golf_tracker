@@ -73,6 +73,40 @@ void main() {
         Utilities.isMobile = originalIsMobile;
       }
     });
+
+    test('notifies listeners when isMobile is false', () {
+      final originalIsMobile = Utilities.isMobile;
+      Utilities.isMobile = false;
+      String? loggedMessage;
+      void listener(String msg) {
+        loggedMessage = msg;
+      }
+      Utilities.addLogListener(listener);
+      try {
+        Utilities.debugPrintWithCallerInfo('listener test desktop');
+        expect(loggedMessage, contains('listener test desktop'));
+      } finally {
+        Utilities.removeLogListener(listener);
+        Utilities.isMobile = originalIsMobile;
+      }
+    });
+
+    test('notifies listeners when isMobile is true', () {
+      final originalIsMobile = Utilities.isMobile;
+      Utilities.isMobile = true;
+      String? loggedMessage;
+      void listener(String msg) {
+        loggedMessage = msg;
+      }
+      Utilities.addLogListener(listener);
+      try {
+        Utilities.debugPrintWithCallerInfo('listener test mobile');
+        expect(loggedMessage, equals('listener test mobile'));
+      } finally {
+        Utilities.removeLogListener(listener);
+        Utilities.isMobile = originalIsMobile;
+      }
+    });
   });
 
   group('Utilities.backdropImageContinerWidget', () {
