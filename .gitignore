@@ -64,3 +64,9 @@ skills-lock.json
 patrol_test/test_bundle.dart
 integration_test/patrol_test_bundle.dart
 *.p8
+
+# Local pubspec overrides
+pubspec_overrides.yaml
+.mcp.json
+
+
