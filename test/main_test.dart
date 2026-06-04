@@ -255,6 +255,7 @@ void main() {
     UserProvider().setAuthInstanceForTesting(mockAuth);
     GeolocatorPlatform.instance = SimpleMockGeolocator();
     MainScaffold.skipPrecacheForTesting = true;
+    isFlutterTestEnvironment = true;
   });
 
   tearDown(() {
@@ -319,6 +320,16 @@ void main() {
       await app.main();
       await Future.delayed(const Duration(milliseconds: 100));
     });
+  });
+
+  testWidgets('defaultBindingInitializer uses WidgetsFlutterBinding when in test env', (tester) async {
+    isFlutterTestEnvironment = true;
+    expect(() => defaultBindingInitializer(), returnsNormally);
+  });
+
+  testWidgets('defaultBindingInitializer attempts to use MarionetteBinding when not in test env', (tester) async {
+    isFlutterTestEnvironment = false;
+    expect(() => defaultBindingInitializer(), throwsAssertionError);
   });
 
   testWidgets('MyApp routes and builds MaterialApp correctly', (tester) async {
