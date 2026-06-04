@@ -15,6 +15,7 @@ import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/utilities.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -23,9 +24,18 @@ final RouteObserver<ModalRoute<void>> routeObserver =
 bool isFlutterTestEnvironment = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
 
 @visibleForTesting
+void Function(PrintLogCollector) initializeMarionetteBinding = (collector) {
+  MarionetteBinding.ensureInitialized(
+    MarionetteConfiguration(logCollector: collector),
+  );
+};
+
+@visibleForTesting
 void defaultBindingInitializer() {
   if (kDebugMode && !kIsWeb && !isFlutterTestEnvironment) {
-    MarionetteBinding.ensureInitialized();
+    final collector = PrintLogCollector();
+    initializeMarionetteBinding(collector);
+    Utilities.addLogListener((msg) => collector.addLog(msg));
   } else {
     WidgetsFlutterBinding.ensureInitialized();
   }

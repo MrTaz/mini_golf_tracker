@@ -75,6 +75,16 @@ class Utilities {
         ));
   }
 
+  static final List<void Function(String)> _logListeners = [];
+
+  static void addLogListener(void Function(String) listener) {
+    _logListeners.add(listener);
+  }
+
+  static void removeLogListener(void Function(String) listener) {
+    _logListeners.remove(listener);
+  }
+
   static void debugPrintWithCallerInfo(String message) {
     if (!Utilities.isMobile) {
       final stackTrace = StackTrace.current;
@@ -112,9 +122,19 @@ class Utilities {
       final modifiedCallerInfo =
           '[$timestamp] $fileNameToShow$tabsAfterFileName$formattedLineColumn\t $message';
 
-      (kDebugMode) ? debugPrint(modifiedCallerInfo) : null;
+      if (kDebugMode) {
+        debugPrint(modifiedCallerInfo);
+      }
+      for (final listener in _logListeners) {
+        listener(modifiedCallerInfo);
+      }
     } else {
-      (kDebugMode) ? debugPrint(message) : null;
+      if (kDebugMode) {
+        debugPrint(message);
+      }
+      for (final listener in _logListeners) {
+        listener(message);
+      }
     }
   }
 }
