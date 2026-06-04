@@ -1,12 +1,12 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
+    "jest.autoRun": "off",
+    "jest.showCoverageOnLoad": false,
     "jest.projects": [
         {
             "rootDir": "${workspaceFolder}/firebase_rules_tests",
             "jestCommandLine": "node_modules/.bin/jest",
-            "jestConfigFile": "${workspaceFolder}/firebase_rules_tests/package.json"
+            "autoRun": "off"
         }
-    ],
-    "jest.autoRun": "off",
-    "jest.showCoverageOnLoad": false
+    ]
 }
