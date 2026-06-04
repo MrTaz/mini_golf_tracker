@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:marionette_flutter/marionette_flutter.dart';
 import 'package:mini_golf_tracker/app_drawer_widget.dart';
 import 'package:mini_golf_tracker/asset_bouncy_animation.dart';
 import 'package:mini_golf_tracker/asset_golf_ball_path.dart';
@@ -16,8 +19,20 @@ import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
 
+@visibleForTesting
+bool isFlutterTestEnvironment = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+
+@visibleForTesting
+void defaultBindingInitializer() {
+  if (kDebugMode && !kIsWeb && !isFlutterTestEnvironment) {
+    MarionetteBinding.ensureInitialized();
+  } else {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
+}
+
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  defaultBindingInitializer();
 
   await DatabaseConnection.initialize();
   await UserProvider().initialize();
