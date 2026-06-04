@@ -157,7 +157,7 @@ const firebaseCmd = [
   `--config "${firebaseConfig}"`,
   '--only firestore,auth',
   '--project demo-mini-golf-tracker',
-  '"jest"',
+  '"jest --forceExit"',
 ].join(' ');
 
 console.log(`[run-tests] Running: ${firebaseCmd}\n`);

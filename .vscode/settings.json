@@ -1,12 +1,17 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
-    "jest.runMode": "on-demand",
-    "jest.showCoverageOnLoad": false,
+    "jest.runMode": {
+        "type": "on-demand",
+        "coverage": false
+    },
     "jest.projects": [
         {
             "rootDir": "${workspaceFolder}/firebase_rules_tests",
-            "jestCommandLine": "node_modules/.bin/jest",
-            "runMode": "on-demand"
+            "jestCommandLine": "node_modules/.bin/jest --forceExit",
+            "runMode": {
+                "type": "on-demand",
+                "coverage": false
+            }
         }
     ]
 }
