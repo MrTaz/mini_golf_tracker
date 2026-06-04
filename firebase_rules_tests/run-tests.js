@@ -148,6 +148,19 @@ const env = {
 // firebase.json lives one level up from firebase_rules_tests/
 const firebaseConfig = path.resolve(__dirname, '..', 'firebase.json');
 
+// Forward any arguments passed to run-tests.js down to Jest.
+// This allows Jest VS Code extension and other tools to run/debug specific tests.
+const args = process.argv.slice(2);
+const escapedArgs = args.map(arg => {
+  const escaped = arg.replace(/"/g, '\\"');
+  if (/[ &|<>^%#@!*?()'"\s\\]/.test(arg)) {
+    return `"${escaped}"`;
+  }
+  return arg;
+});
+
+const jestCmd = ['jest', '--forceExit', ...escapedArgs].join(' ');
+
 // Use npx to invoke firebase-tools without requiring a global install.
 const firebaseCmd = [
   'npx',
@@ -157,7 +170,7 @@ const firebaseCmd = [
   `--config "${firebaseConfig}"`,
   '--only firestore,auth',
   '--project demo-mini-golf-tracker',
-  '"jest --forceExit"',
+  `"${jestCmd.replace(/"/g, '\\"')}"`,
 ].join(' ');
 
 console.log(`[run-tests] Running: ${firebaseCmd}\n`);
