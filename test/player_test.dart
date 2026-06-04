@@ -1,6 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
 
 void main() {
@@ -290,6 +291,183 @@ void main() {
       expect(doc.exists, isTrue);
       expect(doc.data()?['player_name'], '');
       expect(doc.data()?['nickname'], 'NickOnly');
+    });
+  });
+
+  group('Security Guardrail Tests (Phase 5.1 & Phase 5.2)', () {
+    late FakeFirebaseFirestore fakeFirestore;
+
+    setUp(() {
+      fakeFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+    });
+
+    tearDown(() {
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+    });
+
+    test('resolveCanonicalPlayer throws Contact Conflict for split-identity', () async {
+      // Player A has email, Player B has phone number
+      await Player.createPlayer(
+        'Player A',
+        'PA',
+        email: 'a@example.com',
+        ownerId: 'owner-a',
+      );
+      await Player.createPlayer(
+        'Player B',
+        'PB',
+        phoneNumber: '+15551112222',
+        ownerId: 'owner-b',
+      );
+
+      final splitPlayer = Player(
+        id: 'split',
+        playerName: 'Split Player',
+        nickname: 'Split',
+        ownerId: 'owner-split',
+        totalScore: 0,
+        email: 'a@example.com',
+        phoneNumber: '+15551112222',
+      );
+
+      expect(
+        () => Player.resolveCanonicalPlayer(splitPlayer, ownerIdForNewPlayer: 'owner-new'),
+        throwsA(isA<DatabaseConnectionError>().having((e) => e.message, 'message', 'Contact Conflict')),
+      );
+    });
+
+    test('claimPlayerForVerifiedAuthUser and claimPlayerForAuthUser throw Contact Conflict for split-identity', () async {
+      await Player.createPlayer(
+        'Player A',
+        'PA',
+        email: 'a@example.com',
+        ownerId: 'owner-a',
+      );
+      await Player.createPlayer(
+        'Player B',
+        'PB',
+        phoneNumber: '+15551112222',
+        ownerId: 'owner-b',
+      );
+
+      expect(
+        () => Player.claimPlayerForVerifiedAuthUser(
+          uid: 'uid-new',
+          email: 'a@example.com',
+          emailVerified: true,
+          phoneNumber: '+15551112222',
+        ),
+        throwsA(isA<DatabaseConnectionError>().having((e) => e.message, 'message', 'Contact Conflict')),
+      );
+
+      expect(
+        () => Player.claimPlayerForAuthUser(
+          uid: 'uid-new',
+          email: 'a@example.com',
+          phoneNumber: '+15551112222',
+          playerName: 'New Player',
+          nickname: 'New',
+        ),
+        throwsA(isA<DatabaseConnectionError>().having((e) => e.message, 'message', 'Contact Conflict')),
+      );
+    });
+
+    test('canVerifiedAuthUserClaimPlayer returns false for already claimed player by different UID', () async {
+      final claimedPlayer = Player(
+        id: 'p-claimed',
+        playerName: 'Claimed',
+        nickname: 'C',
+        ownerId: 'owner-c',
+        totalScore: 0,
+        email: 'claimed@example.com',
+        normalizedEmail: 'claimed@example.com',
+        claimedByUid: 'uid-first',
+      );
+
+      final result = Player.canVerifiedAuthUserClaimPlayer(
+        player: claimedPlayer,
+        uid: 'uid-second',
+        email: 'claimed@example.com',
+        emailVerified: true,
+        phoneNumber: null,
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('canVerifiedAuthUserClaimPlayer returns true if claimed_by_uid matches current uid', () async {
+      final claimedPlayer = Player(
+        id: 'p-claimed',
+        playerName: 'Claimed',
+        nickname: 'C',
+        ownerId: 'owner-c',
+        totalScore: 0,
+        email: 'claimed@example.com',
+        normalizedEmail: 'claimed@example.com',
+        claimedByUid: 'uid-first',
+      );
+
+      final result = Player.canVerifiedAuthUserClaimPlayer(
+        player: claimedPlayer,
+        uid: 'uid-first',
+        email: 'claimed@example.com',
+        emailVerified: true,
+        phoneNumber: null,
+      );
+
+      expect(result, isTrue);
+    });
+
+    test('claimPlayerForVerifiedAuthUser rejects claim for already claimed player by different UID', () async {
+      await Player.createPlayer(
+        'Claimed Player',
+        'CP',
+        email: 'claimed@example.com',
+        id: 'p-claimed',
+        ownerId: 'owner-c',
+      );
+      
+      // Manually set claimed_by_uid in DB
+      await fakeFirestore
+          .collection('players')
+          .doc('p-claimed')
+          .update({'claimed_by_uid': 'uid-first'});
+
+      final result = await Player.claimPlayerForVerifiedAuthUser(
+        uid: 'uid-second',
+        email: 'claimed@example.com',
+        emailVerified: true,
+        phoneNumber: null,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('claimPlayerForAuthUser throws error for already claimed player by different UID', () async {
+      await Player.createPlayer(
+        'Claimed Player',
+        'CP',
+        email: 'claimed@example.com',
+        id: 'p-claimed',
+        ownerId: 'owner-c',
+      );
+
+      // Manually set claimed_by_uid in DB
+      await fakeFirestore
+          .collection('players')
+          .doc('p-claimed')
+          .update({'claimed_by_uid': 'uid-first'});
+
+      expect(
+        () => Player.claimPlayerForAuthUser(
+          uid: 'uid-second',
+          email: 'claimed@example.com',
+          playerName: 'CP',
+          nickname: 'CP',
+        ),
+        throwsA(isA<DatabaseConnectionError>().having((e) => e.message, 'message', 'Player already claimed')),
+      );
     });
   });
 }
