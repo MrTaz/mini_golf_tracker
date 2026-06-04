@@ -525,11 +525,11 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 4.1 Firebase Local Emulator Suite Setup
 
-* [ ] Set up Firebase Local Emulator Suite (Auth and Firestore) in the project environment.
-* [ ] Update `DatabaseConnection.initialize()` to conditionally call `FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080)` when running in debug or emulator mode.
-* [ ] Update `UserProvider.initialize()` to conditionally call `FirebaseAuth.instance.useAuthEmulator('localhost', 9099)`.
-* [ ] Configure integration tests to run against the local emulator environment.
-* [ ] Implement `@firebase/rules-unit-testing` for security rule validation.
+* [x] Set up Firebase Local Emulator Suite (Auth and Firestore) in the project environment.
+* [x] Update `DatabaseConnection.initialize()` to conditionally call `FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080)` when running in debug or emulator mode.
+* [x] Update `UserProvider.initialize()` to conditionally call `FirebaseAuth.instance.useAuthEmulator('localhost', 9099)`.
+* [x] Configure integration tests to run against the local emulator environment.
+* [x] Implement `@firebase/rules-unit-testing` for security rule validation.
 
 #### 4.2 Canonical Player Convergence E2E Scenario
 

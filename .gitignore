@@ -59,8 +59,9 @@ coverage/
 .agents/
 skills-lock.json
 
-# Node modules for cloud functions
+# Node modules for cloud functions and rules tests
 /functions/node_modules
+/firebase_rules_tests/node_modules
 patrol_test/test_bundle.dart
 integration_test/patrol_test_bundle.dart
 *.p8
