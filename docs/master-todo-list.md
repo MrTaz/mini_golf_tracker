@@ -583,6 +583,12 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Harden rules around how friend relationships are mutated.
 * [x] Verify friend-edge mutations with rule tests.
 
+##### Phase 4.6.1 — Course Security Rules Tests (Technical Debt)
+
+* [ ] Write Jest tests to verify public read access for the `courses` collection.
+* [ ] Write Jest tests to verify guest create/update operations only succeed with a strictly valid data schema.
+* [ ] Write Jest tests to verify malformed course data (invalid schemas) is explicitly denied by Firestore.
+
 #### 4.7 Native Auth E2E Tests
 
 * [ ] Configure native UI test automation (e.g., UIAutomator/Espresso) alongside Flutter `integration_test` to successfully interact with the native Google Sign-In account selector pop-up.
