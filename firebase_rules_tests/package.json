@@ -4,7 +4,8 @@
   "description": "Firestore security rules unit tests",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "node run-tests.js",
+    "test:watch": "jest --watchAll"
   },
   "jest": {
     "testEnvironment": "node",
