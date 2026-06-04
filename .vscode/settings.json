@@ -1,7 +1,7 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
     "jest.rootPath": "firebase_rules_tests",
-    "jest.jestCommandLine": "node firebase_rules_tests/node_modules/jest/bin/jest.js --rootDir firebase_rules_tests --forceExit",
+    "jest.jestCommandLine": "node node_modules/jest/bin/jest.js --forceExit",
     "jest.runMode": {
         "type": "on-demand",
         "coverage": false
