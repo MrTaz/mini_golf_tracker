@@ -510,6 +510,12 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Migrate all 14 legacy standard integration tests to the new domain-based Patrol architecture.
 * [x] Verify all E2E tests execute cleanly via the Patrol CLI.
 
+##### Manual macOS/Xcode Setup for Patrol E2E Tests
+
+* [ ] Open the project in Xcode.
+* [ ] Click **File** -> **New** -> **Target...** and choose **iOS UI Testing Bundle**.
+* [ ] Set the name to **RunnerUITests**, choose language **Objective-C**, and link it to the pre-created `RunnerUITests.m` file.
+
 #### 4.1 Firebase Local Emulator Suite Setup
 
 * [ ] Set up Firebase Local Emulator Suite (Auth and Firestore) in the project environment.
