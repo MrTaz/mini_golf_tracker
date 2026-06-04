@@ -169,8 +169,27 @@ class Player {
     Player player, {
     required String ownerIdForNewPlayer,
   }) async {
-    final existingPlayer =
-        await Player.getPlayerByContactFromDB(player.email, player.phoneNumber);
+    final normalizedEmail = ContactIdentity.normalizeEmail(player.email);
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(player.phoneNumber);
+
+    Player? emailPlayer;
+    if (normalizedEmail != null) {
+      emailPlayer = await getPlayerByEmailFromDB(player.email!);
+    }
+
+    Player? phonePlayer;
+    if (normalizedPhoneNumber != null) {
+      phonePlayer = await getPlayerByPhoneFromDB(player.phoneNumber!);
+    }
+
+    if (emailPlayer != null &&
+        phonePlayer != null &&
+        emailPlayer.id != phonePlayer.id) {
+      throw DatabaseConnectionError('Contact Conflict');
+    }
+
+    final existingPlayer = emailPlayer ?? phonePlayer;
     if (existingPlayer != null) {
       return existingPlayer;
     }
@@ -364,8 +383,32 @@ class Player {
     required String playerName,
     required String nickname,
   }) async {
-    final existingPlayer = await getPlayerByContactFromDB(email, phoneNumber);
+    final normalizedEmail = ContactIdentity.normalizeEmail(email);
+    final normalizedPhoneNumber =
+        ContactIdentity.normalizePhoneNumber(phoneNumber);
+
+    Player? emailPlayer;
+    if (normalizedEmail != null) {
+      emailPlayer = await getPlayerByEmailFromDB(email);
+    }
+
+    Player? phonePlayer;
+    if (normalizedPhoneNumber != null) {
+      phonePlayer = await getPlayerByPhoneFromDB(phoneNumber!);
+    }
+
+    if (emailPlayer != null &&
+        phonePlayer != null &&
+        emailPlayer.id != phonePlayer.id) {
+      throw DatabaseConnectionError('Contact Conflict');
+    }
+
+    final existingPlayer = emailPlayer ?? phonePlayer;
     if (existingPlayer != null) {
+      if (existingPlayer.claimedByUid != null &&
+          existingPlayer.claimedByUid != uid) {
+        throw DatabaseConnectionError('Player already claimed');
+      }
       existingPlayer.claimedByUid = uid;
       await DatabaseConnection.client
           .collection('players')
@@ -415,22 +458,40 @@ class Player {
     final normalizedEmail = ContactIdentity.normalizeEmail(email);
     final normalizedPhoneNumber =
         ContactIdentity.normalizePhoneNumber(phoneNumber);
-    Player? candidate;
+
+    Player? emailPlayer;
     if ((emailVerified || Utilities.isTestAccountBypass(email)) &&
         normalizedEmail != null) {
-      candidate = await getPlayerByEmailFromDB(normalizedEmail);
+      emailPlayer = await getPlayerByEmailFromDB(normalizedEmail);
     }
-    candidate ??= normalizedPhoneNumber != null
-        ? await getPlayerByPhoneFromDB(normalizedPhoneNumber)
-        : null;
-    if (candidate == null ||
-        !canVerifiedAuthUserClaimPlayer(
-          player: candidate,
-          uid: uid,
-          email: email,
-          emailVerified: emailVerified,
-          phoneNumber: phoneNumber,
-        )) {
+
+    Player? phonePlayer;
+    if (normalizedPhoneNumber != null) {
+      phonePlayer = await getPlayerByPhoneFromDB(normalizedPhoneNumber);
+    }
+
+    if (emailPlayer != null &&
+        phonePlayer != null &&
+        emailPlayer.id != phonePlayer.id) {
+      throw DatabaseConnectionError('Contact Conflict');
+    }
+
+    final candidate = emailPlayer ?? phonePlayer;
+    if (candidate == null) {
+      return null;
+    }
+
+    if (candidate.claimedByUid != null && candidate.claimedByUid != uid) {
+      return null;
+    }
+
+    if (!canVerifiedAuthUserClaimPlayer(
+      player: candidate,
+      uid: uid,
+      email: email,
+      emailVerified: emailVerified,
+      phoneNumber: phoneNumber,
+    )) {
       return null;
     }
 

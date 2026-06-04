@@ -594,17 +594,17 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 5.1 Split-Identity Rejection
 
-* [ ] Update `Player.resolveCanonicalPlayer` to check both email and phone number.
-* [ ] If email resolves to Player A and phone resolves to Player B, reject the claim.
-* [ ] Return a `"Contact Conflict"` error.
-* [ ] Ensure split-identity rejection also runs inside transactional claim logic.
+* [x] Update `Player.resolveCanonicalPlayer` to check both email and phone number.
+* [x] If email resolves to Player A and phone resolves to Player B, reject the claim.
+* [x] Return a `"Contact Conflict"` error.
+* [x] Ensure split-identity rejection also runs inside transactional claim logic.
 
 #### 5.2 Double-Claim Prevention
 
-* [ ] Update `Player.canVerifiedAuthUserClaimPlayer`.
-* [ ] Reject claims where `claimed_by_uid` is already populated and does not match the current `auth.uid`.
-* [ ] Update `claimPlayerForVerifiedAuthUser` to explicitly check `claimed_by_uid` before processing.
-* [ ] Prevent account takeovers.
+* [x] Update `Player.canVerifiedAuthUserClaimPlayer`.
+* [x] Reject claims where `claimed_by_uid` is already populated and does not match the current `auth.uid`.
+* [x] Update `claimPlayerForVerifiedAuthUser` to explicitly check `claimed_by_uid` before processing.
+* [x] Prevent account takeovers.
 
 #### 5.3 Multi-Contact Support
 
@@ -1214,8 +1214,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] ContactIdentity.normalizePhoneNumber.
 * [x] ContactIdentity null boundary cases and reservationId methods (Needs 100% coverage).
 * [ ] Player.updateUnclaimedPlayer contact reservation checks.
-* [ ] Player.resolveCanonicalPlayer split-identity rejection.
-* [ ] Player.canVerifiedAuthUserClaimPlayer double-claim prevention.
+* [x] Player.resolveCanonicalPlayer split-identity rejection.
+* [x] Player.canVerifiedAuthUserClaimPlayer double-claim prevention.
 * [ ] PlayerGameInfo.toJson with local nickname.
 * [ ] PlayerGameInfo.fromJson with local nickname.
 * [ ] Game.fromSnapshot.
@@ -1308,8 +1308,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Courses can be detected as duplicates by both GPS proximity and normalized address matching.
 * [ ] Real-time score updates work across multiple devices.
 * [ ] Offline writes are queued and replayed in FIFO order.
-* [ ] Double-claiming is prevented.
-* [ ] Split-identity conflicts are caught during claim flow.
+* [x] Double-claiming is prevented.
+* [x] Split-identity conflicts are caught during claim flow.
 * [ ] Multi-contact ownership is supported.
 * [ ] Account merge requires challenged owner approval.
 * [ ] Firestore rules enforce claim, contact, game, and friend-edge restrictions.
