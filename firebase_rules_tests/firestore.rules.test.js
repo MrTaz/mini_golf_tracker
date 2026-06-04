@@ -249,4 +249,275 @@ describe('Firestore Security Rules', () => {
       await assertSucceeds(getDoc(infoRef));
     });
   });
+
+  // -------------------------------------------------------------------------
+  // games collection — MUTATION rules
+  // -------------------------------------------------------------------------
+
+  describe('games collection — mutations', () => {
+    const GAME_ID = 'game-1';
+    const CREATOR_UID = 'uid-creator';
+    const PARTICIPANT_UID = 'uid-participant';
+    const OTHER_UID = 'uid-other';
+
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'games', GAME_ID), {
+          id: GAME_ID,
+          name: 'Fun Golf Game',
+          status: 'started',
+          creator_id: CREATOR_UID,
+          participant_ids: [CREATOR_UID, PARTICIPANT_UID],
+          players: [],
+          course: {},
+        });
+      });
+    });
+
+    it('DENIES unauthenticated user from updating any game', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const gameRef = doc(unauthedCtx.firestore(), 'games', GAME_ID);
+      await assertFails(
+        updateDoc(gameRef, {
+          name: 'Updated Game Name',
+        })
+      );
+    });
+
+    it('DENIES a non-creator, non-participant authenticated user from updating the game', async () => {
+      const otherCtx = testEnv.authenticatedContext(OTHER_UID);
+      const gameRef = doc(otherCtx.firestore(), 'games', GAME_ID);
+      await assertFails(
+        updateDoc(gameRef, {
+          name: 'Hack Game Name',
+        })
+      );
+    });
+
+    it('ALLOWS the creator to update the game', async () => {
+      const creatorCtx = testEnv.authenticatedContext(CREATOR_UID);
+      const gameRef = doc(creatorCtx.firestore(), 'games', GAME_ID);
+      await assertSucceeds(
+        updateDoc(gameRef, {
+          name: 'Creator Updated Game Name',
+          status: 'started',
+          course: {},
+          players: [],
+          participant_ids: [CREATOR_UID, PARTICIPANT_UID],
+        })
+      );
+    });
+
+    it('ALLOWS a participant to update the game', async () => {
+      const participantCtx = testEnv.authenticatedContext(PARTICIPANT_UID);
+      const gameRef = doc(participantCtx.firestore(), 'games', GAME_ID);
+      await assertSucceeds(
+        updateDoc(gameRef, {
+          name: 'Participant Updated Game Name',
+          status: 'started',
+          course: {},
+          players: [],
+          participant_ids: [CREATOR_UID, PARTICIPANT_UID],
+        })
+      );
+    });
+
+    it('DENIES unauthenticated user from deleting a game', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const gameRef = doc(unauthedCtx.firestore(), 'games', GAME_ID);
+      await assertFails(deleteDoc(gameRef));
+    });
+
+    it('DENIES a participant from deleting a game', async () => {
+      const participantCtx = testEnv.authenticatedContext(PARTICIPANT_UID);
+      const gameRef = doc(participantCtx.firestore(), 'games', GAME_ID);
+      await assertFails(deleteDoc(gameRef));
+    });
+
+    it('ALLOWS the creator to delete the game', async () => {
+      const creatorCtx = testEnv.authenticatedContext(CREATOR_UID);
+      const gameRef = doc(creatorCtx.firestore(), 'games', GAME_ID);
+      await assertSucceeds(deleteDoc(gameRef));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // players collection — Verified Claim & Mutation Restrictions
+  // -------------------------------------------------------------------------
+
+  describe('players collection — claim and mutation restrictions', () => {
+    const CLAIMED_PLAYER_ID = 'claimed-player';
+    const OWNER_UID = 'uid-owner';
+    const OTHER_UID = 'uid-other';
+    const OWNER_EMAIL = 'owner@example.com';
+
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'players', CLAIMED_PLAYER_ID), {
+          ...validPlayer(CLAIMED_PLAYER_ID),
+          normalized_email: OWNER_EMAIL,
+          claimed_by_uid: OWNER_UID,
+        });
+      });
+    });
+
+    it('DENIES another authenticated user from claiming an already claimed player', async () => {
+      const otherCtx = testEnv.authenticatedContext(OTHER_UID, {
+        email: OWNER_EMAIL,
+        email_verified: true,
+      });
+      const playerRef = doc(otherCtx.firestore(), 'players', CLAIMED_PLAYER_ID);
+      await assertFails(
+        updateDoc(playerRef, {
+          claimed_by_uid: OTHER_UID,
+        })
+      );
+    });
+
+    it('DENIES another authenticated user from mutating profile fields of a claimed player', async () => {
+      const otherCtx = testEnv.authenticatedContext(OTHER_UID);
+      const playerRef = doc(otherCtx.firestore(), 'players', CLAIMED_PLAYER_ID);
+      await assertFails(
+        updateDoc(playerRef, {
+          nickname: 'Stolen Nickname',
+        })
+      );
+    });
+
+    it('ALLOWS the owner of a claimed player to mutate their own profile fields', async () => {
+      const ownerCtx = testEnv.authenticatedContext(OWNER_UID);
+      const playerRef = doc(ownerCtx.firestore(), 'players', CLAIMED_PLAYER_ID);
+      await assertSucceeds(
+        updateDoc(playerRef, {
+          id: CLAIMED_PLAYER_ID,
+          player_name: 'Test Player',
+          nickname: 'Owner New Nickname',
+          total_score: 0,
+        })
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // players & player_contacts collections — Contact Visibility / PII Restrictions
+  // -------------------------------------------------------------------------
+
+  describe('Contact Visibility / PII Restrictions', () => {
+    const PII_PLAYER_ID = 'pii-player';
+    const PUBLIC_PLAYER_ID = 'public-player';
+    const ALICE_UID = 'uid-alice';
+
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        // Player with PII
+        await setDoc(doc(db, 'players', PII_PLAYER_ID), {
+          ...validPlayer(PII_PLAYER_ID),
+          normalized_email: 'alice@example.com',
+          normalized_phone_number: '+1234567890',
+        });
+        // Player without PII (nickname only / guest)
+        await setDoc(doc(db, 'players', PUBLIC_PLAYER_ID), {
+          ...validPlayer(PUBLIC_PLAYER_ID),
+        });
+        // Contact reservations
+        await setDoc(doc(db, 'player_contacts', 'email_alice@example.com'), {
+          player_id: PII_PLAYER_ID,
+          created_by_uid: ALICE_UID,
+          kind: 'email',
+          normalized_value: 'alice@example.com',
+        });
+      });
+    });
+
+    it('DENIES unauthenticated user from reading a player document with PII', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const playerRef = doc(unauthedCtx.firestore(), 'players', PII_PLAYER_ID);
+      await assertFails(getDoc(playerRef));
+    });
+
+    it('ALLOWS unauthenticated user to read a player document without PII', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const playerRef = doc(unauthedCtx.firestore(), 'players', PUBLIC_PLAYER_ID);
+      await assertSucceeds(getDoc(playerRef));
+    });
+
+    it('ALLOWS authenticated user to read a player document with PII', async () => {
+      const authedCtx = testEnv.authenticatedContext(ALICE_UID);
+      const playerRef = doc(authedCtx.firestore(), 'players', PII_PLAYER_ID);
+      await assertSucceeds(getDoc(playerRef));
+    });
+
+    it('DENIES unauthenticated user from reading a contact reservation', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const contactRef = doc(unauthedCtx.firestore(), 'player_contacts', 'email_alice@example.com');
+      await assertFails(getDoc(contactRef));
+    });
+
+    it('ALLOWS authenticated user to get a specific contact reservation', async () => {
+      const authedCtx = testEnv.authenticatedContext(ALICE_UID);
+      const contactRef = doc(authedCtx.firestore(), 'player_contacts', 'email_alice@example.com');
+      await assertSucceeds(getDoc(contactRef));
+    });
+
+    it('DENIES authenticated user from listing all contact reservations (prevents email harvesting)', async () => {
+      const authedCtx = testEnv.authenticatedContext(ALICE_UID);
+      const contactsRef = collection(authedCtx.firestore(), 'player_contacts');
+      await assertFails(getDocs(contactsRef));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // friends collection — Friend-Edge Mutation Rules
+  // -------------------------------------------------------------------------
+
+  describe('friends collection — mutation rules', () => {
+    const ALICE_UID = 'uid-alice';
+    const BOB_UID = 'uid-bob';
+    const CHARLIE_UID = 'uid-charlie';
+
+    it('DENIES unauthenticated user from creating a friend edge', async () => {
+      const unauthedCtx = testEnv.unauthenticatedContext();
+      const friendRef = doc(unauthedCtx.firestore(), 'friends', `${ALICE_UID}_${BOB_UID}`);
+      await assertFails(
+        setDoc(friendRef, {
+          player_id: ALICE_UID,
+          friend_id: BOB_UID,
+        })
+      );
+    });
+
+    it('DENIES a user from creating a friend edge between two other users (not owner)', async () => {
+      const charlieCtx = testEnv.authenticatedContext(CHARLIE_UID);
+      const friendRef = doc(charlieCtx.firestore(), 'friends', `${ALICE_UID}_${BOB_UID}`);
+      await assertFails(
+        setDoc(friendRef, {
+          player_id: ALICE_UID,
+          friend_id: BOB_UID,
+        })
+      );
+    });
+
+    it('ALLOWS a user to create a friend edge where they are the player_id (owner)', async () => {
+      const aliceCtx = testEnv.authenticatedContext(ALICE_UID);
+      const friendRef = doc(aliceCtx.firestore(), 'friends', `${ALICE_UID}_${BOB_UID}`);
+      await assertSucceeds(
+        setDoc(friendRef, {
+          player_id: ALICE_UID,
+          friend_id: BOB_UID,
+        })
+      );
+    });
+
+    it('ALLOWS a user to create a friend edge where they are the friend_id', async () => {
+      const bobCtx = testEnv.authenticatedContext(BOB_UID);
+      const friendRef = doc(bobCtx.firestore(), 'friends', `${ALICE_UID}_${BOB_UID}`);
+      await assertSucceeds(
+        setDoc(friendRef, {
+          player_id: ALICE_UID,
+          friend_id: BOB_UID,
+        })
+      );
+    });
+  });
 });

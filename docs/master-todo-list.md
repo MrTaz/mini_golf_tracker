@@ -573,15 +573,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 4.6 Firestore Rules Tests
 
-* [ ] Test game mutation rules.
-* [ ] Ensure users can only mutate games they created or participate in.
-* [ ] Test verified claim restrictions.
-* [ ] Ensure other users cannot steal a canonical player.
-* [ ] Test contact visibility restrictions.
-* [ ] Verify email and phone visibility is properly restricted.
-* [ ] Test friend-edge mutation rules.
-* [ ] Harden rules around how friend relationships are mutated.
-* [ ] Verify friend-edge mutations with rule tests.
+* [x] Test game mutation rules.
+* [x] Ensure users can only mutate games they created or participate in.
+* [x] Test verified claim restrictions.
+* [x] Ensure other users cannot steal a canonical player.
+* [x] Test contact visibility restrictions.
+* [x] Verify email and phone visibility is properly restricted.
+* [x] Test friend-edge mutation rules.
+* [x] Harden rules around how friend relationships are mutated.
+* [x] Verify friend-edge mutations with rule tests.
 
 #### 4.7 Native Auth E2E Tests
 

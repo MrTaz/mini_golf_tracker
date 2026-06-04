@@ -28,7 +28,12 @@ service cloud.firestore {
 
     // Players Collection
     match /players/{playerId} {
-      allow read: if true;
+      allow read: if isLoggedIn()
+        || resource == null
+        || (
+          resource.data.get('normalized_email', null) == null
+          && resource.data.get('normalized_phone_number', null) == null
+        );
       
       allow create: if request.resource.data.id == playerId
         && request.resource.data.total_score == 0
@@ -50,6 +55,8 @@ service cloud.firestore {
         // Case 1: Owner or guest updates profile fields.
         (
           request.resource.data.id == resource.data.id
+          && (resource.data.get('claimed_by_uid', null) == null || (isLoggedIn() && request.auth.uid == resource.data.get('claimed_by_uid', null)))
+          && (request.resource.data.get('claimed_by_uid', null) == resource.data.get('claimed_by_uid', null))
           && request.resource.data.player_name is string
           && request.resource.data.player_name.size() > 0
           && request.resource.data.player_name.size() <= 100
@@ -74,16 +81,16 @@ service cloud.firestore {
         || (
           isLoggedIn()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed_by_uid'])
-          && resource.data.claimed_by_uid == null
-          && request.resource.data.claimed_by_uid == request.auth.uid
+          && resource.data.get('claimed_by_uid', null) == null
+          && request.resource.data.get('claimed_by_uid', null) == request.auth.uid
           && (
             (
               request.auth.token.email_verified == true
-              && resource.data.normalized_email == request.auth.token.email
+              && resource.data.get('normalized_email', null) == request.auth.token.email
             )
             || (
               request.auth.token.phone_number != null
-              && resource.data.normalized_phone_number == request.auth.token.phone_number
+              && resource.data.get('normalized_phone_number', null) == request.auth.token.phone_number
             )
           )
         )
@@ -95,7 +102,8 @@ service cloud.firestore {
     // Canonical contact reservations. The deterministic document ID is the
     // uniqueness boundary for normalized emails and phone numbers.
     match /player_contacts/{contactId} {
-      allow read: if true;
+      allow get: if isLoggedIn();
+      allow list: if isTestAccount();
 
       allow create: if (
           request.resource.data.player_id is string
@@ -127,7 +135,9 @@ service cloud.firestore {
     match /friends/{friendDocId} {
       allow read: if true;
       
-      allow create, update: if request.resource.data.player_id is string
+      allow create, update: if isLoggedIn()
+        && (request.auth.uid == request.resource.data.player_id || request.auth.uid == request.resource.data.friend_id || isTestAccount())
+        && request.resource.data.player_id is string
         && request.resource.data.player_id.size() > 0
         && request.resource.data.player_id.size() <= 100
         && request.resource.data.friend_id is string
@@ -157,11 +167,27 @@ service cloud.firestore {
     match /games/{gameId} {
       allow read: if true;
       
-      allow create, update: if request.resource.data.name is string
+      allow create: if request.resource.data.name is string
         && request.resource.data.status is string
         && request.resource.data.course is map
         && request.resource.data.players is list
         && request.resource.data.participant_ids is list;
+
+      allow update: if request.resource.data.name is string
+        && request.resource.data.status is string
+        && request.resource.data.course is map
+        && request.resource.data.players is list
+        && request.resource.data.participant_ids is list
+        && (
+          isTestAccount()
+          || (
+            isLoggedIn()
+            && (
+              request.auth.uid == resource.data.get('creator_id', null)
+              || request.auth.uid in resource.data.get('participant_ids', [])
+            )
+          )
+        );
 
       allow delete: if request.auth != null
         && (request.auth.uid == resource.data.creator_id || isTestAccount());
