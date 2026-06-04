@@ -1264,7 +1264,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
 * [x] Google Sign-In E2E authentication flow passes (Note: requires Patrol native UI test configuration to tap system pop-ups).
 * [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
-* [ ] Firebase Local Emulator Suite is configured.
+* [x] Firebase Local Emulator Suite is configured.
 * [ ] Remote game exists with canonical player.
 * [ ] Guest creates local game with matching contact.
 * [ ] Guest signs up.
