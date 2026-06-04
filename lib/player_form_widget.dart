@@ -11,12 +11,14 @@ class PlayerForm extends StatefulWidget {
       this.player,
       required this.allowEditing,
       required this.onSaveChanges,
-      required this.editingOrAdding});
+      required this.editingOrAdding,
+      this.isQuickPlay = false});
 
   final bool allowEditing;
   final String editingOrAdding;
   final VoidCallback onSaveChanges;
   final Player? player;
+  final bool isQuickPlay;
 
   @override
   PlayerFormState createState() => PlayerFormState();
@@ -34,6 +36,7 @@ class PlayerFormState extends State<PlayerForm> {
   late bool _shareName;
   late bool _shareEmail;
   late bool _sharePhone;
+  late bool _isQuickPlay;
 
   @override
   void dispose() {
@@ -57,6 +60,7 @@ class PlayerFormState extends State<PlayerForm> {
     _shareName = widget.player?.shareName ?? true;
     _shareEmail = widget.player?.shareEmail ?? true;
     _sharePhone = widget.player?.sharePhone ?? true;
+    _isQuickPlay = widget.player?.isQuickPlay ?? widget.isQuickPlay;
   }
 
   bool get isEditing => widget.player != null;
@@ -64,8 +68,9 @@ class PlayerFormState extends State<PlayerForm> {
       currentUser == null && widget.player?.id == 'guest';
 
   bool validateRequiredFields() {
+    final isQuickPlayProfile = _isQuickPlay;
     final playerNameMissing =
-        !isGuestScorekeeper && _playerNameController.text.isEmpty;
+        !isGuestScorekeeper && !isQuickPlayProfile && _playerNameController.text.isEmpty;
     if (playerNameMissing || _nicknameController.text.isEmpty) {
       showDialog(
         context: context,
@@ -87,6 +92,31 @@ class PlayerFormState extends State<PlayerForm> {
         },
       );
       return false;
+    }
+
+    if (!isQuickPlayProfile && !isGuestScorekeeper && currentUser != null) {
+      if (_emailController.text.trim().isEmpty &&
+          _phoneNumberController.text.trim().isEmpty) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Missing contact information'),
+              content: const Text(
+                  'Please enter either an email address or a phone number for non-Quick-Play players.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return false;
+      }
     }
     return true;
   }
@@ -143,6 +173,7 @@ class PlayerFormState extends State<PlayerForm> {
         widget.player!.shareEmail = _shareEmail;
         widget.player!.sharePhone = _sharePhone;
         widget.player!.ownerId = currentUser?.id ?? 'guest';
+        widget.player!.isQuickPlay = _isQuickPlay;
 
         if (widget.editingOrAdding == 'Add') {
           if (currentUser != null) {
@@ -152,6 +183,7 @@ class PlayerFormState extends State<PlayerForm> {
             widget.player!.nickname = canonicalPlayer.nickname;
             widget.player!.email = canonicalPlayer.email;
             widget.player!.phoneNumber = canonicalPlayer.phoneNumber;
+            widget.player!.isQuickPlay = canonicalPlayer.isQuickPlay;
           } else {
             final canonicalPlayer =
                 await Player.resolveGuestPlayer(widget.player!);
@@ -176,86 +208,101 @@ class PlayerFormState extends State<PlayerForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        (widget.editingOrAdding == 'Edit')
-            ? const Text("Edit Player Attributes")
-            : const Text("Add A New Player"),
-        const SizedBox(height: 10),
-        if (isGuestScorekeeper) ...[
-          TextFormField(
-            controller: _nicknameController,
-            decoration: const InputDecoration(labelText: 'Nickname'),
-            enabled: widget.allowEditing,
-          ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          (widget.editingOrAdding == 'Edit')
+              ? const Text("Edit Player Attributes")
+              : const Text("Add A New Player"),
           const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const LoginScreen(
-                    promptMessage:
-                        'Log in or sign up to set your real name, email, and phone number!',
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lock_outline, color: Colors.black87),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Log in or sign up to set your real name, email, and phone number!',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+          if (isGuestScorekeeper) ...[
+            TextFormField(
+              controller: _nicknameController,
+              decoration: const InputDecoration(labelText: 'Nickname'),
+              enabled: widget.allowEditing,
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LoginScreen(
+                      promptMessage:
+                          'Log in or sign up to set your real name, email, and phone number!',
                     ),
                   ),
-                ],
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.lock_outline, color: Colors.black87),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Log in or sign up to set your real name, email, and phone number!',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ] else ...[
-          _buildTextField(
-            controller: _playerNameController,
-            labelText: 'Player Name',
-          ),
+          ] else ...[
+            _buildTextField(
+              controller: _playerNameController,
+              labelText: 'Player Name',
+            ),
+            const SizedBox(height: 10),
+            _buildTextField(
+              controller: _nicknameController,
+              labelText: 'Nickname',
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              key: const Key('quick_play_switch'),
+              title: const Text('Quick-Play Player'),
+              value: _isQuickPlay,
+              onChanged: widget.allowEditing
+                  ? (value) {
+                      setState(() {
+                        _isQuickPlay = value;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 10),
+            _buildTextField(
+              controller: _emailController,
+              labelText: 'Email',
+            ),
+            const SizedBox(height: 10),
+            _buildTextField(
+              controller: _phoneNumberController,
+              labelText: 'Phone Number',
+            ),
+            const SizedBox(height: 10),
+            if (UserProvider().loggedInUser?.id != null &&
+                UserProvider().loggedInUser?.id == widget.player?.id)
+              _buildPrivacySettings(),
+          ],
           const SizedBox(height: 10),
-          _buildTextField(
-            controller: _nicknameController,
-            labelText: 'Nickname',
+          ElevatedButton(
+            onPressed: () {
+              checkDuplicate();
+            },
+            child: (widget.editingOrAdding == 'Edit')
+                ? const Text("Save Changes")
+                : const Text("Add Player"),
           ),
-          const SizedBox(height: 10),
-          _buildTextField(
-            controller: _emailController,
-            labelText: 'Email',
-          ),
-          const SizedBox(height: 10),
-          _buildTextField(
-            controller: _phoneNumberController,
-            labelText: 'Phone Number',
-          ),
-          const SizedBox(height: 10),
-          if (UserProvider().loggedInUser?.id != null &&
-              UserProvider().loggedInUser?.id == widget.player?.id)
-            _buildPrivacySettings(),
         ],
-        const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: () {
-            checkDuplicate();
-          },
-          child: (widget.editingOrAdding == 'Edit')
-              ? const Text("Save Changes")
-              : const Text("Add Player"),
-        ),
-      ],
+      ),
     );
   }
 

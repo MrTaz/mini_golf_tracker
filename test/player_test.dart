@@ -5,6 +5,12 @@ import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
+import 'package:firebase_core_platform_interface/test.dart';
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
 void main() {
   group('Player constructor', () {
     test('creates with required fields', () {
@@ -574,4 +580,197 @@ void main() {
       expect(result, isNull);
     });
   });
+
+  group('Player isQuickPlay unit tests', () {
+    test('creates with isQuickPlay default false', () {
+      final player = Player(
+        id: 'qp-test-1',
+        playerName: 'Quick',
+        nickname: 'Q',
+        ownerId: 'owner-1',
+        totalScore: 0,
+      );
+      expect(player.isQuickPlay, isFalse);
+    });
+
+    test('fromJson and toJson handles isQuickPlay correctly', () {
+      final json = {
+        'id': 'qp-test-2',
+        'player_name': 'Quick 2',
+        'nickname': 'Q2',
+        'owner_id': 'owner-2',
+        'total_score': 0,
+        'is_quick_play': true,
+      };
+      final player = Player.fromJson(json);
+      expect(player.isQuickPlay, isTrue);
+
+      final outJson = player.toJson();
+      expect(outJson['is_quick_play'], isTrue);
+    });
+
+    test('createPlayer sets isQuickPlay and resolves canonical player', () async {
+      final db = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(db);
+
+      final created = await Player.createPlayer('QP Player', 'QP', isQuickPlay: true);
+      expect(created.isQuickPlay, isTrue);
+
+      final resolved = await Player.resolveCanonicalPlayer(created, ownerIdForNewPlayer: 'owner-x');
+      expect(resolved.isQuickPlay, isTrue);
+
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+    });
+  });
+
+  group('Player createPlayer ownerId defaults coverage tests', () {
+    test('createPlayer with active Firebase apps and matching currentUser UID', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final originalFirebase = FirebasePlatform.instance;
+      final originalAuth = FirebaseAuthPlatform.instance;
+
+      try {
+        setupFirebaseCoreMocks();
+        await Firebase.initializeApp();
+
+        final mockUser = MyMockUserPlatform(
+          uid: 'auth-user-uid',
+          email: 'test@example.com',
+        );
+        MockFirebaseAuthPlatform.mockUser = mockUser;
+        MockFirebaseAuthPlatform.shouldThrow = false;
+        FirebaseAuthPlatform.instance = MockFirebaseAuthPlatform();
+
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        final player = await Player.createPlayer('Test Player', 'TP');
+        expect(player.ownerId, 'auth-user-uid');
+      } finally {
+        FirebasePlatform.instance = originalFirebase;
+        FirebaseAuthPlatform.instance = originalAuth;
+        DatabaseConnection.setFirestoreInstanceForTesting(null);
+      }
+    });
+
+    test('createPlayer when auth currentUser getter throws exception defaults to guest', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final originalFirebase = FirebasePlatform.instance;
+      final originalAuth = FirebaseAuthPlatform.instance;
+
+      try {
+        setupFirebaseCoreMocks();
+        await Firebase.initializeApp();
+
+        MockFirebaseAuthPlatform.mockUser = null;
+        MockFirebaseAuthPlatform.shouldThrow = true;
+        FirebaseAuthPlatform.instance = MockFirebaseAuthPlatform();
+
+        final testFirestore = FakeFirebaseFirestore();
+        DatabaseConnection.setFirestoreInstanceForTesting(testFirestore);
+
+        final player = await Player.createPlayer('Test Player', 'TP');
+        expect(player.ownerId, 'guest');
+      } finally {
+        FirebasePlatform.instance = originalFirebase;
+        FirebaseAuthPlatform.instance = originalAuth;
+        DatabaseConnection.setFirestoreInstanceForTesting(null);
+      }
+    });
+  });
+}
+
+class MockFirebasePlatform extends FirebasePlatform {
+  final bool shouldThrow;
+  MockFirebasePlatform({this.shouldThrow = false}) : super();
+
+  @override
+  Future<FirebaseAppPlatform> initializeApp({
+    String? name,
+    FirebaseOptions? options,
+  }) async {
+    return FirebaseAppPlatform(
+      name ?? '[DEFAULT]',
+      options ??
+          const FirebaseOptions(
+            apiKey: 'key',
+            appId: 'id',
+            messagingSenderId: 'sender',
+            projectId: 'project',
+          ),
+    );
+  }
+
+  @override
+  List<FirebaseAppPlatform> get apps => [
+        FirebaseAppPlatform(
+            '[DEFAULT]',
+            const FirebaseOptions(
+              apiKey: 'key',
+              appId: 'id',
+              messagingSenderId: 'sender',
+              projectId: 'project',
+            ))
+      ];
+
+  @override
+  FirebaseAppPlatform app([String name = '[DEFAULT]']) {
+    if (shouldThrow) {
+      throw Exception('Simulated Firebase Platform Exception');
+    }
+    return apps.first;
+  }
+}
+
+class MyMockUserPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements UserPlatform {
+  @override
+  final String uid;
+  @override
+  final String? email;
+  final bool emailVerified;
+
+  MyMockUserPlatform({
+    required this.uid,
+    this.email,
+    this.emailVerified = true,
+  });
+}
+
+class MockFirebaseAuthPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements FirebaseAuthPlatform {
+  static UserPlatform? mockUser;
+  static bool shouldThrow = false;
+
+  MockFirebaseAuthPlatform();
+
+  @override
+  FirebaseAuthPlatform delegateFor({required FirebaseApp app}) => this;
+
+  @override
+  FirebaseAuthPlatform setInitialValues({
+    covariant dynamic currentUser,
+    covariant dynamic languageCode,
+  }) {
+    return this;
+  }
+
+  @override
+  Stream<UserPlatform?> authStateChanges() => const Stream.empty();
+
+  @override
+  Stream<UserPlatform?> userChanges() => const Stream.empty();
+
+  @override
+  Stream<UserPlatform?> idTokenChanges() => const Stream.empty();
+
+  @override
+  UserPlatform? get currentUser {
+    if (shouldThrow) {
+      throw Exception('Simulated Auth Exception');
+    }
+    return mockUser;
+  }
 }

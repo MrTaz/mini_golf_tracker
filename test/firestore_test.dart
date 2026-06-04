@@ -1276,14 +1276,14 @@ void main() {
   // ════════════════════════════════════════════════════════════════════════════
 
   group('Player.createPlayer edge cases', () {
-    test('updates owner_id to doc ID when ownerId is empty', () async {
+    test('updates owner_id to guest when ownerId is empty and no user is logged in', () async {
       // Indirectly test via createPlayer with no ownerId
       final p = await Player.createPlayer('EmptyOwner', 'EO',
           email: 'empty@test.com', phoneNumber: '000');
-      expect(p.ownerId, p.id);
+      expect(p.ownerId, 'guest');
 
       final doc = await fakeFirestore.collection('players').doc(p.id).get();
-      expect(doc.data()?['owner_id'], p.id);
+      expect(doc.data()?['owner_id'], 'guest');
     });
   });
 

@@ -365,13 +365,14 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.7 Preserve Nickname-Only and Quick-Play Players
 
-* [ ] Preserve anonymous / nickname-only users as first-class players.
-* [ ] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
-* [ ] Ensure `ownerId` defaults to the creator’s UID or `'guest'`.
-* [ ] Update the `Player` model to include an `isQuickPlay` boolean flag.
-* [ ] Ensure `PlayerForm` bypasses mandatory email / phone validation when `isQuickPlay` is `true`.
-* [ ] Store quick-play players in the local `guest_players` `SharedPreferences` key.
-* [ ] Ensure PII independence for quick-play and guest players.
+* [x] Preserve anonymous / nickname-only users as first-class players.
+* [x] Verify `Player.createPlayer` remains functional with only `playerName` and `nickname`.
+* [x] Ensure `ownerId` defaults to the creator’s UID or `'guest'`.
+* [x] Update the `Player` model to include an `isQuickPlay` boolean flag.
+* [x] Ensure `PlayerForm` bypasses mandatory email / phone validation when `isQuickPlay` is `true`.
+* [x] Store quick-play players in the local `guest_players` `SharedPreferences` key.
+* [x] Ensure PII independence for quick-play and guest players.
+* [x] Create a Patrol E2E test to validate the quick-play profile creation flow without mandatory contacts.
 
 #### Phase 2.8 Normalize Contact Entry Points
 
@@ -1229,7 +1230,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] FIFO SyncQueue.
 * [ ] GameCardWidget.deleteSavedGame targeted storage lookup.
 * [x] _findConflictingCourses Haversine threshold.
+* [x] Location conflict detects courses within `100 meters` (`test/add_edit_course_screen_test.dart`).
 * [x] Normalized address substring matching.
+* [x] Address conflict works without coordinates (`test/add_edit_course_screen_test.dart`).
 
 ---
 
@@ -1255,22 +1258,23 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Integration / E2E Tests
 
-* [x] In-game pause reminder coach mark flow passes (`integration_test/pause_reminder_coach_mark_test.dart`).
-* [x] Concurrency guardrails and active game warning flow passes (`integration_test/concurrency_guardrails_flow_test.dart`).
-* [x] Guest scorekeeper PII form gating and login routing flow passes (`integration_test/guest_pii_gating_flow_test.dart`).
-* [x] Creator participation warning bypass flow passes (`integration_test/creator_participation_warning_test.dart`).
-* [x] Course creation map search and location name flow passes (`integration_test/course_creation_map_flow_test.dart`).
-* [x] Update `integration_test/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
-* [x] Course location duplicate conflict and bypass flow passes (`integration_test/course_location_conflict_flow_test.dart`).
-* [x] Activity Hub game create and active game resume flow passes (`integration_test/activity_hub_game_create_flow_test.dart`).
-* [x] Active game score increment and guest shared drawer access flows pass (`integration_test/phase_1_19_drawer_score_flow_test.dart`).
-* [x] Offline course selection fallback flow passes (`integration_test/course_selection_fallback_test.dart`).
-* [x] Authentication and test-account verification bypass flow passes (`integration_test/auth_login_flow_test.dart`).
-* [x] Player selection, deselection, and clear-all flow passes (`integration_test/player_selection_flow_test.dart`).
-* [x] Guest-created cloud game visibility by registered participant ID flow passes (`integration_test/guest_game_visibility_test.dart`).
-* [x] Google Sign-In E2E authentication flow passes (Note: requires Patrol native UI test configuration to tap system pop-ups).
-* [x] Guest drawer intercept context banner flow passes (`integration_test/guest_drawer_intercept_flow_test.dart`).
-* [x] Firebase Local Emulator Suite is configured.
+* [x] Quick-play profile creation flow passes (`patrol_test/auth/quick_play_profile_patrol_test.dart`).
+* [x] In-game pause reminder coach mark flow passes (`patrol_test/gameplay/pause_reminder_coach_mark_test.dart`).
+* [x] Concurrency guardrails and active game warning flow passes (`patrol_test/game_setup/concurrency_guardrails_flow_test.dart`).
+* [x] Guest scorekeeper PII form gating and login routing flow passes (`patrol_test/auth/guest_pii_gating_flow_test.dart`).
+* [x] Creator participation warning bypass flow passes (`patrol_test/game_setup/creator_participation_warning_test.dart`).
+* [x] Course creation map search and location name flow passes (`patrol_test/courses/course_creation_map_flow_test.dart`).
+* [x] Update `patrol_test/courses/course_creation_map_flow_test.dart` to explicitly test tapping a course in `CoursesScreen`, verifying it expands inline (no popup), and asserting the course details (Location and Total Par) are visible.
+* [x] Course location duplicate conflict and bypass flow passes (`patrol_test/courses/course_location_conflict_flow_test.dart`).
+* [x] Activity Hub game create and active game resume flow passes (`patrol_test/navigation/activity_hub_game_create_flow_test.dart`).
+* [x] Active game score increment and guest shared drawer access flows pass (`patrol_test/gameplay/active_game_score_drawer_flow_test.dart`).
+* [x] Offline course selection fallback flow passes (`patrol_test/courses/course_selection_fallback_test.dart`).
+* [x] Authentication and test-account verification bypass flow passes (`patrol_test/auth/auth_login_flow_test.dart`).
+* [x] Player selection, deselection, and clear-all flow passes (`patrol_test/game_setup/player_selection_flow_test.dart`).
+* [x] Guest-created cloud game visibility by registered participant ID flow passes (`patrol_test/gameplay/guest_game_visibility_test.dart`).
+* [x] Google Sign-In E2E authentication flow passes (`patrol_test/auth/google_sign_in_patrol_test.dart`).
+* [x] Guest drawer intercept context banner flow passes (`patrol_test/navigation/guest_drawer_intercept_flow_test.dart`).
+* [x] Firebase Local Emulator Suite is configured (`firebase_rules_tests/firestore.rules.test.js`).
 * [ ] Remote game exists with canonical player.
 * [ ] Guest creates local game with matching contact.
 * [ ] Guest signs up.
@@ -1280,9 +1284,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Firestore stream updates propagate to UI.
 * [ ] Offline queue replays writes in FIFO order.
 * [ ] Merge approval only completes after challenged owner approves verification link.
-* [x] Location conflict detects courses within `100 meters`.
-* [x] Address conflict works without coordinates.
-* [x] User can create a secondary course at same location.
+* [x] User can create a secondary course at same location (`patrol_test/courses/course_location_conflict_flow_test.dart`).
 
 ---
 

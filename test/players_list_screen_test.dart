@@ -287,6 +287,7 @@ void main() {
       nickname: 'Owner',
       ownerId: 'owner123',
       totalScore: 0,
+      isQuickPlay: true,
     );
     await UserProvider().login(owner);
 

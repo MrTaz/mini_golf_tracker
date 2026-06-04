@@ -34,7 +34,8 @@ class Player {
       this.avatarImageLocation,
       this.claimStatus = ClaimStatus.none,
       this.verifiedEmails = const [],
-      this.verifiedPhones = const []});
+      this.verifiedPhones = const [],
+      this.isQuickPlay = false});
 
   // Factory method to create a Player object without populating fields
   factory Player.empty() {
@@ -44,6 +45,7 @@ class Player {
       nickname: '',
       ownerId: '',
       totalScore: 0,
+      isQuickPlay: false,
     );
   }
 
@@ -72,7 +74,8 @@ class Player {
             : const [],
         verifiedPhones: json['verified_phones'] != null
             ? List<String>.from(json['verified_phones'])
-            : const []);
+            : const [],
+        isQuickPlay: json['is_quick_play'] ?? false);
   }
 
   static ClaimStatus _parseClaimStatus(String? status) {
@@ -109,6 +112,7 @@ class Player {
   ClaimStatus claimStatus;
   List<String> verifiedEmails;
   List<String> verifiedPhones;
+  bool isQuickPlay;
 
   Map<String, dynamic> toJson() {
     return {
@@ -130,6 +134,7 @@ class Player {
       'claim_status': claimStatus.name,
       'verified_emails': verifiedEmails,
       'verified_phones': verifiedPhones,
+      'is_quick_play': isQuickPlay,
     };
   }
 
@@ -236,6 +241,7 @@ class Player {
       email: player.email,
       phoneNumber: player.phoneNumber,
       ownerId: ownerIdForNewPlayer,
+      isQuickPlay: player.isQuickPlay,
     );
   }
 
@@ -566,6 +572,7 @@ class Player {
     String? phoneNumber,
     String? id,
     String? ownerId,
+    bool isQuickPlay = false,
   }) async {
     try {
       final normalizedEmail = ContactIdentity.normalizeEmail(email);
@@ -584,17 +591,28 @@ class Player {
           ? DatabaseConnection.client.collection('players').doc(id)
           : DatabaseConnection.client.collection('players').doc();
 
+      String computedOwnerId = ownerId ?? 'guest';
+      if (ownerId == null && Firebase.apps.isNotEmpty) {
+        try {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            computedOwnerId = currentUser.uid;
+          }
+        } catch (_) {}
+      }
+
       final player = Player(
         id: docRef.id,
         playerName: playerName,
         nickname: nickname,
-        ownerId: ownerId ?? docRef.id,
+        ownerId: computedOwnerId,
         totalScore: 0,
         email: normalizedEmail,
         phoneNumber: normalizedPhoneNumber,
         normalizedEmail: normalizedEmail,
         normalizedPhoneNumber: normalizedPhoneNumber,
         claimedByUid: id,
+        isQuickPlay: isQuickPlay,
       );
 
       final reservations = _contactReservationsForPlayer(player);
