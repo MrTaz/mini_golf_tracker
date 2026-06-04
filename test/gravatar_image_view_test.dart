@@ -82,4 +82,30 @@ void main() {
     final fadeImageFinder = find.byType(FadeInImage);
     expect(fadeImageFinder, findsOneWidget);
   });
+
+  testWidgets('GravatarImageView updates when email changes', (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: 'initial@example.com'),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Rebuild with different email
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: DefaultAssetBundle(
+          bundle: FakeAssetBundle(),
+          child: GravatarImageView(email: 'updated@example.com'),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final fadeImageFinder = find.byType(FadeInImage);
+    expect(fadeImageFinder, findsOneWidget);
+  });
 }

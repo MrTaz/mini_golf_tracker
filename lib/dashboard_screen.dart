@@ -162,10 +162,6 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
       return const Center(child: Text("Please log in"));
     }
 
-    if (_initGamesFuture == null || _lastUser != loggedInUser) {
-      _initGames();
-    }
-
     return FutureBuilder(
         future: _initGamesFuture,
         builder: (BuildContext context, AsyncSnapshot snap) {

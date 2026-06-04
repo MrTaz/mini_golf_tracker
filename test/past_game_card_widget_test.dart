@@ -84,4 +84,36 @@ void main() {
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('PastGameCardWidget updates when gamesFuture changes', (WidgetTester tester) async {
+    final completer1 = Completer<List<Game?>>();
+    final completer2 = Completer<List<Game?>>();
+    completer1.future.catchError((_) => <Game?>[]);
+    completer2.future.catchError((_) => <Game?>[]);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: PastGameCardWidget(
+          gamesFuture: completer1.future,
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    // Rebuild with different gamesFuture
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: PastGameCardWidget(
+          gamesFuture: completer2.future,
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    completer2.completeError('Simulated error');
+    await tester.pumpAndSettle();
+    expect(find.text('Error: Unable to load local game data'), findsOneWidget);
+    await tester.pumpWidget(Container());
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
