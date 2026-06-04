@@ -142,60 +142,109 @@ const env = {
 };
 
 // ---------------------------------------------------------------------------
-// Step 3: Run firebase emulators:exec → jest
+// Step 3: Run firebase emulators:exec → jest (or run Jest directly if emulator is active)
 // ---------------------------------------------------------------------------
 
-// firebase.json lives one level up from firebase_rules_tests/
-const firebaseConfig = path.resolve(__dirname, '..', 'firebase.json');
+const http = require('http');
 
-// Forward any arguments passed to run-tests.js down to Jest.
-// This allows Jest VS Code extension and other tools to run/debug specific tests.
-const args = process.argv.slice(2);
-const escapedArgs = args.map(arg => {
-  const escaped = arg.replace(/"/g, '\\"');
-  if (/[ &|<>^%#@!*?()'"\s\\]/.test(arg)) {
-    return `"${escaped}"`;
+function isEmulatorRunning(port) {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/`, (res) => {
+      res.destroy();
+      resolve(true);
+    });
+    req.on('error', () => {
+      resolve(false);
+    });
+    req.setTimeout(500, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+(async () => {
+  const firebaseConfig = path.resolve(__dirname, '..', 'firebase.json');
+  const args = process.argv.slice(2);
+  const escapedArgs = args.map(arg => {
+    const escaped = arg.replace(/"/g, '\\"');
+    if (/[ &|<>^%#@!*?()'"\s\\]/.test(arg)) {
+      return `"${escaped}"`;
+    }
+    return arg;
+  });
+
+  const { spawn } = require('child_process');
+
+  // Firestore emulator runs on port 8080 by default
+  const emulatorActive = await isEmulatorRunning(8080);
+
+  if (emulatorActive) {
+    console.log('[run-tests] Firebase Emulator is already running. Running Jest directly...\n');
+    
+    const jestBin = path.resolve(__dirname, 'node_modules', 'jest', 'bin', 'jest.js');
+    const child = spawn('node', [jestBin, '--forceExit', ...args], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env,
+      windowsHide: true
+    });
+
+    child.stdout.on('data', (data) => {
+      process.stdout.write(data);
+    });
+
+    child.stderr.on('data', (data) => {
+      process.stderr.write(data);
+    });
+
+    child.on('close', (code) => {
+      process.exit(code ?? 0);
+    });
+
+    child.on('error', (err) => {
+      console.error('[run-tests] Failed to start Jest process:', err);
+      process.exit(1);
+    });
+  } else {
+    console.log('[run-tests] Firebase Emulator is not running. Launching via emulators:exec...\n');
+
+    const jestCmd = ['jest', '--forceExit', ...escapedArgs].join(' ');
+
+    const firebaseCmd = [
+      'npx',
+      '--yes',
+      'firebase-tools',
+      'emulators:exec',
+      `--config "${firebaseConfig}"`,
+      '--only firestore,auth',
+      '--project demo-mini-golf-tracker',
+      `"${jestCmd.replace(/"/g, '\\"')}"`,
+    ].join(' ');
+
+    console.log(`[run-tests] Running: ${firebaseCmd}\n`);
+
+    const child = spawn(firebaseCmd, {
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env,
+      windowsHide: true
+    });
+
+    child.stdout.on('data', (data) => {
+      process.stdout.write(data);
+    });
+
+    child.stderr.on('data', (data) => {
+      process.stderr.write(data);
+    });
+
+    child.on('close', (code) => {
+      process.exit(code ?? 0);
+    });
+
+    child.on('error', (err) => {
+      console.error('[run-tests] Failed to start process:', err);
+      process.exit(1);
+    });
   }
-  return arg;
-});
-
-const jestCmd = ['jest', '--forceExit', ...escapedArgs].join(' ');
-
-// Use npx to invoke firebase-tools without requiring a global install.
-const firebaseCmd = [
-  'npx',
-  '--yes',
-  'firebase-tools',
-  'emulators:exec',
-  `--config "${firebaseConfig}"`,
-  '--only firestore,auth',
-  '--project demo-mini-golf-tracker',
-  `"${jestCmd.replace(/"/g, '\\"')}"`,
-].join(' ');
-
-console.log(`[run-tests] Running: ${firebaseCmd}\n`);
-
-const { spawn } = require('child_process');
-const child = spawn(firebaseCmd, {
-  shell: true,
-  stdio: ['ignore', 'pipe', 'pipe'],
-  env,
-  windowsHide: true
-});
-
-child.stdout.on('data', (data) => {
-  process.stdout.write(data);
-});
-
-child.stderr.on('data', (data) => {
-  process.stderr.write(data);
-});
-
-child.on('close', (code) => {
-  process.exit(code ?? 0);
-});
-
-child.on('error', (err) => {
-  console.error('[run-tests] Failed to start process:', err);
-  process.exit(1);
-});
+})();
