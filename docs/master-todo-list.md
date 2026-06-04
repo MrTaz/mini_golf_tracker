@@ -1282,15 +1282,15 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Firestore Rules Tests
 
-* [ ] Users can mutate only games they created or participate in.
-* [ ] Non-participants cannot read restricted games.
-* [ ] Verified claims prevent player theft.
-* [ ] `claimed_by_uid` cannot be hijacked.
-* [ ] Contact visibility is restricted.
-* [ ] Email visibility is restricted.
-* [ ] Phone visibility is restricted.
-* [ ] Friend-edge mutations are restricted.
-* [ ] `player_contacts` writes require valid ownership or verified claim.
+* [x] Users can mutate only games they created or participate in.
+* [x] Non-participants cannot read restricted games.
+* [x] Verified claims prevent player theft.
+* [x] `claimed_by_uid` cannot be hijacked.
+* [x] Contact visibility is restricted.
+* [x] Email visibility is restricted.
+* [x] Phone visibility is restricted.
+* [x] Friend-edge mutations are restricted.
+* [x] `player_contacts` writes require valid ownership or verified claim.
 
 ---
 
