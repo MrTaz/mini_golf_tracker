@@ -27,6 +27,7 @@ You must follow this strict iterative loop for every task until completion:
 * **Clean Architecture:** Strictly separate concerns. Break down features into separate files for Models, Services/Repositories, Interfaces, and UI Components/Widgets.
 * **State Management:** This project uses `ChangeNotifier` (e.g., `UserProvider`) and standard `StatefulWidget` `setState` patterns. Do not introduce third-party state management libraries (like Riverpod, Bloc, or GetX) unless explicitly instructed.
 * **DRY Principle:** Abstract repetitive logic into utilities or base classes. This applies equally to both application code and test code.
+* **FutureBuilder Safety:** NEVER instantiate a `Future` directly inside a `build()` method or pass an un-cached method call to a `FutureBuilder` (e.g., `future: fetchGames()`). You MUST cache all futures in state variables (using `initState` or `didUpdateWidget`) to prevent infinite rebuild loops, CPU spikes, and memory leaks.
 
 ## Testing Requirements & Established Mocks
 
