@@ -9,6 +9,12 @@ import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum ClaimStatus {
+  none,
+  pendingVerification,
+  claimed,
+}
+
 class Player {
   Player(
       {required this.id,
@@ -25,7 +31,10 @@ class Player {
       this.shareName = true,
       this.shareEmail = true,
       this.sharePhone = true,
-      this.avatarImageLocation});
+      this.avatarImageLocation,
+      this.claimStatus = ClaimStatus.none,
+      this.verifiedEmails = const [],
+      this.verifiedPhones = const []});
 
   // Factory method to create a Player object without populating fields
   factory Player.empty() {
@@ -56,7 +65,28 @@ class Player {
         shareEmail: json['share_email'] ?? true,
         sharePhone: json['share_phone'] ?? true,
         totalScore: json['total_score'] ?? 0,
-        avatarImageLocation: json['avatar_image_location']);
+        avatarImageLocation: json['avatar_image_location'],
+        claimStatus: _parseClaimStatus(json['claim_status']),
+        verifiedEmails: json['verified_emails'] != null
+            ? List<String>.from(json['verified_emails'])
+            : const [],
+        verifiedPhones: json['verified_phones'] != null
+            ? List<String>.from(json['verified_phones'])
+            : const []);
+  }
+
+  static ClaimStatus _parseClaimStatus(String? status) {
+    if (status == null) return ClaimStatus.none;
+    switch (status) {
+      case 'none':
+        return ClaimStatus.none;
+      case 'pendingVerification':
+        return ClaimStatus.pendingVerification;
+      case 'claimed':
+        return ClaimStatus.claimed;
+      default:
+        return ClaimStatus.none;
+    }
   }
 
   static List<Player> players = [];
@@ -76,6 +106,9 @@ class Player {
   String playerName;
   String? status;
   num totalScore;
+  ClaimStatus claimStatus;
+  List<String> verifiedEmails;
+  List<String> verifiedPhones;
 
   Map<String, dynamic> toJson() {
     return {
@@ -93,7 +126,10 @@ class Player {
       'share_email': shareEmail,
       'share_phone': sharePhone,
       'total_score': totalScore,
-      'avatar_image_location': avatarImageLocation
+      'avatar_image_location': avatarImageLocation,
+      'claim_status': claimStatus.name,
+      'verified_emails': verifiedEmails,
+      'verified_phones': verifiedPhones,
     };
   }
 

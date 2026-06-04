@@ -608,14 +608,14 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### 5.3 Multi-Contact Support
 
-* [ ] Update `Player` model to support multiple verified contacts.
-* [ ] Add `List<String> verifiedEmails`.
-* [ ] Add `List<String> verifiedPhones`.
-* [ ] Also support schema names:
+* [x] Update `Player` model to support multiple verified contacts.
+* [x] Add `List<String> verifiedEmails`.
+* [x] Add `List<String> verifiedPhones`.
+* [x] Also support schema names:
   * `verified_emails`
   * `verified_phones`
-* [ ] Update `player_contacts` collection so a single canonical player can own multiple verified contacts.
-* [ ] Define a `ClaimStatus` enum:
+* [x] Update `player_contacts` collection so a single canonical player can own multiple verified contacts.
+* [x] Define a `ClaimStatus` enum:
   * `none`
   * `pendingVerification`
   * `claimed`

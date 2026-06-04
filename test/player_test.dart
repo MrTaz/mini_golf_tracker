@@ -27,6 +27,9 @@ void main() {
       expect(player.shareName, isTrue);
       expect(player.shareEmail, isTrue);
       expect(player.sharePhone, isTrue);
+      expect(player.claimStatus, ClaimStatus.none);
+      expect(player.verifiedEmails, isEmpty);
+      expect(player.verifiedPhones, isEmpty);
     });
 
     test('creates with all optional fields', () {
@@ -46,6 +49,9 @@ void main() {
         shareEmail: false,
         sharePhone: false,
         avatarImageLocation: 'https://example.com/avatar.png',
+        claimStatus: ClaimStatus.claimed,
+        verifiedEmails: const ['bob@example.com'],
+        verifiedPhones: const ['555-1234'],
       );
       expect(player.email, 'bob@example.com');
       expect(player.phoneNumber, '555-1234');
@@ -57,6 +63,9 @@ void main() {
       expect(player.shareEmail, isFalse);
       expect(player.sharePhone, isFalse);
       expect(player.avatarImageLocation, 'https://example.com/avatar.png');
+      expect(player.claimStatus, ClaimStatus.claimed);
+      expect(player.verifiedEmails, const ['bob@example.com']);
+      expect(player.verifiedPhones, const ['555-1234']);
     });
   });
 
@@ -89,6 +98,9 @@ void main() {
         'share_phone': false,
         'total_score': 75,
         'avatar_image_location': 'https://example.com/carol.png',
+        'claim_status': 'claimed',
+        'verified_emails': ['carol@example.com'],
+        'verified_phones': ['555-5678'],
       };
       final player = Player.fromJson(json);
       expect(player.id, 'p1');
@@ -106,6 +118,9 @@ void main() {
       expect(player.sharePhone, isFalse);
       expect(player.totalScore, 75);
       expect(player.avatarImageLocation, 'https://example.com/carol.png');
+      expect(player.claimStatus, ClaimStatus.claimed);
+      expect(player.verifiedEmails, ['carol@example.com']);
+      expect(player.verifiedPhones, ['555-5678']);
     });
 
     test('defaults empty string when optional fields are missing', () {
@@ -124,6 +139,51 @@ void main() {
       expect(player.shareName, isTrue);
       expect(player.shareEmail, isTrue);
       expect(player.sharePhone, isTrue);
+      expect(player.claimStatus, ClaimStatus.none);
+      expect(player.verifiedEmails, isEmpty);
+      expect(player.verifiedPhones, isEmpty);
+    });
+
+    test('handles unknown, pendingVerification, or null claim_status', () {
+      final jsonPending = {
+        'player_name': 'A',
+        'nickname': 'A',
+        'owner_id': 'o1',
+        'total_score': 0,
+        'claim_status': 'pendingVerification',
+      };
+      final playerPending = Player.fromJson(jsonPending);
+      expect(playerPending.claimStatus, ClaimStatus.pendingVerification);
+
+      final jsonNone = {
+        'player_name': 'A',
+        'nickname': 'A',
+        'owner_id': 'o1',
+        'total_score': 0,
+        'claim_status': 'none',
+      };
+      final playerNone = Player.fromJson(jsonNone);
+      expect(playerNone.claimStatus, ClaimStatus.none);
+
+      final jsonUnknown = {
+        'player_name': 'B',
+        'nickname': 'B',
+        'owner_id': 'o1',
+        'total_score': 0,
+        'claim_status': 'garbage_value',
+      };
+      final playerUnknown = Player.fromJson(jsonUnknown);
+      expect(playerUnknown.claimStatus, ClaimStatus.none);
+
+      final jsonNull = {
+        'player_name': 'C',
+        'nickname': 'C',
+        'owner_id': 'o1',
+        'total_score': 0,
+        'claim_status': null,
+      };
+      final playerNull = Player.fromJson(jsonNull);
+      expect(playerNull.claimStatus, ClaimStatus.none);
     });
   });
 
@@ -145,6 +205,9 @@ void main() {
         shareEmail: false,
         sharePhone: false,
         avatarImageLocation: 'https://example.com/eve.png',
+        claimStatus: ClaimStatus.pendingVerification,
+        verifiedEmails: const ['eve@example.com'],
+        verifiedPhones: const ['555-9999'],
       );
       final json = player.toJson();
       expect(json['id'], 'p1');
@@ -162,6 +225,9 @@ void main() {
       expect(json['share_email'], isFalse);
       expect(json['share_phone'], isFalse);
       expect(json['avatar_image_location'], 'https://example.com/eve.png');
+      expect(json['claim_status'], 'pendingVerification');
+      expect(json['verified_emails'], ['eve@example.com']);
+      expect(json['verified_phones'], ['555-9999']);
     });
 
     test('round-trip fromJson -> toJson preserves data', () {
@@ -178,6 +244,9 @@ void main() {
         'share_phone': false,
         'total_score': 20,
         'avatar_image_location': null,
+        'claim_status': 'claimed',
+        'verified_emails': ['frank@example.com'],
+        'verified_phones': <String>[],
       };
       final player = Player.fromJson(original);
       final result = player.toJson();
@@ -187,6 +256,9 @@ void main() {
       expect(result['share_name'], isFalse);
       expect(result['share_email'], isFalse);
       expect(result['share_phone'], isFalse);
+      expect(result['claim_status'], 'claimed');
+      expect(result['verified_emails'], ['frank@example.com']);
+      expect(result['verified_phones'], <String>[]);
     });
   });
 
