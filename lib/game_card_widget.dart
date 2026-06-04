@@ -51,21 +51,31 @@ class GameCardWidget extends StatefulWidget {
 }
 
 class GameCardWidgetState extends State<GameCardWidget> {
+  late Future<List<Game?>> _gamesFuture;
+  final Map<String, Future<String>> _formattedTimes = {};
+
   @override
   void initState() {
-    setState(() {}); // Refresh the widget after creating a new game
     super.initState();
+    _loadGames();
+  }
+
+  void _loadGames() {
+    _gamesFuture = Game.getLocallySavedGames(
+        gameStatusTypes: ["unstarted_game", "started"]);
   }
 
   Future<void> updateGameCard() async {
-    await Game.getLocallySavedGames(
-        gameStatusTypes: ["unstarted_game", "started"]);
-    setState(() {});
+    setState(() {
+      _loadGames();
+    });
   }
 
   Future<void> deleteSavedGame({Game? gameToDelete}) async {
     await _deleteSavedGameFromStorage(gameToDelete: gameToDelete);
-    setState(() {}); // Refresh the widget after deletion
+    setState(() {
+      _loadGames();
+    }); // Refresh the widget after deletion
   }
 
   Future<void> _navigateToGameCreateScreen() async {
@@ -76,9 +86,9 @@ class GameCardWidgetState extends State<GameCardWidget> {
         });
       }),
     );
-    await Game.getLocallySavedGames(
-        gameStatusTypes: ["unstarted_game", "started"]);
-    setState(() {}); // Refresh the widget after creating a new game
+    setState(() {
+      _loadGames();
+    }); // Refresh the widget after creating a new game
   }
 
   Widget _buildCreateNewGameCard() {
@@ -109,8 +119,7 @@ class GameCardWidgetState extends State<GameCardWidget> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: FutureBuilder<List<Game?>>(
-            future: Game.getLocallySavedGames(
-                gameStatusTypes: ["unstarted_game", "started"]),
+            future: _gamesFuture,
             builder: (BuildContext context,
                 AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
@@ -164,16 +173,19 @@ class GameCardWidgetState extends State<GameCardWidget> {
                         itemCount: gameSnapshot.data!.length,
                         itemBuilder: (BuildContext context, int index) {
                           Game game = gameSnapshot.data![index]!;
+                          final targetTime = game.status != "unstarted_game" &&
+                                  game.startTime != null
+                              ? game.startTime!
+                              : game.scheduledTime;
                           return Card(
                               elevation: 6,
                               child: Column(children: [
                                 ListTile(
                                   title: FutureBuilder<String>(
-                                    future: Utilities.formatStartTime(
-                                        game.status != "unstarted_game" &&
-                                                game.startTime != null
-                                            ? game.startTime!
-                                            : game.scheduledTime),
+                                    future: _formattedTimes.putIfAbsent(
+                                      '${game.id}_${targetTime.millisecondsSinceEpoch}',
+                                      () => Utilities.formatStartTime(targetTime),
+                                    ),
                                     builder: (BuildContext context,
                                         AsyncSnapshot<String> snapshot) {
                                       if (snapshot.hasData) {

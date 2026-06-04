@@ -16,7 +16,7 @@ import 'package:mini_golf_tracker/scheduled_games_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({
     super.key,
     this.changeBodyCallback,
@@ -30,9 +30,27 @@ class AppDrawer extends StatelessWidget {
   final VoidCallback? onRefreshRequested;
   final ValueChanged<int>? onTabSelected;
 
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  late Future<List<Game?>> _gamesFuture;
+  final Map<String, Future<String>> _formattedTimes = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGames();
+  }
+
+  void _loadGames() {
+    _gamesFuture = Game.getLocallySavedGames();
+  }
+
   void _showHome(BuildContext context) {
     Navigator.of(context).pop();
-    changeBodyCallback?.call(const HomeScreen());
+    widget.changeBodyCallback?.call(const HomeScreen());
   }
 
   Future<void> _openLogin(BuildContext context, {String? message}) async {
@@ -41,7 +59,7 @@ class AppDrawer extends StatelessWidget {
     await navigator.push(
       MaterialPageRoute(builder: (context) => LoginScreen(promptMessage: message)),
     );
-    onRefreshRequested?.call();
+    widget.onRefreshRequested?.call();
   }
 
   List<Widget> _buildUserAccounts(BuildContext context) {
@@ -65,7 +83,7 @@ class AppDrawer extends StatelessWidget {
         currentAccountPicture: PlayerAvatarWidget(player: loggedInPlayer!),
         otherAccountsPictures: <Widget>[
           GestureDetector(
-            onTap: onLogout,
+            onTap: widget.onLogout,
             child: Semantics(
               label: 'Logout',
               child: const CircleAvatar(
@@ -117,7 +135,7 @@ class AppDrawer extends StatelessWidget {
 
     list.add(
       FutureBuilder<List<Game?>>(
-        future: Game.getLocallySavedGames(),
+        future: _gamesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -162,7 +180,7 @@ class AppDrawer extends StatelessWidget {
                   final navigator = Navigator.of(context);
                   navigator.pop();
                   if (hasActive) {
-                    changeBodyCallback?.call(
+                    widget.changeBodyCallback?.call(
                       GameInprogressScreen(currentGame: activeGames.first),
                     );
                   } else {
@@ -171,7 +189,7 @@ class AppDrawer extends StatelessWidget {
                         builder: (context) => const GameCreateScreen(),
                       ),
                     );
-                    onRefreshRequested?.call();
+                    widget.onRefreshRequested?.call();
                   }
                 },
               ),
@@ -184,16 +202,16 @@ class AppDrawer extends StatelessWidget {
                   navigator.pop();
                   if (user != null) {
                     navigator.popUntil((route) => route.isFirst);
-                    if (onTabSelected != null) {
-                      onTabSelected?.call(1);
+                    if (widget.onTabSelected != null) {
+                      widget.onTabSelected?.call(1);
                     }
                     if (DashboardScreen.onTabSelect == null &&
-                        changeBodyCallback != null) {
-                      changeBodyCallback?.call(const DashboardScreen());
+                        widget.changeBodyCallback != null) {
+                      widget.changeBodyCallback?.call(const DashboardScreen());
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         DashboardScreen.onTabSelect?.call(1);
                       });
-                    } else if (onTabSelected == null &&
+                    } else if (widget.onTabSelected == null &&
                         DashboardScreen.onTabSelect != null) {
                       DashboardScreen.onTabSelect?.call(1);
                     }
@@ -203,7 +221,7 @@ class AppDrawer extends StatelessWidget {
                           MaterialPageRoute(
                               builder: (context) => const PlayersScreen()),
                         )
-                        .then((_) => onRefreshRequested?.call());
+                        .then((_) => widget.onRefreshRequested?.call());
                   }
                 },
               ),
@@ -217,16 +235,16 @@ class AppDrawer extends StatelessWidget {
                   navigator.pop();
                   if (user != null) {
                     navigator.popUntil((route) => route.isFirst);
-                    if (onTabSelected != null) {
-                      onTabSelected?.call(2);
+                    if (widget.onTabSelected != null) {
+                      widget.onTabSelected?.call(2);
                     }
                     if (DashboardScreen.onTabSelect == null &&
-                        changeBodyCallback != null) {
-                      changeBodyCallback?.call(const DashboardScreen());
+                        widget.changeBodyCallback != null) {
+                      widget.changeBodyCallback?.call(const DashboardScreen());
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         DashboardScreen.onTabSelect?.call(2);
                       });
-                    } else if (onTabSelected == null &&
+                    } else if (widget.onTabSelected == null &&
                         DashboardScreen.onTabSelect != null) {
                       DashboardScreen.onTabSelect?.call(2);
                     }
@@ -236,7 +254,7 @@ class AppDrawer extends StatelessWidget {
                           MaterialPageRoute(
                               builder: (context) => const PastGamesScreen()),
                         )
-                        .then((_) => onRefreshRequested?.call());
+                        .then((_) => widget.onRefreshRequested?.call());
                   }
                 },
               ),
@@ -254,8 +272,11 @@ class AppDrawer extends StatelessWidget {
                             fontWeight: FontWeight.w500, fontSize: 13),
                       ),
                       subtitle: FutureBuilder<String>(
-                        future: Utilities.formatStartTime(
-                            game.completedTime ?? game.scheduledTime),
+                        future: _formattedTimes.putIfAbsent(
+                          '${game.id}_${(game.completedTime ?? game.scheduledTime).millisecondsSinceEpoch}',
+                          () => Utilities.formatStartTime(
+                              game.completedTime ?? game.scheduledTime),
+                        ),
                         builder: (context, snapshot) {
                           final timeText = snapshot.data ?? "Loading...";
                           int? score;
@@ -288,7 +309,7 @@ class AppDrawer extends StatelessWidget {
                                 MaterialPageRoute(
                                     builder: (context) => const LoginScreen(promptMessage: "Login or register to view your past game details and save your history to the cloud.")),
                               )
-                              .then((_) => onRefreshRequested?.call());
+                              .then((_) => widget.onRefreshRequested?.call());
                         } else {
                           navigator
                               .push(
@@ -297,7 +318,7 @@ class AppDrawer extends StatelessWidget {
                                       PastGameDetailsScreen(passedGame: game),
                                 ),
                               )
-                              .then((_) => onRefreshRequested?.call());
+                              .then((_) => widget.onRefreshRequested?.call());
                         }
                       },
                     )),
@@ -314,7 +335,7 @@ class AppDrawer extends StatelessWidget {
                           builder: (context) => const LoginScreen(promptMessage: "Sign up to schedule future rounds and sync with friends."))
                       : MaterialPageRoute(
                           builder: (context) => const ScheduledGamesScreen());
-                  navigator.push(route).then((_) => onRefreshRequested?.call());
+                  navigator.push(route).then((_) => widget.onRefreshRequested?.call());
                 },
               ),
               if (user == null)
@@ -344,7 +365,10 @@ class AppDrawer extends StatelessWidget {
                             fontWeight: FontWeight.w500, fontSize: 13),
                       ),
                       subtitle: FutureBuilder<String>(
-                        future: Utilities.formatStartTime(game.scheduledTime),
+                        future: _formattedTimes.putIfAbsent(
+                          '${game.id}_${game.scheduledTime.millisecondsSinceEpoch}',
+                          () => Utilities.formatStartTime(game.scheduledTime),
+                        ),
                         builder: (context, snapshot) {
                           return Text(
                             snapshot.data ?? "Loading...",
@@ -362,7 +386,7 @@ class AppDrawer extends StatelessWidget {
                                     GameStartScreen(unstartedGame: game),
                               ),
                             )
-                            .then((_) => onRefreshRequested?.call());
+                            .then((_) => widget.onRefreshRequested?.call());
                       },
                     )),
             ],

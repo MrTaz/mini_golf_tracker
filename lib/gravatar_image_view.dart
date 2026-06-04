@@ -3,19 +3,45 @@ import 'package:flutter_gravatar/flutter_gravatar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mini_golf_tracker/utilities.dart';
 
-class GravatarImageView extends StatelessWidget {
+class GravatarImageView extends StatefulWidget {
   const GravatarImageView(
       {super.key, required this.email, this.width, this.height = 0.0});
 
-  final String defaultFriendAvatarImageStr =
-      "assets/images/avatars_3d_avatar_28.png";
   final String email;
   final double? height;
   final double? width;
 
+  @override
+  State<GravatarImageView> createState() => _GravatarImageViewState();
+}
+
+class _GravatarImageViewState extends State<GravatarImageView> {
+  final String defaultFriendAvatarImageStr =
+      "assets/images/avatars_3d_avatar_28.png";
+
+  late Future<String> _avatarFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _avatarFuture = getFriendAvatarImage();
+  }
+
+  @override
+  void didUpdateWidget(GravatarImageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.email != widget.email || oldWidget.width != widget.width) {
+      setState(() {
+        _avatarFuture = getFriendAvatarImage();
+      });
+    }
+  }
+
   static final Map<String, String> _gravatarImgUrlCache = {};
 
   Future<String> getFriendAvatarImage() async {
+    final email = widget.email;
+    final width = widget.width;
     return Future.microtask(() async {
       Utilities.debugPrintWithCallerInfo('Getting gravatar data for $email');
       if (email.isNotEmpty) {
@@ -35,6 +61,8 @@ class GravatarImageView extends StatelessWidget {
   }
 
   Widget _fadeInWidget(String imgUrlStr) {
+    final width = widget.width;
+    final height = widget.height;
     return FadeInImage(
         placeholder: AssetImage(defaultFriendAvatarImageStr),
         image: CachedNetworkImageProvider(imgUrlStr),
@@ -52,7 +80,7 @@ class GravatarImageView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
         child: FutureBuilder<String>(
-            future: getFriendAvatarImage(),
+            future: _avatarFuture,
             builder: (BuildContext context, AsyncSnapshot snapshot) {
               if (snapshot.hasData) {
                 return _fadeInWidget(snapshot.data.toString());

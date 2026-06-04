@@ -7,6 +7,7 @@ import 'package:mini_golf_tracker/game_card_widget.dart';
 import 'package:mini_golf_tracker/home_screen.dart';
 import 'package:mini_golf_tracker/past_game_card_widget.dart';
 import 'package:mini_golf_tracker/past_games_screen.dart';
+import 'package:mini_golf_tracker/player.dart';
 import 'package:mini_golf_tracker/players_card_widget.dart';
 import 'package:mini_golf_tracker/players_screen.dart';
 import 'package:mini_golf_tracker/userprovider.dart';
@@ -116,11 +117,14 @@ class DashBoardLayout extends StatefulWidget {
 
 class _DashBoardLayoutState extends State<DashBoardLayout> {
   bool isShowFriendsScreen = false;
+  Future<void>? _initGamesFuture;
+  Player? _lastUser;
 
   @override
   void initState() {
     super.initState();
     UserProvider().addListener(_onUserChanged);
+    _initGames();
   }
 
   @override
@@ -129,9 +133,24 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
     super.dispose();
   }
 
+  void _initGames() {
+    final loggedInUser = UserProvider().loggedInUser;
+    if (loggedInUser != null) {
+      _lastUser = loggedInUser;
+      _initGamesFuture = Game.initializeLocalGames(loggedInUser);
+    }
+  }
+
   void _onUserChanged() {
     if (mounted) {
-      setState(() {});
+      final loggedInUser = UserProvider().loggedInUser;
+      if (loggedInUser != _lastUser) {
+        setState(() {
+          _initGames();
+        });
+      } else {
+        setState(() {});
+      }
     }
   }
 
@@ -143,11 +162,12 @@ class _DashBoardLayoutState extends State<DashBoardLayout> {
       return const Center(child: Text("Please log in"));
     }
 
+    if (_initGamesFuture == null || _lastUser != loggedInUser) {
+      _initGames();
+    }
 
     return FutureBuilder(
-        future: Future.wait([
-          Game.initializeLocalGames(loggedInUser),
-        ]),
+        future: _initGamesFuture,
         builder: (BuildContext context, AsyncSnapshot snap) {
           if (snap.connectionState != ConnectionState.waiting) {
             return isShowFriendsScreen

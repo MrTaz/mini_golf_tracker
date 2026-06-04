@@ -13,6 +13,26 @@ class PastGameCardWidget extends StatefulWidget {
 }
 
 class PastGameCardWidgetState extends State<PastGameCardWidget> {
+  late Future<List<Game?>> _localGamesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalGames();
+  }
+
+  @override
+  void didUpdateWidget(PastGameCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.gamesFuture != oldWidget.gamesFuture) {
+      _loadLocalGames();
+    }
+  }
+
+  void _loadLocalGames() {
+    _localGamesFuture = widget.gamesFuture ?? Game.getLocallySavedGames(gameStatusTypes: ["completed"]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -25,7 +45,7 @@ class PastGameCardWidgetState extends State<PastGameCardWidget> {
         child: Column(children: <Widget>[
           const ListTile(title: Text('Past games')),
           FutureBuilder<List<Game?>>(
-            future: widget.gamesFuture ?? Game.getLocallySavedGames(gameStatusTypes: ["completed"]),
+            future: _localGamesFuture,
             builder: (BuildContext context,
                 AsyncSnapshot<List<Game?>> gameSnapshot) {
               if (gameSnapshot.connectionState == ConnectionState.waiting) {
