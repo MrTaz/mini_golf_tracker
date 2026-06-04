@@ -505,10 +505,10 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Phase 4.0 — Patrol Native E2E Standardization (Infrastructure)
 
-* [ ] Create domain-based `patrol_test/` folder structure (`auth/`, `courses/`, `game_setup/`, `gameplay/`, `navigation/`).
-* [ ] Relocate existing Phase 2.0 and Phase 2.2 Patrol native auth tests to `patrol_test/auth/`.
-* [ ] Migrate all 14 legacy standard integration tests to the new domain-based Patrol architecture.
-* [ ] Verify all E2E tests execute cleanly via the Patrol CLI.
+* [x] Create domain-based `patrol_test/` folder structure (`auth/`, `courses/`, `game_setup/`, `gameplay/`, `navigation/`).
+* [x] Relocate existing Phase 2.0 and Phase 2.2 Patrol native auth tests to `patrol_test/auth/`.
+* [x] Migrate all 14 legacy standard integration tests to the new domain-based Patrol architecture.
+* [x] Verify all E2E tests execute cleanly via the Patrol CLI.
 
 #### 4.1 Firebase Local Emulator Suite Setup
 
