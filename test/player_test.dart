@@ -1,5 +1,6 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mini_golf_tracker/contact_identity.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
@@ -468,6 +469,37 @@ void main() {
         ),
         throwsA(isA<DatabaseConnectionError>().having((e) => e.message, 'message', 'Player already claimed')),
       );
+    });
+
+    test('claimPlayerForVerifiedAuthUser returns null when canVerifiedAuthUserClaimPlayer returns false due to contact mismatch', () async {
+      // Create a reservation that points to a player with a different email
+      final reservationId = ContactIdentity.reservationIdForEmail('a@example.com');
+      await fakeFirestore.collection('player_contacts').doc(reservationId).set({
+        'kind': 'email',
+        'normalized_value': 'a@example.com',
+        'player_id': 'p-mismatch',
+        'created_by_uid': 'owner-1',
+      });
+
+      // The player record has a completely different email
+      await fakeFirestore.collection('players').doc('p-mismatch').set({
+        'id': 'p-mismatch',
+        'player_name': 'Mismatch Player',
+        'nickname': 'Mismatch',
+        'owner_id': 'owner-1',
+        'total_score': 0,
+        'email': 'different@example.com',
+        'normalized_email': 'different@example.com',
+      });
+
+      final result = await Player.claimPlayerForVerifiedAuthUser(
+        uid: 'uid-new',
+        email: 'a@example.com',
+        emailVerified: true,
+        phoneNumber: null,
+      );
+
+      expect(result, isNull);
     });
   });
 }
