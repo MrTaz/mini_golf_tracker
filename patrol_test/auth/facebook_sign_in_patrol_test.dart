@@ -20,7 +20,7 @@ void main() {
   });
 
   patrolTest(
-    'Meta/Facebook Sign-In Native E2E Test',
+    'Meta Facebook Sign-In Native E2E Test',
     ($) async {
       final mockAuth = SocialMockFirebaseAuth(
         uid: 'facebook-uid',

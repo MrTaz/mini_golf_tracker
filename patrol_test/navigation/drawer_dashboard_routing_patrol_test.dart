@@ -129,7 +129,7 @@ void main() {
   });
 
   patrolTest(
-    'E2E Patrol: open side menu and tap Friends/Past Games - navigates to screen and preserves BottomNavigationBar',
+    'E2E Patrol: open side menu and tap Friends or Past Games - navigates to screen and preserves BottomNavigationBar',
     ($) async {
       // 1. Seed a logged-in user
       final player = Player(
