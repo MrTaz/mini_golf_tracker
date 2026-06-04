@@ -1297,6 +1297,7 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [x] Phone visibility is restricted.
 * [x] Friend-edge mutations are restricted.
 * [x] `player_contacts` writes require valid ownership or verified claim.
+* [x] courses collection reads and schema-validated writes are tested and enforced.
 
 ---
 
