@@ -431,27 +431,42 @@ class Game {
           .collection('games')
           .where('participant_ids', arrayContains: currentUserId)
           .orderBy('scheduled_time', descending: false)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 2));
 
       final participantSnapshot = await DatabaseConnection.client
           .collection('player_game_info')
           .where('player_id', isEqualTo: currentUserId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 2));
 
       final Map<String, DocumentSnapshot<Map<String, dynamic>>> gameDocsById = {
         for (final doc in creatorSnapshot.docs) doc.id: doc,
       };
+
+      final List<Future<DocumentSnapshot<Map<String, dynamic>>>> futures = [];
+      final List<String> gameIdsToFetch = [];
+
       for (final participantDoc in participantSnapshot.docs) {
         final gameId = participantDoc.data()['game_id'];
-        if (gameId is! String || gameDocsById.containsKey(gameId)) {
-          continue;
+        if (gameId is String &&
+            !gameDocsById.containsKey(gameId) &&
+            !gameIdsToFetch.contains(gameId)) {
+          gameIdsToFetch.add(gameId);
+          futures.add(DatabaseConnection.client
+              .collection('games')
+              .doc(gameId)
+              .get()
+              .timeout(const Duration(seconds: 2)));
         }
-        final gameDoc = await DatabaseConnection.client
-            .collection('games')
-            .doc(gameId)
-            .get();
-        if (gameDoc.exists) {
-          gameDocsById[gameDoc.id] = gameDoc;
+      }
+
+      if (futures.isNotEmpty) {
+        final results = await Future.wait(futures);
+        for (final gameDoc in results) {
+          if (gameDoc.exists) {
+            gameDocsById[gameDoc.id] = gameDoc;
+          }
         }
       }
 
