@@ -23,6 +23,7 @@ void main() {
     mockAuth = MockFirebaseAuth();
     DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
     me.expectations.clear();
+    Player.players.clear();
 
     SharedPreferences.setMockInitialValues({});
 
@@ -600,6 +601,78 @@ void main() {
       expect(userProvider.loggedInUser!.id, 'user123');
       expect(Player.players.length, 1);
       expect(Player.players[0].id, 'friend1');
+    });
+
+    test('initialize() handles loadUserPlayers() throwing exception and completes successfully', () async {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'user123', email: 'test@example.com'),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', 'test@example.com');
+      await prefs.setString('loggedInUser', jsonEncode(player.toJson()));
+
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+
+      await userProvider.initialize();
+
+      expect(userProvider.loggedInUser, isNotNull);
+      expect(Player.players, isEmpty);
+    });
+
+    test('login() handles loadUserPlayers() throwing exception and completes successfully', () async {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+
+      await userProvider.login(player);
+
+      expect(userProvider.loggedInUser, isNotNull);
+      expect(Player.players, isEmpty);
+    });
+
+    test('authStateChanges listener handles loadUserPlayers() throwing exception and completes successfully', () async {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'user123', email: 'test@example.com'),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+      userProvider.loggedInUser = player;
+
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+
+      await userProvider.initialize();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      expect(userProvider.loggedInUser!.id, 'user123');
+      expect(Player.players, isEmpty);
     });
   });
 }

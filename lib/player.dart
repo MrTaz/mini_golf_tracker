@@ -146,7 +146,9 @@ class Player {
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = _friendsCacheKey(id);
     try {
-      final loadedPlayers = await _getAllPlayersFromFriends(id);
+      final loadedPlayers = await _getAllPlayersFromFriends(id).timeout(
+        const Duration(seconds: 2),
+      );
       players.clear();
       players.addAll(loadedPlayers);
       // Cache them to SharedPreferences

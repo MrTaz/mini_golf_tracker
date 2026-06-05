@@ -58,7 +58,12 @@ class UserProvider extends ChangeNotifier {
       await prefs.setString("email", player.email!);
     }
     await prefs.setString("loggedInUser", jsonEncode(player));
-    await player.loadUserPlayers();
+    try {
+      await player.loadUserPlayers();
+    } catch (e) {
+      Utilities.debugPrintWithCallerInfo(
+          'Error loading user players during login: $e');
+    }
     await Game.initializeLocalGames(player);
     notifyListeners();
   }
@@ -86,12 +91,22 @@ class UserProvider extends ChangeNotifier {
 
     if (email != null && loggedInUserJson != null) {
       _loggedInUser = Player.fromJson(jsonDecode(loggedInUserJson));
-      await _loggedInUser!.loadUserPlayers();
+      try {
+        await _loggedInUser!.loadUserPlayers();
+      } catch (e) {
+        Utilities.debugPrintWithCallerInfo(
+            'Error loading user players during initialization: $e');
+      }
       notifyListeners();
     }
 
     if (auth.currentUser != null && _loggedInUser != null) {
-      await _loggedInUser!.loadUserPlayers();
+      try {
+        await _loggedInUser!.loadUserPlayers();
+      } catch (e) {
+        Utilities.debugPrintWithCallerInfo(
+            'Error loading user players for current user during initialization: $e');
+      }
     }
 
     // Listen to Firebase Auth changes
@@ -180,7 +195,12 @@ class UserProvider extends ChangeNotifier {
           } else {
             // Already logged in user matched with Firebase auth.
             // Explicitly call loadUserPlayers to ensure Player.players is populated.
-            await _loggedInUser!.loadUserPlayers();
+            try {
+              await _loggedInUser!.loadUserPlayers();
+            } catch (e) {
+              Utilities.debugPrintWithCallerInfo(
+                  'Error loading user players in auth state change listener: $e');
+            }
           }
         }
       } catch (e) {
