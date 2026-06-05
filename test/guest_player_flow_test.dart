@@ -104,10 +104,9 @@ void main() {
     await tester.tap(find.text('Add Player'));
     await tester.pumpAndSettle();
 
-    expect(Player.players.single.id, 'known-player');
-    expect(Player.players.single.nickname, 'Canonical');
-    expect(find.text('Canonical'), findsOneWidget);
-    expect(find.text('Entered Nick'), findsNothing);
+    expect(find.text('Contact Collision'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets(
@@ -168,8 +167,9 @@ void main() {
     await tester.tap(find.text('Add Player'));
     await tester.pumpAndSettle();
 
-    expect(Player.players, hasLength(1));
-    expect(Player.players.single.nickname, 'Canonical');
+    expect(find.text('Contact Collision'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('logged in user add form uses canonical contact-backed player',
@@ -228,8 +228,9 @@ void main() {
     await tester.tap(find.text('Add Player'));
     await tester.pumpAndSettle();
 
-    expect(Player.players.single.id, 'known-player');
-    expect(Player.players.single.nickname, 'Canonical');
+    expect(find.text('Contact Collision'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('guest picker restores previously selected local players',

@@ -376,12 +376,12 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 
 #### Phase 2.8 Normalize Contact Entry Points
 
-* [ ] Use `ContactIdentity.normalizeEmail` in all contact write paths.
-* [ ] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
-* [ ] Apply normalization inside `PlayerForm.saveChanges`.
-* [ ] Apply normalization before any database write.
-* [ ] Reference `ContactIdentity` as the source of truth for all contact normalization.
-* [ ] Ensure normalization supports reservation consistency.
+* [x] Use `ContactIdentity.normalizeEmail` in all contact write paths.
+* [x] Use `ContactIdentity.normalizePhoneNumber` in all contact write paths.
+* [x] Apply normalization inside `PlayerForm.saveChanges`.
+* [x] Apply normalization before any database write.
+* [x] Reference `ContactIdentity` as the source of truth for all contact normalization.
+* [x] Ensure normalization supports reservation consistency.
 
 #### Phase 2.9 Late Contact Attribution
 
@@ -438,6 +438,12 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
   * embedded `game.players` lists
   * local `SharedPreferences` JSON strings
 * [ ] Ensure all history converges onto a canonical ID.
+
+#### Phase 2.13 Bug Triage
+
+* [ ] **Fix Scheduled Game Creation:** In `lib/game_create_screen.dart`, the `_createGame` method currently forces every new game to a `"started"` status and immediately routes to `GameInprogressScreen`. Refactor this logic to honor the scheduled date/time, save the game as an `"unstarted_game"` if it is scheduled for the future, and return the user to the dashboard instead of auto-starting it.
+* [ ] **Fix Dashboard "New Game" Routing:** In `lib/game_card_widget.dart`, update the `_navigateToGameCreateScreen` method attached to the "Create a new game" button so that it pushes `GameCreateScreen` instead of the legacy `GameStartScreen`.
+* [ ] **Fix Authenticated Friends Offline Persistence:** Update the friends list fetching logic to explicitly cache authenticated friends to `SharedPreferences` (similar to how local games are cached) or ensure Firestore offline persistence is correctly hydrating the `friends` collection when the app is restarted or offline.
 
 ---
 

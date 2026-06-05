@@ -97,7 +97,7 @@ class PlayerFormState extends State<PlayerForm> {
     return true;
   }
 
-  void checkDuplicate() {
+  Future<void> checkDuplicate() async {
     // Check for duplicates before saving
     final List<Player> allPlayers =
         currentUser?.getAllPlayerFriends() ?? Player.players;
@@ -107,6 +107,7 @@ class PlayerFormState extends State<PlayerForm> {
             player.nickname == _nicknameController.text));
 
     if (isDuplicate) {
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -125,10 +126,69 @@ class PlayerFormState extends State<PlayerForm> {
           );
         },
       );
-    } else {
-      // No duplicate found, proceed with saving the changes
-      saveChanges();
+      return;
     }
+
+    final normalizedEmail = ContactIdentity.normalizeEmail(_emailController.text);
+    final normalizedPhone = ContactIdentity.normalizePhoneNumber(_phoneNumberController.text);
+
+    if (normalizedEmail != null || normalizedPhone != null) {
+      bool localCollision = allPlayers.any((player) {
+        if (widget.player != null && player.id == widget.player!.id) {
+          return false;
+        }
+        final playerNormEmail = player.normalizedEmail ?? ContactIdentity.normalizeEmail(player.email);
+        final playerNormPhone = player.normalizedPhoneNumber ?? ContactIdentity.normalizePhoneNumber(player.phoneNumber);
+
+        final emailMatch = normalizedEmail != null && playerNormEmail == normalizedEmail;
+        final phoneMatch = normalizedPhone != null && playerNormPhone == normalizedPhone;
+        return emailMatch || phoneMatch;
+      });
+
+      bool dbCollision = false;
+      try {
+        if (normalizedEmail != null) {
+          final dbPlayer = await Player.getPlayerByEmailFromDB(normalizedEmail);
+          if (dbPlayer != null && dbPlayer.id != widget.player?.id) {
+            dbCollision = true;
+          }
+        }
+        if (!dbCollision && normalizedPhone != null) {
+          final dbPlayer = await Player.getPlayerByPhoneFromDB(normalizedPhone);
+          if (dbPlayer != null && dbPlayer.id != widget.player?.id) {
+            dbCollision = true;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error checking database collision: $e');
+      }
+
+      if (localCollision || dbCollision) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Contact Collision'),
+              content: const Text(
+                  'This email/phone number is already in use by another player.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return;
+      }
+    }
+
+    // No duplicate or collision found, proceed with saving the changes
+    saveChanges();
   }
 
   Future<void> saveChanges() async {

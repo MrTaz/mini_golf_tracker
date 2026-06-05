@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
@@ -403,4 +404,403 @@ void main() {
     expect(player.playerName, 'AvaNick');
     expect(player.isQuickPlay, isTrue);
   });
+
+  testWidgets('detects email collision and blocks save', (tester) async {
+    final existingPlayer = Player(
+      id: 'existing-id',
+      playerName: 'Existing Player',
+      nickname: 'Existing',
+      ownerId: 'some-owner',
+      totalScore: 0,
+      email: 'collision@example.com',
+      normalizedEmail: 'collision@example.com',
+    );
+    await DatabaseConnection.client
+        .collection('players')
+        .doc(existingPlayer.id)
+        .set(existingPlayer.toJson());
+
+    await DatabaseConnection.client
+        .collection('player_contacts')
+        .doc('email_collision@example.com')
+        .set({
+      'kind': 'email',
+      'normalized_value': 'collision@example.com',
+      'player_id': 'existing-id',
+      'created_by_uid': 'some-owner',
+    });
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'collision@example.com',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contact Collision'), findsOneWidget);
+    expect(
+      find.text('This email/phone number is already in use by another player.'),
+      findsOneWidget,
+    );
+    expect(saved, isFalse);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Contact Collision'), findsNothing);
+
+    final doc = await DatabaseConnection.client
+        .collection('players')
+        .doc('new-player-id')
+        .get();
+    expect(doc.exists, isFalse);
+  });
+
+  testWidgets('detects phone collision and blocks save', (tester) async {
+    final existingPlayer = Player(
+      id: 'existing-id',
+      playerName: 'Existing Player',
+      nickname: 'Existing',
+      ownerId: 'some-owner',
+      totalScore: 0,
+      phoneNumber: '+1234567890',
+      normalizedPhoneNumber: '+1234567890',
+    );
+    await DatabaseConnection.client
+        .collection('players')
+        .doc(existingPlayer.id)
+        .set(existingPlayer.toJson());
+
+    await DatabaseConnection.client
+        .collection('player_contacts')
+        .doc('phone_+1234567890')
+        .set({
+      'kind': 'phone',
+      'normalized_value': '+1234567890',
+      'player_id': 'existing-id',
+      'created_by_uid': 'some-owner',
+    });
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Phone Number'),
+      '+1234567890',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contact Collision'), findsOneWidget);
+    expect(
+      find.text('This email/phone number is already in use by another player.'),
+      findsOneWidget,
+    );
+    expect(saved, isFalse);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    final doc = await DatabaseConnection.client
+        .collection('players')
+        .doc('new-player-id')
+        .get();
+    expect(doc.exists, isFalse);
+  });
+
+  testWidgets('detects local list contact collision and blocks save', (tester) async {
+    Player.players = [
+      Player(
+        id: 'local-friend-id',
+        playerName: 'Local Friend',
+        nickname: 'Local',
+        ownerId: 'guest',
+        totalScore: 0,
+        email: 'local@example.com',
+        normalizedEmail: 'local@example.com',
+      ),
+    ];
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'local@example.com',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contact Collision'), findsOneWidget);
+    expect(saved, isFalse);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('successful save writes normalized contact strings', (tester) async {
+    final owner = Player(
+      id: 'owner-id',
+      playerName: 'Owner',
+      nickname: 'Owner',
+      ownerId: 'owner-id',
+      totalScore: 0,
+    );
+    await UserProvider().login(owner);
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      ' SUCCESS@EXAMPLE.COM ',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Phone Number'),
+      ' +1 (234) 567-8901 ',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    expect(saved, isTrue);
+
+    expect(newPlayer.email, 'success@example.com');
+    expect(newPlayer.phoneNumber, '+12345678901');
+    expect(newPlayer.normalizedEmail, 'success@example.com');
+    expect(newPlayer.normalizedPhoneNumber, '+12345678901');
+
+    final snapshot = await DatabaseConnection.client
+        .collection('players')
+        .where('normalized_email', isEqualTo: 'success@example.com')
+        .get();
+    expect(snapshot.docs.isNotEmpty, isTrue);
+    final doc = snapshot.docs.first;
+    expect(doc.data()['email'], 'success@example.com');
+    expect(doc.data()['phone_number'], '+12345678901');
+    expect(doc.data()['normalized_email'], 'success@example.com');
+    expect(doc.data()['normalized_phone_number'], '+12345678901');
+  });
+
+  testWidgets('detects local phone contact collision and blocks save', (tester) async {
+    Player.players = [
+      Player(
+        id: 'local-friend-id',
+        playerName: 'Local Friend',
+        nickname: 'Local',
+        ownerId: 'guest',
+        totalScore: 0,
+        phoneNumber: '+1234567890',
+        normalizedPhoneNumber: '+1234567890',
+      ),
+    ];
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Phone Number'),
+      '+1234567890',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contact Collision'), findsOneWidget);
+    expect(saved, isFalse);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('handles firestore exception during db collision check gracefully', (tester) async {
+    DatabaseConnection.setFirestoreInstanceForTesting(ThrowingFirestore());
+
+    final newPlayer = Player(
+      id: 'new-player-id',
+      playerName: 'New Player',
+      nickname: 'New',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    var saved = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: newPlayer,
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () => saved = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'error@example.com',
+    );
+
+    await tester.tap(find.text('Add Player'));
+    await tester.pumpAndSettle();
+
+    // Since firestore throws, collision check fails but it doesn't crash the app, and proceed to save.
+    expect(saved, isTrue);
+  });
+
+  testWidgets('saves and overwrites existing local guest player in saveChanges branch', (tester) async {
+    final guestPlayer = Player(
+      id: 'existing-guest-id',
+      playerName: 'Old Guest Name',
+      nickname: 'Old Guest',
+      ownerId: 'guest',
+      totalScore: 0,
+    );
+    Player.players = [guestPlayer];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayerForm(
+            player: Player(
+              id: 'existing-guest-id',
+              playerName: 'New Guest Name',
+              nickname: 'New Guest',
+              ownerId: 'guest',
+              totalScore: 0,
+            ),
+            allowEditing: true,
+            editingOrAdding: 'Add',
+            onSaveChanges: () {},
+          ),
+        ),
+      ),
+    );
+
+    // Call saveChanges directly to bypass checkDuplicate and force entering the overwriting branch
+    final state = tester.state<PlayerFormState>(find.byType(PlayerForm));
+    await state.saveChanges();
+    await tester.pumpAndSettle();
+
+    expect(Player.players, hasLength(1));
+    expect(Player.players.single.playerName, 'New Guest Name');
+  });
+}
+
+class ThrowingFirestore extends FakeFirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String path) {
+    if (path == 'players') {
+      final stack = StackTrace.current.toString();
+      if (stack.contains('checkDuplicate') &&
+          !stack.contains('saveChanges') &&
+          !stack.contains('resolveGuestPlayer') &&
+          !stack.contains('addPlayerFriend')) {
+        throw FirebaseException(plugin: 'firestore', message: 'Simulated DB Error');
+      }
+    }
+    return super.collection(path);
+  }
 }
