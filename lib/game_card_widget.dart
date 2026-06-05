@@ -180,6 +180,56 @@ class GameCardWidgetState extends State<GameCardWidget> {
                               elevation: 6,
                               child: Column(children: [
                                 ListTile(
+                                  onTap: () {
+                                    try {
+                                      if (game.status == "started") {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  GameInprogressScreen(
+                                                      currentGame: game)),
+                                        ).then((_) {
+                                          setState(() {});
+                                        }).catchError((e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Remote sync temporarily unavailable')),
+                                            );
+                                          }
+                                        });
+                                      } else if (game.status == "unstarted_game") {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  GameStartScreen(
+                                                      unstartedGame: game)),
+                                        ).then((_) {
+                                          setState(() {});
+                                        }).catchError((e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Remote sync temporarily unavailable')),
+                                            );
+                                          }
+                                        });
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Remote sync temporarily unavailable')),
+                                        );
+                                      }
+                                    }
+                                  },
                                   title: FutureBuilder<String>(
                                     future: _formattedTimes.putIfAbsent(
                                       '${game.id}_${targetTime.millisecondsSinceEpoch}',

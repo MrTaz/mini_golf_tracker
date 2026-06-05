@@ -465,6 +465,91 @@ void main() {
 
       expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
     });
+
+    testWidgets('ListTile onTap routes started game to GameInprogressScreen and refreshes on pop', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_2': jsonEncode(startedGame.toJson()),
+      });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Afternoon Round'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameInprogressScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameInprogressScreen))).pop();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('ListTile onTap routes unstarted game to GameStartScreen and refreshes on pop', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+      });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Morning Round'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameStartScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('ListTile onTap navigation error triggers catchError SnackBar', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_2': jsonEncode(startedGame.toJson()),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FakeNavigator(
+              onPush: (route) {
+                return Future.error(Exception('Simulated navigation error'));
+              },
+              child: const GameCardWidget(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Afternoon Round'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+    });
+
+    testWidgets('ListTile onTap Navigator synchronous throws trigger try/catch SnackBar', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+      });
+
+      // Render without a Navigator ancestor to cause a synchronous throw on Navigator.of(context)
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: ScaffoldMessenger(
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => const GameCardWidget(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Morning Round'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+    });
   });
 }
 
