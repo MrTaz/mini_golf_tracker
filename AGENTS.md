@@ -36,6 +36,7 @@ You must follow this strict iterative loop for every task until completion:
 * **State Management:** This project uses `ChangeNotifier` (e.g., `UserProvider`) and standard `StatefulWidget` `setState` patterns. Do not introduce third-party state management libraries (like Riverpod, Bloc, or GetX) unless explicitly instructed.
 * **DRY Principle:** Abstract repetitive logic into utilities or base classes. This applies equally to both application code and test code.
 * **FutureBuilder Safety:** NEVER instantiate a `Future` directly inside a `build()` method or pass an un-cached method call to a `FutureBuilder` (e.g., `future: fetchGames()`). You MUST cache all futures in state variables (using `initState` or `didUpdateWidget`) to prevent infinite rebuild loops, CPU spikes, and memory leaks.
+* **Behavioral Data Assertions:** Unit and widget tests must go beyond simple line coverage. When modifying or saving data models, state objects, or forms, you must write explicit `expect()` assertions to verify the exact mutated data state (e.g., verifying the saved document payload in the `FakeFirebaseFirestore` database) rather than relying solely on successful UI execution.
 
 ## Testing Requirements & Established Mocks
 
