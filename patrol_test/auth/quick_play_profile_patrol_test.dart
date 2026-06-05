@@ -54,11 +54,6 @@ void main() {
       await $(find.widgetWithText(TextFormField, 'Nickname')).enterText('QuickNick');
       await $.pumpAndSettle();
 
-      // 5. Toggle the Quick-Play switch to true.
-      final quickPlaySwitch = $(find.byKey(const Key('quick_play_switch')));
-      expect(quickPlaySwitch, findsOneWidget);
-      await quickPlaySwitch.tap();
-      await $.pumpAndSettle();
 
       // 6. Tap "Add Player" button to save.
       await $('Add Player').tap();
@@ -67,7 +62,7 @@ void main() {
       // 7. Verify validation succeeded, form closed, and player appears in the list.
       expect($('Missing contact information'), findsNothing);
       expect($('Missing required fields'), findsNothing);
-      expect($('QuickNick'), findsOneWidget);
+      expect($('QuickNick'), findsWidgets);
     },
   );
 }

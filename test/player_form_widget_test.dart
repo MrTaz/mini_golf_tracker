@@ -66,6 +66,7 @@ void main() {
               nickname: '',
               ownerId: 'guest',
               totalScore: 0,
+              email: 'test@example.com',
             ),
             allowEditing: true,
             editingOrAdding: 'Edit',
@@ -325,63 +326,6 @@ void main() {
     expect(find.text('Show Phone Number'), findsNothing);
   });
 
-  testWidgets('non-quick-play form requires email or phone number',
-      (tester) async {
-    final loggedInUser = Player(
-      id: 'owner-1',
-      playerName: 'Owner Player',
-      nickname: 'Owner',
-      ownerId: 'owner-1',
-      totalScore: 0,
-    );
-    await UserProvider().login(loggedInUser);
-
-    final player = Player(
-      id: 'player-1',
-      playerName: 'Ava Guest',
-      nickname: 'Ava',
-      ownerId: 'guest',
-      totalScore: 0,
-      isQuickPlay: false,
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlayerForm(
-            player: player,
-            allowEditing: true,
-            editingOrAdding: 'Edit',
-            onSaveChanges: () {},
-            isQuickPlay: false,
-          ),
-        ),
-      ),
-    );
-
-    // Clear email and phone number
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Email'),
-      '',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Phone Number'),
-      '',
-    );
-
-    await tester.tap(find.text('Save Changes'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Missing contact information'), findsOneWidget);
-    expect(
-      find.text('Please enter either an email address or a phone number for non-Quick-Play players.'),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
-    expect(find.text('Missing contact information'), findsNothing);
-  });
 
   testWidgets('quick-play form bypasses email and phone number validation',
       (tester) async {
@@ -391,7 +335,6 @@ void main() {
       nickname: 'Ava',
       ownerId: 'guest',
       totalScore: 0,
-      isQuickPlay: true,
     );
     var saved = false;
 
@@ -403,7 +346,6 @@ void main() {
             allowEditing: true,
             editingOrAdding: 'Edit',
             onSaveChanges: () => saved = true,
-            isQuickPlay: true,
           ),
         ),
       ),
@@ -430,15 +372,16 @@ void main() {
     expect(saved, isTrue);
   });
 
-  testWidgets('quick-play switch toggles state', (tester) async {
+  testWidgets('quick-play form copies nickname to playerName when playerName is blank',
+      (tester) async {
     final player = Player(
       id: 'player-1',
-      playerName: 'Ava Guest',
-      nickname: 'Ava',
+      playerName: '',
+      nickname: 'AvaNick',
       ownerId: 'guest',
       totalScore: 0,
-      isQuickPlay: false,
     );
+    var saved = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -447,25 +390,17 @@ void main() {
             player: player,
             allowEditing: true,
             editingOrAdding: 'Edit',
-            onSaveChanges: () {},
-            isQuickPlay: false,
+            onSaveChanges: () => saved = true,
           ),
         ),
       ),
     );
 
-    final switchFinder = find.byKey(const Key('quick_play_switch'));
-    expect(switchFinder, findsOneWidget);
-
-    // Verify it is false initially
-    var switchWidget = tester.widget<SwitchListTile>(switchFinder);
-    expect(switchWidget.value, isFalse);
-
-    // Tap it to toggle
-    await tester.tap(switchFinder);
+    await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
-    switchWidget = tester.widget<SwitchListTile>(switchFinder);
-    expect(switchWidget.value, isTrue);
+    expect(saved, isTrue);
+    expect(player.playerName, 'AvaNick');
+    expect(player.isQuickPlay, isTrue);
   });
 }

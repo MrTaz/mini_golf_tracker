@@ -36,7 +36,10 @@ class PlayerFormState extends State<PlayerForm> {
   late bool _shareName;
   late bool _shareEmail;
   late bool _sharePhone;
-  late bool _isQuickPlay;
+
+  bool get _isQuickPlay =>
+      _emailController.text.trim().isEmpty &&
+      _phoneNumberController.text.trim().isEmpty;
 
   @override
   void dispose() {
@@ -60,7 +63,6 @@ class PlayerFormState extends State<PlayerForm> {
     _shareName = widget.player?.shareName ?? true;
     _shareEmail = widget.player?.shareEmail ?? true;
     _sharePhone = widget.player?.sharePhone ?? true;
-    _isQuickPlay = widget.player?.isQuickPlay ?? widget.isQuickPlay;
   }
 
   bool get isEditing => widget.player != null;
@@ -94,30 +96,6 @@ class PlayerFormState extends State<PlayerForm> {
       return false;
     }
 
-    if (!isQuickPlayProfile && !isGuestScorekeeper && currentUser != null) {
-      if (_emailController.text.trim().isEmpty &&
-          _phoneNumberController.text.trim().isEmpty) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Missing contact information'),
-              content: const Text(
-                  'Please enter either an email address or a phone number for non-Quick-Play players.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-        return false;
-      }
-    }
     return true;
   }
 
@@ -158,6 +136,13 @@ class PlayerFormState extends State<PlayerForm> {
   Future<void> saveChanges() async {
     if (isGuestScorekeeper) {
       _playerNameController.text = 'Guest';
+    }
+    final isImplicitQuickPlay = _emailController.text.trim().isEmpty &&
+        _phoneNumberController.text.trim().isEmpty;
+    if (isImplicitQuickPlay && _playerNameController.text.trim().isEmpty) {
+      _playerNameController.text = _nicknameController.text.trim().isEmpty
+          ? 'Guest'
+          : _nicknameController.text.trim();
     }
     if (validateRequiredFields()) {
       if (widget.player != null) {
@@ -263,19 +248,6 @@ class PlayerFormState extends State<PlayerForm> {
             _buildTextField(
               controller: _nicknameController,
               labelText: 'Nickname',
-            ),
-            const SizedBox(height: 10),
-            SwitchListTile(
-              key: const Key('quick_play_switch'),
-              title: const Text('Quick-Play Player'),
-              value: _isQuickPlay,
-              onChanged: widget.allowEditing
-                  ? (value) {
-                      setState(() {
-                        _isQuickPlay = value;
-                      });
-                    }
-                  : null,
             ),
             const SizedBox(height: 10),
             _buildTextField(
