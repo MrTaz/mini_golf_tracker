@@ -37,9 +37,6 @@ class PlayerFormState extends State<PlayerForm> {
   late bool _shareEmail;
   late bool _sharePhone;
 
-  bool get _isQuickPlay =>
-      _emailController.text.trim().isEmpty &&
-      _phoneNumberController.text.trim().isEmpty;
 
   @override
   void dispose() {
@@ -70,9 +67,10 @@ class PlayerFormState extends State<PlayerForm> {
       currentUser == null && widget.player?.id == 'guest';
 
   bool validateRequiredFields() {
-    final isQuickPlayProfile = _isQuickPlay;
+    final isImplicitQuickPlay = _emailController.text.trim().isEmpty &&
+        _phoneNumberController.text.trim().isEmpty;
     final playerNameMissing =
-        !isGuestScorekeeper && !isQuickPlayProfile && _playerNameController.text.isEmpty;
+        !isGuestScorekeeper && !isImplicitQuickPlay && _playerNameController.text.isEmpty;
     if (playerNameMissing || _nicknameController.text.isEmpty) {
       showDialog(
         context: context,
@@ -158,7 +156,7 @@ class PlayerFormState extends State<PlayerForm> {
         widget.player!.shareEmail = _shareEmail;
         widget.player!.sharePhone = _sharePhone;
         widget.player!.ownerId = currentUser?.id ?? 'guest';
-        widget.player!.isQuickPlay = _isQuickPlay;
+        widget.player!.isQuickPlay = isImplicitQuickPlay;
 
         if (widget.editingOrAdding == 'Add') {
           if (currentUser != null) {
