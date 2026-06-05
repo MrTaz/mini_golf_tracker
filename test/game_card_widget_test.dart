@@ -9,6 +9,7 @@ import 'package:mini_golf_tracker/game.dart';
 import 'package:mini_golf_tracker/course.dart';
 import 'package:mini_golf_tracker/player_game_info.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
+import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -314,7 +315,7 @@ void main() {
       expect(find.text('Deleted saved game'), findsOneWidget);
     });
 
-    testWidgets('can navigate to create game from card, call callback to update card, and pop to refresh', (WidgetTester tester) async {
+    testWidgets('can navigate to create game from card and pop to refresh', (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
@@ -323,23 +324,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      // Trigger the callback inside GameStartScreen
-      expect(find.byType(GameStartScreen), findsOneWidget);
-      final gameStartScreen = tester.widget<GameStartScreen>(find.byType(GameStartScreen));
-      gameStartScreen.callback?.call();
-      await tester.pump();
-
-      // Dismiss the AlertDialog first (which was automatically pushed by GameStartScreen)
-      expect(find.byType(AlertDialog), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-
-      // Now pop the GameStartScreen route to cover _navigateToGameCreateScreen return path
-      expect(find.byType(GameStartScreen), findsOneWidget);
-      Navigator.of(tester.element(find.byType(GameStartScreen))).pop();
-      await tester.pumpAndSettle();
-      await tester.idle();
-      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(GameCreateScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GameCreateScreen))).pop();
       await tester.pumpAndSettle();
     });
 

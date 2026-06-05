@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mini_golf_tracker/game.dart';
+import 'package:mini_golf_tracker/game_create_screen.dart';
 import 'package:mini_golf_tracker/game_inprogress_screen.dart';
 import 'package:mini_golf_tracker/game_start_screen.dart';
 import 'package:mini_golf_tracker/utilities.dart';
@@ -81,9 +82,7 @@ class GameCardWidgetState extends State<GameCardWidget> {
   Future<void> _navigateToGameCreateScreen() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
-        return GameStartScreen(callback: () {
-          updateGameCard();
-        });
+        return const GameCreateScreen();
       }),
     );
     setState(() {

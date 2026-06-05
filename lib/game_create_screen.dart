@@ -258,31 +258,35 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         return;
       }
 
-      final activeGames =
-          await Game.getLocallySavedGames(gameStatusTypes: ['started']);
-      if (activeGames.isNotEmpty) {
-        if (!mounted) return;
-        final bool? proceed = await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Warning'),
-              content: const Text(
-                  'You already have a game in progress. Starting a new game will put your current game on hold.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Continue'),
-                ),
-              ],
-            );
-          },
-        );
-        if (proceed != true) return;
+      final bool isFutureScheduled = _scheduledTime.isAfter(DateTime.now());
+
+      if (!isFutureScheduled) {
+        final activeGames =
+            await Game.getLocallySavedGames(gameStatusTypes: ['started']);
+        if (activeGames.isNotEmpty) {
+          if (!mounted) return;
+          final bool? proceed = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Warning'),
+                content: const Text(
+                    'You already have a game in progress. Starting a new game will put your current game on hold.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Continue'),
+                  ),
+                ],
+              );
+            },
+          );
+          if (proceed != true) return;
+        }
       }
 
       if (UserProvider().loggedInUser != null) {
@@ -323,7 +327,6 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         }
       }
 
-
       final Game newGame = Game(
           name: name,
           course: _selectedCourse!,
@@ -335,22 +338,36 @@ class GameCreateScreenState extends State<GameCreateScreen> {
         newGame.addPlayer(pgi);
       }
 
-      newGame.status = "started";
-      newGame.startTime = DateTime.now();
+      if (isFutureScheduled) {
+        newGame.status = "unstarted_game";
+      } else {
+        newGame.status = "started";
+        newGame.startTime = DateTime.now();
+      }
 
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String gameJson = jsonEncode(newGame);
       await prefs.setString(newGame.id, gameJson);
 
+      final loggedInUser = UserProvider().loggedInUser;
+      if (loggedInUser != null) {
+        await Game.saveGameToDatabase(newGame, loggedInUser);
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Game created successfully'),
       ));
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => GameInprogressScreen(currentGame: newGame),
-        ),
-      );
+
+      if (isFutureScheduled) {
+        Navigator.of(context).pop();
+      } else {
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => GameInprogressScreen(currentGame: newGame),
+          ),
+        );
+      }
     }
   }
 

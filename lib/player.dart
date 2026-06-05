@@ -138,10 +138,35 @@ class Player {
     };
   }
 
+  static String _friendsCacheKey(String playerId) => 'friends_$playerId';
+
   Future<void> loadUserPlayers() async {
-    if (players.isEmpty && id != '') {
+    if (id == '') return;
+    if (players.isNotEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = _friendsCacheKey(id);
+    try {
       final loadedPlayers = await _getAllPlayersFromFriends(id);
+      players.clear();
       players.addAll(loadedPlayers);
+      // Cache them to SharedPreferences
+      await prefs.setString(
+        cacheKey,
+        jsonEncode(loadedPlayers.map((p) => p.toJson()).toList()),
+      );
+    } catch (e) {
+      // Offline fallback: load from SharedPreferences cache
+      final cachedJson = prefs.getString(cacheKey);
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        final decoded = jsonDecode(cachedJson) as List<dynamic>;
+        players.clear();
+        players.addAll(
+          decoded.map((json) => Player.fromJson(json as Map<String, dynamic>)),
+        );
+      } else {
+        players.clear();
+        rethrow;
+      }
     }
   }
 
@@ -203,6 +228,14 @@ class Player {
     } else {
       players[existingIndex] = canonicalPlayer;
     }
+
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = _friendsCacheKey(id);
+    await prefs.setString(
+      cacheKey,
+      jsonEncode(players.map((p) => p.toJson()).toList()),
+    );
+
     return canonicalPlayer;
   }
 
@@ -253,13 +286,23 @@ class Player {
 
   static Future<Map<String, Player>> adoptLocalGuestPlayers(
       Player loggedInUser) async {
-    await loadLocalGuestPlayers();
+    final prefs = await SharedPreferences.getInstance();
+    final guestPlayersJson = prefs.getString(_localGuestPlayersKey);
+    if (guestPlayersJson == null || guestPlayersJson.isEmpty) {
+      return {};
+    }
+    final decoded = jsonDecode(guestPlayersJson) as List<dynamic>;
+    final guestPlayers = decoded
+        .map(
+            (playerJson) => Player.fromJson(playerJson as Map<String, dynamic>))
+        .toList();
+
     final adoptedPlayers = <String, Player>{};
-    for (final guestPlayer in List<Player>.from(players)) {
+    for (final guestPlayer in guestPlayers) {
       final canonicalPlayer = await loggedInUser.addPlayerFriend(guestPlayer);
       adoptedPlayers[guestPlayer.id] = canonicalPlayer;
     }
-    await clearLocalGuestPlayers();
+    await prefs.remove(_localGuestPlayersKey);
     return adoptedPlayers;
   }
 

@@ -451,6 +451,66 @@ void main() {
 
       expect(userProvider.loggedInUser, isNull);
     });
+
+    test('logout() clears SharedPreferences friends cache', () async {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      await userProvider.login(player);
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('friends_user123', '[]');
+
+      await userProvider.logout();
+
+      expect(prefs.getString('friends_user123'), isNull);
+    });
+
+    test('login() and initialize() call loadUserPlayers()', () async {
+      Player.players.clear();
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      final friend = Player(
+        id: 'friend1',
+        playerName: 'Friend One',
+        nickname: 'F1',
+        ownerId: 'user123',
+        totalScore: 0,
+      );
+
+      // Seed FakeFirebaseFirestore
+      await fakeFirestore.collection('players').doc('friend1').set(friend.toJson());
+      await fakeFirestore.collection('friends').doc('user123_friend1').set({
+        'player_id': 'user123',
+        'friend_id': 'friend1',
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('friends_user123', jsonEncode([friend.toJson()]));
+
+      await userProvider.login(player);
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'friend1');
+
+      Player.players.clear();
+      await prefs.setString('loggedInUser', jsonEncode(player.toJson()));
+      await userProvider.initialize();
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'friend1');
+    });
   });
 }
 

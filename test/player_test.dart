@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/contact_identity.dart';
 import 'package:mini_golf_tracker/database_connection.dart';
 import 'package:mini_golf_tracker/database_connection_error.dart';
 import 'package:mini_golf_tracker/player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
@@ -676,6 +678,97 @@ void main() {
         FirebaseAuthPlatform.instance = originalAuth;
         DatabaseConnection.setFirestoreInstanceForTesting(null);
       }
+    });
+  });
+
+  group('Friends Caching Tests', () {
+    late FakeFirebaseFirestore fakeFirestore;
+    late Player testOwner;
+
+    setUp(() {
+      fakeFirestore = FakeFirebaseFirestore();
+      DatabaseConnection.setFirestoreInstanceForTesting(fakeFirestore);
+      SharedPreferences.setMockInitialValues({});
+      Player.players = [];
+      testOwner = Player(
+        id: 'owner-xyz',
+        playerName: 'Owner XYZ',
+        nickname: 'XYZ',
+        ownerId: 'owner-xyz',
+        totalScore: 0,
+      );
+    });
+
+    tearDown(() {
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+      Player.players = [];
+    });
+
+    test('loadUserPlayers fetches from Firestore and caches to SharedPreferences', () async {
+      final friend = Player(
+        id: 'friend-1',
+        playerName: 'Friend One',
+        nickname: 'F1',
+        ownerId: 'owner-xyz',
+        totalScore: 0,
+      );
+      await fakeFirestore.collection('players').doc('friend-1').set(friend.toJson());
+      await fakeFirestore.collection('friends').doc('owner-xyz_friend-1').set({
+        'player_id': 'owner-xyz',
+        'friend_id': 'friend-1',
+      });
+
+      await testOwner.loadUserPlayers();
+
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'friend-1');
+
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString('friends_owner-xyz');
+      expect(cachedJson, isNotNull);
+      expect(cachedJson!.contains('friend-1'), isTrue);
+    });
+
+    test('loadUserPlayers falls back to SharedPreferences cache when Firestore throws error', () async {
+      final cachedFriend = Player(
+        id: 'cached-friend',
+        playerName: 'Cached Friend',
+        nickname: 'CF',
+        ownerId: 'owner-xyz',
+        totalScore: 0,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'friends_owner-xyz',
+        jsonEncode([cachedFriend.toJson()]),
+      );
+
+      DatabaseConnection.setFirestoreInstanceForTesting(null);
+
+      await testOwner.loadUserPlayers();
+
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'cached-friend');
+      expect(Player.players[0].playerName, 'Cached Friend');
+    });
+
+    test('addPlayerFriend saves the updated friends list to SharedPreferences cache', () async {
+      final newFriend = Player(
+        id: 'new-friend',
+        playerName: 'New Friend',
+        nickname: 'NF',
+        ownerId: 'owner-xyz',
+        totalScore: 0,
+      );
+
+      final returnedFriend = await testOwner.addPlayerFriend(newFriend);
+      expect(returnedFriend.playerName, 'New Friend');
+
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString('friends_owner-xyz');
+      expect(cachedJson, isNotNull);
+      expect(cachedJson!.contains(returnedFriend.id), isTrue);
     });
   });
 }

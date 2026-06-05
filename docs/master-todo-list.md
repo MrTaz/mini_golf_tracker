@@ -383,6 +383,13 @@ This roadmap consolidates all active TODOs, enhancement plans, testing plans, an
 * [x] Reference `ContactIdentity` as the source of truth for all contact normalization.
 * [x] Ensure normalization supports reservation consistency.
 
+##### Phase 2.8.1 — Contact Collision Invite Flow & Player Swapping
+
+* [ ] **Collision Invite Prompt:** In `lib/player_form_widget.dart`, if an entered email or phone number resolves to an existing canonical player via `Player.getPlayerByContactFromDB()`, do not block the UI with a hard error. Instead, display an AlertDialog offering to add the existing player to the creator's friend list and the current game.
+* [ ] **Implicit Multiplayer Linking:** If the creator accepts the invite prompt, use `addPlayerFriend()` to save the relationship and return the canonical player object to the game creation flow.
+* [ ] **Mid-Game Player Swap:** In `lib/game_inprogress_screen.dart` (or via the `PlayerListItem` dropdown), add a "Reassign/Swap Player" action.
+* [ ] **Score Preservation:** When swapping a player, mutate the existing `PlayerGameInfo.playerId` to the new player's ID and update the `Game.participant_ids` array, ensuring the `scores` array remains completely untouched.
+
 #### Phase 2.9 Late Contact Attribution
 
 * [ ] Refactor `Player.updateUnclaimedPlayer` to support post-creation contact attachment.
@@ -441,9 +448,9 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Phase 2.13 Bug Triage
 
-* [ ] **Fix Scheduled Game Creation:** In `lib/game_create_screen.dart`, the `_createGame` method currently forces every new game to a `"started"` status and immediately routes to `GameInprogressScreen`. Refactor this logic to honor the scheduled date/time, save the game as an `"unstarted_game"` if it is scheduled for the future, and return the user to the dashboard instead of auto-starting it.
-* [ ] **Fix Dashboard "New Game" Routing:** In `lib/game_card_widget.dart`, update the `_navigateToGameCreateScreen` method attached to the "Create a new game" button so that it pushes `GameCreateScreen` instead of the legacy `GameStartScreen`.
-* [ ] **Fix Authenticated Friends Offline Persistence:** Update the friends list fetching logic to explicitly cache authenticated friends to `SharedPreferences` (similar to how local games are cached) or ensure Firestore offline persistence is correctly hydrating the `friends` collection when the app is restarted or offline.
+* [x] **Fix Scheduled Game Creation:** In `lib/game_create_screen.dart`, the `_createGame` method currently forces every new game to a `"started"` status and immediately routes to `GameInprogressScreen`. Refactor this logic to honor the scheduled date/time, save the game as an `"unstarted_game"` if it is scheduled for the future, and return the user to the dashboard instead of auto-starting it.
+* [x] **Fix Dashboard "New Game" Routing:** In `lib/game_card_widget.dart`, update the `_navigateToGameCreateScreen` method attached to the "Create a new game" button so that it pushes `GameCreateScreen` instead of the legacy `GameStartScreen`.
+* [x] **Fix Authenticated Friends Offline Persistence:** Update the friends list fetching logic to explicitly cache authenticated friends to `SharedPreferences` (similar to how local games are cached) or ensure Firestore offline persistence is correctly hydrating the `friends` collection when the app is restarted or offline.
 
 ---
 

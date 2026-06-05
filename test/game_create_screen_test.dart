@@ -825,4 +825,38 @@ void main() {
 
     expect(find.text('Start Time'), findsOneWidget);
   });
+
+  testWidgets('authenticated user: schedules game in the future, sets unstarted_game status and pops to dashboard', (tester) async {
+    UserProvider().loggedInUser = _authPlayer();
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+
+    final futureTime = DateTime.now().add(const Duration(hours: 3));
+    state.setScheduledTimeForTesting(futureTime);
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextFormField), 'Future Scheduled Game');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GameCreateScreen), findsNothing);
+
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k != 'email' && k != 'loggedInUser' && k != 'courses' && k != 'guest_players');
+    expect(keys.length, 1);
+    final savedJson = prefs.getString(keys.first);
+    expect(savedJson, isNotNull);
+    final savedMap = jsonDecode(savedJson!) as Map<String, dynamic>;
+    expect(savedMap['status'], 'unstarted_game');
+    expect(savedMap['name'], 'Future Scheduled Game');
+
+    final doc = await DatabaseConnection.client.collection('games').doc(savedMap['id']).get();
+    expect(doc.exists, isTrue);
+    expect(doc.data()?['status'], 'unstarted_game');
+    expect(doc.data()?['name'], 'Future Scheduled Game');
+  });
 }

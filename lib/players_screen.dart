@@ -40,6 +40,8 @@ class PlayersScreenState extends State<PlayersScreen> {
     });
     if (loggedInUser == null) {
       await Player.loadLocalGuestPlayers();
+    } else {
+      await loggedInUser!.loadUserPlayers();
     }
     if (!mounted) return;
     setState(() {

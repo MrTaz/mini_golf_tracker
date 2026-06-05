@@ -58,12 +58,14 @@ class UserProvider extends ChangeNotifier {
       await prefs.setString("email", player.email!);
     }
     await prefs.setString("loggedInUser", jsonEncode(player));
+    await player.loadUserPlayers();
     await Game.initializeLocalGames(player);
     notifyListeners();
   }
 
   Future<void> logout() async {
     await auth.signOut();
+    final String? loggedInUserId = _loggedInUser?.id;
     _loggedInUser = null;
     _pendingClaimPlayer = null;
     final prefs = await SharedPreferences.getInstance();
@@ -71,6 +73,9 @@ class UserProvider extends ChangeNotifier {
     await prefs.remove("loggedInUser");
     await Game.clearLocallySavedGames();
     await Player.clearLocalGuestPlayers();
+    if (loggedInUserId != null) {
+      await prefs.remove("friends_$loggedInUserId");
+    }
     notifyListeners();
   }
 
@@ -81,6 +86,7 @@ class UserProvider extends ChangeNotifier {
 
     if (email != null && loggedInUserJson != null) {
       _loggedInUser = Player.fromJson(jsonDecode(loggedInUserJson));
+      await _loggedInUser!.loadUserPlayers();
       notifyListeners();
     }
 
