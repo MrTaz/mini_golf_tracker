@@ -281,6 +281,15 @@ void main() {
       await tester.pump();
     }
 
+    final profileWidgets = tester.widgetList<PlayerProfileWidget>(find.byType(PlayerProfileWidget));
+    for (final profile in profileWidgets) {
+      if (profile.player.totalScore > 0) {
+        expect(profile.rank, isNotNull);
+      } else {
+        expect(profile.rank, isNull);
+      }
+    }
+
     Player.players = originalPlayers;
   });
 

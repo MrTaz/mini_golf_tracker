@@ -77,7 +77,7 @@ class PlayersCardState extends State<PlayersCard> {
                 }
             : null,
         child: PlayerProfileWidget(
-            player: player, rank: i, isSelected: isSelected),
+            player: player, rank: player.totalScore > 0 ? i : null, isSelected: isSelected),
       ));
     }
     return playerCards;
