@@ -497,23 +497,20 @@ class GameInprogressScreenState extends State<GameInprogressScreen>
   }
 
   Widget _buildPlayerCards() {
-    return Flexible(
-      fit: FlexFit.loose,
-      flex: 1,
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(0.8),
-        itemCount: widget.currentGame.players.length,
-        itemBuilder: (BuildContext context, int index) {
-          PlayerGameInfo pgi = _playersInfo[index];
-          int playerScore = pgi.scores.length >= currentHole
-              ? pgi.scores[currentHole - 1]
-              : 0;
-          int playerScoreDropDownIndex =
-              (playerScore <= 1) ? 0 : playerScore - 1;
-          return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
-        },
-      ),
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(0.8),
+      itemCount: widget.currentGame.players.length,
+      itemBuilder: (BuildContext context, int index) {
+        PlayerGameInfo pgi = _playersInfo[index];
+        int playerScore = pgi.scores.length >= currentHole
+            ? pgi.scores[currentHole - 1]
+            : 0;
+        int playerScoreDropDownIndex =
+            (playerScore <= 1) ? 0 : playerScore - 1;
+        return _buildPlayerCard(pgi, playerScore, playerScoreDropDownIndex);
+      },
     );
   }
 
@@ -642,42 +639,39 @@ class GameInprogressScreenState extends State<GameInprogressScreen>
             body: Stack(children: [
               Utilities.backdropImageContinerWidget(),
               SingleChildScrollView(
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height + 200,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        _buildCourseCard(),
-                        if (loggedInUser == null)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const LoginScreen()),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 8.0, vertical: 4.0),
-                              padding: const EdgeInsets.all(8.0),
-                              color: Colors.amber[100],
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.info_outline, color: Colors.amber),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                      child: Text(
-                                          "Playing as a Guest. Sign up to save your score to the cloud!")),
-                                ],
-                              ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      _buildCourseCard(),
+                      if (loggedInUser == null)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const LoginScreen()),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 8.0, vertical: 4.0),
+                            padding: const EdgeInsets.all(8.0),
+                            color: Colors.amber[100],
+                            child: const Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.amber),
+                                SizedBox(width: 8),
+                                Expanded(
+                                    child: Text(
+                                        "Playing as a Guest. Sign up to save your score to the cloud!")),
+                              ],
                             ),
                           ),
-                        _buildCurrentHoleWidget(),
-                        _buildPlayerCards(),
-                      ],
-                    ),
+                        ),
+                      _buildCurrentHoleWidget(),
+                      _buildPlayerCards(),
+                    ],
                   ),
                 ),
               ),

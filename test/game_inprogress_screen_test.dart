@@ -576,4 +576,31 @@ void main() {
     expect(find.text("Need a break? You can safely pause your game here!"),
         findsOneWidget);
   });
+
+  testWidgets('scrolling layout configuration: no SizedBox height limit, ListView has correct physics and shrinkWrap', (tester) async {
+    final game = createTestGame();
+    Player.players = [testPlayer1, testPlayer2];
+
+    await tester.pumpWidget(createWidgetUnderTest(game));
+    await tester.pumpAndSettle();
+
+    // Verify SingleChildScrollView is present
+    final singleChildScrollViewFinder = find.byType(SingleChildScrollView);
+    expect(singleChildScrollViewFinder, findsOneWidget);
+
+    // Verify no SizedBox with explicit height inside SingleChildScrollView's direct child
+    // In our new layout, SingleChildScrollView's child is a Padding widget, not a SizedBox.
+    final scrollChild = tester.widget<SingleChildScrollView>(singleChildScrollViewFinder).child;
+    expect(scrollChild, isA<Padding>());
+
+    // Verify the ListView.builder inside _buildPlayerCards has shrinkWrap: true and NeverScrollableScrollPhysics
+    final listViewFinder = find.descendant(
+      of: find.byType(GameInprogressScreen),
+      matching: find.byType(ListView),
+    );
+    expect(listViewFinder, findsOneWidget);
+    final listView = tester.widget<ListView>(listViewFinder);
+    expect(listView.shrinkWrap, isTrue);
+    expect(listView.physics, isA<NeverScrollableScrollPhysics>());
+  });
 }

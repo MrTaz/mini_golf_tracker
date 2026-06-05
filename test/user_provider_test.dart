@@ -511,6 +511,96 @@ void main() {
       expect(Player.players.length, 1);
       expect(Player.players[0].id, 'friend1');
     });
+
+    test('initialize() calls loadUserPlayers() when user is already authenticated on Firebase', () async {
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'user123', email: 'test@example.com'),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      final friend = Player(
+        id: 'friend1',
+        playerName: 'Friend One',
+        nickname: 'F1',
+        ownerId: 'user123',
+        totalScore: 0,
+      );
+
+      // Seed FakeFirebaseFirestore
+      await fakeFirestore.collection('players').doc('friend1').set(friend.toJson());
+      await fakeFirestore.collection('friends').doc('user123_friend1').set({
+        'player_id': 'user123',
+        'friend_id': 'friend1',
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', 'test@example.com');
+      await prefs.setString('loggedInUser', jsonEncode(player.toJson()));
+      await prefs.setString('friends_user123', jsonEncode([friend.toJson()]));
+
+      Player.players.clear();
+      await userProvider.initialize();
+
+      expect(userProvider.loggedInUser, isNotNull);
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'friend1');
+    });
+
+    test('authStateChanges listener calls loadUserPlayers() when loggedInUser matches firebase user', () async {
+      final player = Player(
+        id: 'user123',
+        playerName: 'Test User',
+        nickname: 'Tester',
+        ownerId: 'user123',
+        totalScore: 100,
+        email: 'test@example.com',
+      );
+
+      mockAuth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'user123', email: 'test@example.com'),
+      );
+      userProvider.setAuthInstanceForTesting(mockAuth);
+
+      final friend = Player(
+        id: 'friend1',
+        playerName: 'Friend One',
+        nickname: 'F1',
+        ownerId: 'user123',
+        totalScore: 0,
+      );
+
+      // Seed FakeFirebaseFirestore
+      await fakeFirestore.collection('players').doc('friend1').set(friend.toJson());
+      await fakeFirestore.collection('friends').doc('user123_friend1').set({
+        'player_id': 'user123',
+        'friend_id': 'friend1',
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('friends_user123', jsonEncode([friend.toJson()]));
+
+      // Pre-set loggedInUser before initialize() registers the stream listener
+      userProvider.loggedInUser = player;
+      Player.players.clear();
+
+      await userProvider.initialize();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      expect(userProvider.loggedInUser!.id, 'user123');
+      expect(Player.players.length, 1);
+      expect(Player.players[0].id, 'friend1');
+    });
   });
 }
 

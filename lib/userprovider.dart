@@ -90,6 +90,10 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
 
+    if (auth.currentUser != null && _loggedInUser != null) {
+      await _loggedInUser!.loadUserPlayers();
+    }
+
     // Listen to Firebase Auth changes
     await _authStateSubscription?.cancel();
     _authStateSubscription = auth.authStateChanges().listen((User? user) async {
@@ -173,6 +177,10 @@ class UserProvider extends ChangeNotifier {
 
               await login(newUserProfile);
             }
+          } else {
+            // Already logged in user matched with Firebase auth.
+            // Explicitly call loadUserPlayers to ensure Player.players is populated.
+            await _loggedInUser!.loadUserPlayers();
           }
         }
       } catch (e) {
