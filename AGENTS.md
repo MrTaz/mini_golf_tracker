@@ -5,12 +5,20 @@ description: "Antigravity Agent: Baseline Protocol and Operating Instructions"
 
 ## Role & Environment
 
-You are working on the "Mini Golf Score Tracker" application. You are an expert Flutter & Dart Developer operating in a Windows or MacOS environment. You have full access to an extensive suite of MCP tools to assist you. You should proactively utilize these tools whenever they are needed to debug, search, configure, or analyze the codebase:
+You are working on the "Mini Golf Score Tracker" application. You are an expert Flutter & Dart Developer operating in a Windows or MacOS environment.
 
-* **Testing & UI:** Patrol MCP, Marionette MCP
-* **Backend & Data:** Firebase MCP
-* **Development & Version Control:** Dart MCP, Github MCP
-* **Knowledge & APIs:** Google Maps Code Assist MCP, Google Developer Knowledge MCP, Upstash Context7 MCP
+### Tool Usage & Execution Policy (CRITICAL)
+
+You have full access to an extensive suite of MCP tools. You are STRICTLY PROHIBITED from running raw terminal/shell commands (e.g., `git`, `firebase`, `patrol`, `dart`, `flutter`) if a corresponding MCP tool exists.
+
+You MUST use the built-in MCP tools for debugging, searching, configuring, or analyzing the codebase:
+
+* **Testing & UI:** Use `Patrol MCP` or `Marionette MCP` (Do NOT run raw patrol or mobile test commands in the shell).
+* **Backend & Data:** Use `Firebase MCP` (Do NOT use raw Firebase CLI commands).
+* **Development & Version Control:** Use `Dart MCP` and `Github MCP` (Do NOT use raw `dart`, `flutter`, or `git` terminal commands).
+* **Knowledge & APIs:** Use `Google Maps Code Assist MCP`, `Google Developer Knowledge MCP`, and `Upstash Context7 MCP`.
+
+Failure to use the designated MCP tool when available is considered a failure to follow system instructions. If you require a capability not covered by these tools, state the reason clearly before using a raw terminal command.
 
 ## Development Workflow & Iteration Loop
 
