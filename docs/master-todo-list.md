@@ -726,8 +726,8 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 
 #### Phase 7.3 Architectural Refactoring & Clean Architecture
 
-* [ ] **Directory Reorganization:** Migrate the flat `lib/` file structure into logical domain folders (e.g., `/models`, `/screens`, `/widgets`, `/services`, `/utils`).
-* [ ] **Update Imports:** Fix all internal imports across the application and test suites to align with the new directory structure.
+* [x] **Directory Reorganization:** Migrate the flat `lib/` file structure into logical domain folders (e.g., `/models`, `/screens`, `/widgets`, `/services`, `/utils`).
+* [x] **Update Imports:** Fix all internal imports across the application and test suites to align with the new directory structure.
 * [ ] **Repository Pattern Abstraction:** Extract raw Firestore queries and `SharedPreferences` logic out of the core data models (`Course`, `Game`, `Player`).
 * [ ] **Service Layer Creation:** Create dedicated repository classes (e.g., `GameRepository`, `PlayerRepository`, `CourseRepository`) to handle all data access operations.
 * [ ] **Enforce Separation of Concerns:** Ensure UI components and models strictly call repository methods rather than interacting with `FirebaseFirestore.instance` or `SharedPreferences.getInstance()` directly.
