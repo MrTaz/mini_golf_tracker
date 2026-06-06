@@ -566,6 +566,33 @@ void main() {
       expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
     });
 
+    testWidgets('ListTile onTap unstarted game navigation error triggers catchError SnackBar',
+        (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'game_1': jsonEncode(unstartedGame.toJson()),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FakeNavigator(
+              onPush: (route) {
+                return Future.error(Exception('Simulated navigation error'));
+              },
+              child: const GameCardWidget(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Morning Round'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Remote sync temporarily unavailable'), findsOneWidget);
+    });
+
     testWidgets(
         'ListTile onTap Navigator synchronous throws trigger try/catch SnackBar',
         (WidgetTester tester) async {

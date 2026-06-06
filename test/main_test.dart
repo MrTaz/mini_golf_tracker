@@ -315,6 +315,57 @@ void main() {
     expect(find.textContaining('Startup Course'), findsOneWidget);
   });
 
+  testWidgets('auto-resumes the most recently created active game when multiple exist',
+      (tester) async {
+    final course = Course(
+      id: 'c1',
+      name: 'Startup Course',
+      numberOfHoles: 1,
+      parStrokes: {1: 3},
+    );
+    final playerGameInfo1 = PlayerGameInfo(
+      playerId: 'p1',
+      gameId: 'g1',
+      scores: [1],
+    );
+    final playerGameInfo2 = PlayerGameInfo(
+      playerId: 'p1',
+      gameId: 'g2',
+      scores: [1],
+    );
+    final game1 = Game(
+      id: 'g1',
+      name: 'Older Resumed Game',
+      course: course,
+      players: [playerGameInfo1],
+      scheduledTime: DateTime(2026, 1, 1),
+      status: 'started',
+    );
+    final game2 = Game(
+      id: 'g2',
+      name: 'Newer Resumed Game',
+      course: course,
+      players: [playerGameInfo2],
+      scheduledTime: DateTime(2026, 1, 2),
+      status: 'started',
+    );
+
+    SharedPreferences.setMockInitialValues({
+      'g1': jsonEncode(game1.toJson()),
+      'g2': jsonEncode(game2.toJson()),
+    });
+
+    await tester.pumpWidget(createMyApp());
+    await tester.pump();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // It should choose game2 because it is newer (Jan 2 compared to Jan 1)
+    expect(find.byType(GameInprogressScreen), findsOneWidget);
+    expect(find.textContaining('Newer Resumed Game'), findsOneWidget);
+  });
+
   testWidgets('executes main method successfully', (tester) async {
     setupFirebaseCoreMocks();
     SharedPreferences.setMockInitialValues({});

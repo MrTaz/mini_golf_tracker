@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
 import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:mini_golf_tracker/features/game_setup/presentation/screens/game_create_screen.dart';
@@ -890,4 +891,34 @@ void main() {
     expect(doc.data()?['status'], 'unstarted_game');
     expect(doc.data()?['name'], 'Future Scheduled Game');
   });
+
+  testWidgets('handles database error when saving game to database', (tester) async {
+    UserProvider().loggedInUser = _authPlayer();
+    final state = await pushAndGetState(tester);
+    state.setSelectedCourseForTesting(_fakeCourse());
+    state.setSelectedPlayersForTesting([
+      _guestPlayer('p1', 'Ava'),
+      _guestPlayer('p2', 'Ben'),
+    ]);
+    await tester.pump();
+
+    // Set throwing firestore
+    DatabaseConnection.setFirestoreInstanceForTesting(MockFirestoreWithError());
+
+    await tester.enterText(find.byType(TextFormField), 'Test Game error');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Create Game'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Game created locally! We\'ll sync it to the cloud when you\'re back online.'), findsOneWidget);
+  });
+}
+
+class MockFirestoreWithError extends FakeFirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String collectionPath) {
+    if (StackTrace.current.toString().contains('saveGameToDatabase')) {
+      throw Exception('Simulated database error');
+    }
+    return super.collection(collectionPath);
+  }
 }

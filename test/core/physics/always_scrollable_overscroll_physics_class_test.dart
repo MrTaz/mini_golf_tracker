@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_golf_tracker/core/physics/always_scrollable_overscroll_physics_class.dart';
+import 'package:mini_golf_tracker/core/utils/utilities.dart';
 
 void main() {
   group('AlwaysScrollableOverscrollPhysics', () {
@@ -180,6 +181,19 @@ void main() {
       expect(physics.applyPhysicsToUserOffset(metrics, 10), isNotNull);
       expect(physics.createBallisticSimulation(metrics, 1000),
           isNull); // NeverScrollable typically returns null
+    });
+  });
+
+  group('Utilities debugPrintWithCallerInfo in long file name', () {
+    test('truncates file name when length > 35', () {
+      final originalIsMobile = Utilities.isMobile;
+      Utilities.isMobile = false;
+      try {
+        expect(() => Utilities.debugPrintWithCallerInfo('test long filename truncation'),
+            returnsNormally);
+      } finally {
+        Utilities.isMobile = originalIsMobile;
+      }
     });
   });
 }

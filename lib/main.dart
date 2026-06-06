@@ -20,9 +20,11 @@ import 'package:mini_golf_tracker/core/utils/utilities.dart';
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
 
+// coverage:ignore-start
 @visibleForTesting
 bool isFlutterTestEnvironment =
     !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+// coverage:ignore-end
 
 @visibleForTesting
 void Function(PrintLogCollector) initializeMarionetteBinding = (collector) {

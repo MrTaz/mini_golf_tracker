@@ -32,12 +32,10 @@ class DatabaseConnection {
           ? '10.0.2.2'
           : 'localhost';
       FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
-      debugPrint(
-          '🔌 Connected to local Firestore Emulator at $host:8080'); // coverage:ignore-line
+      debugPrint('🔌 Connected to local Firestore Emulator at $host:8080'); // coverage:ignore-line
 
       FirebaseAuth.instance.useAuthEmulator(host, 9099); // coverage:ignore-line
-      debugPrint(
-          '🔌 Connected to local Auth Emulator at $host:9099'); // coverage:ignore-line
+      debugPrint('🔌 Connected to local Auth Emulator at $host:9099'); // coverage:ignore-line
     } catch (e) {
       debugPrint('⚠️ Failed to connect to Emulators: $e');
     }

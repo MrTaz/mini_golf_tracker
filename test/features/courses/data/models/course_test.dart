@@ -93,8 +93,10 @@ void main() {
         'number_of_holes': 9.0,
         'par_strokes': {
           '1': '3',
-          '2.0': 4.0,
+          '2.0': '4.0',
         },
+        'latitude': '42.3601',
+        'longitude': '-71.0589',
       };
       final course = Course.fromMap(map);
       expect(course.id, 'c3');
@@ -102,6 +104,8 @@ void main() {
       expect(course.numberOfHoles, 9);
       expect(course.parStrokes[1], 3);
       expect(course.parStrokes[2], 4);
+      expect(course.latitude, 42.3601);
+      expect(course.longitude, -71.0589);
     });
   });
 

@@ -69,18 +69,16 @@ class _PastGamesListViewState extends State<PastGamesListView> {
             _isLoading = false;
           });
         }
-      } catch (localError) {
-        // coverage:ignore-start
-        // This branch only executes if SharedPreferences.getInstance() throws
-        // (a platform channel failure), which cannot be simulated through the
-        // standard SharedPreferences mock setup in unit tests.
+      }
+      // coverage:ignore-start
+      catch (localError) {
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
         }
-        // coverage:ignore-end
       }
+      // coverage:ignore-end
     }
   }
 
