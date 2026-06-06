@@ -212,6 +212,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Without any local games, the offline empty state should show
-    expect(find.text('No scheduled games'), findsOneWidget);
+    expect(
+        find.textContaining(
+            "We couldn't sync your scheduled games. Please check your internet connection"),
+        findsOneWidget);
   });
 }
