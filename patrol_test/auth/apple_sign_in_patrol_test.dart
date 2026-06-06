@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/login_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple_platform_interface/sign_in_with_apple_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -60,7 +60,9 @@ void main() {
       expect($('Putt Scorer - Please login'), findsOneWidget);
 
       // Tap the Apple Sign-In button
-      await $(find.byWidgetPredicate((widget) => widget is FaIcon && widget.icon?.codePoint == FontAwesomeIcons.apple.codePoint)).tap();
+      await $(find.byWidgetPredicate((widget) =>
+          widget is FaIcon &&
+          widget.icon?.codePoint == FontAwesomeIcons.apple.codePoint)).tap();
       await $.pumpAndSettle();
 
       // Interact with the OS-level Native dialog prompts (Apple ID "Continue" / "Passcode")

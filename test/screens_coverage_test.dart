@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/past_games_screen.dart';
-import 'package:mini_golf_tracker/past_game_details_screen.dart';
-import 'package:mini_golf_tracker/players_screen.dart';
-import 'package:mini_golf_tracker/course_list_item_widget.dart';
-import 'package:mini_golf_tracker/player_form_widget.dart';
-import 'package:mini_golf_tracker/players_list_screen.dart';
-import 'package:mini_golf_tracker/past_game_list_item.dart';
-import 'package:mini_golf_tracker/players_card_widget.dart';
-import 'package:mini_golf_tracker/player_profile_widget.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/past_games_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/past_game_details_screen.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_screen.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/widgets/course_list_item_widget.dart';
+import 'package:mini_golf_tracker/features/players/presentation/widgets/player_form_widget.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_list_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/widgets/past_game_list_item.dart';
+import 'package:mini_golf_tracker/features/players/presentation/widgets/players_card_widget.dart';
+import 'package:mini_golf_tracker/features/players/presentation/widgets/player_profile_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -60,8 +60,7 @@ void main() {
   });
 
   testWidgets('Coverage for PlayersScreen lines', (tester) async {
-    await tester
-        .pumpWidget(buildTestApp(PlayersScreen(creatingGame: true)));
+    await tester.pumpWidget(buildTestApp(PlayersScreen(creatingGame: true)));
     await tester.pumpAndSettle();
 
     // Tap FAB to open PlayerCreateScreen
@@ -173,11 +172,11 @@ void main() {
         ownerId: 'guest',
         totalScore: 0);
     await tester.pumpWidget(buildTestApp(Scaffold(
-            body: PlayerListItem(
-                player: player,
-                creatingGame: false,
-                listOrderNumber: 1,
-                onRemove: () {}))));
+        body: PlayerListItem(
+            player: player,
+            creatingGame: false,
+            listOrderNumber: 1,
+            onRemove: () {}))));
     await tester.pumpAndSettle();
 
     // Tap ListTile to select
@@ -210,8 +209,7 @@ void main() {
         status: 'completed');
 
     await tester.pumpWidget(buildTestApp(Scaffold(
-            body: PastGameListItem(
-                pastGame: pastGame, onPastGameCardTap: null))));
+        body: PastGameListItem(pastGame: pastGame, onPastGameCardTap: null))));
 
     // Pump a few times to let the FutureBuilder complete its loading state
     await tester.pump();
@@ -261,7 +259,7 @@ void main() {
     ];
 
     await tester.pumpWidget(buildTestApp(Scaffold(
-            body: ListView(children: [
+        body: ListView(children: [
       PlayersCard(onTap: (Player p) {}), // Card without sortedPlayerIds
       PlayersCard(sortedPlayerIds: ['p2', 'p1']), // Card with sortedPlayerIds
     ]))));
@@ -281,7 +279,8 @@ void main() {
       await tester.pump();
     }
 
-    final profileWidgets = tester.widgetList<PlayerProfileWidget>(find.byType(PlayerProfileWidget));
+    final profileWidgets = tester
+        .widgetList<PlayerProfileWidget>(find.byType(PlayerProfileWidget));
     for (final profile in profileWidgets) {
       if (profile.player.totalScore > 0) {
         expect(profile.rank, isNotNull);
@@ -310,7 +309,8 @@ void main() {
       locationName: 'Awesome Location',
       address: '123 Mini Golf Lane',
     );
-    await tester.pumpWidget(buildTestApp(Scaffold(
+    await tester.pumpWidget(buildTestApp(
+      Scaffold(
         body: CourseListItem(
           course: course,
           onDelete: () {},
@@ -363,7 +363,8 @@ void main() {
       address: '404 Nowhere Road',
     );
 
-    await tester.pumpWidget(buildTestApp(Scaffold(
+    await tester.pumpWidget(buildTestApp(
+      Scaffold(
         body: CourseListItem(
           course: course,
           onDelete: () {},
@@ -388,7 +389,8 @@ void main() {
       parStrokes: {for (var i = 1; i <= 9; i++) i: 3},
     );
 
-    await tester.pumpWidget(buildTestApp(Scaffold(
+    await tester.pumpWidget(buildTestApp(
+      Scaffold(
         body: CourseListItem(
           course: course,
           onModify: () {},

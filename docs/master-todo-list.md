@@ -724,13 +724,21 @@ adoptLocalGames(Player loggedInUser, List<String> gameIdsToAdopt)
 * [ ] Use a `const bool` to ensure this logic is completely removed from production builds.
 * [ ] Optimize production performance.
 
-#### 7.3 Architectural Refactoring & Clean Architecture
+#### Phase 7.3 Architectural Refactoring & Clean Architecture
 
 * [ ] **Directory Reorganization:** Migrate the flat `lib/` file structure into logical domain folders (e.g., `/models`, `/screens`, `/widgets`, `/services`, `/utils`).
 * [ ] **Update Imports:** Fix all internal imports across the application and test suites to align with the new directory structure.
 * [ ] **Repository Pattern Abstraction:** Extract raw Firestore queries and `SharedPreferences` logic out of the core data models (`Course`, `Game`, `Player`).
 * [ ] **Service Layer Creation:** Create dedicated repository classes (e.g., `GameRepository`, `PlayerRepository`, `CourseRepository`) to handle all data access operations.
 * [ ] **Enforce Separation of Concerns:** Ensure UI components and models strictly call repository methods rather than interacting with `FirebaseFirestore.instance` or `SharedPreferences.getInstance()` directly.
+
+##### Phase 7.3.1 — Clean Architecture Test Refactoring
+
+* [x] **Relocate Core Tests:** Move `assets_test.dart` and `golf_ball_painter_test.dart` into `test/core/...` to match their implementation paths.
+* [ ] **Split Monolithic Model Tests:** Break apart `model_test.dart` and move the JSON tests into their respective feature model tests (e.g., `course_test.dart`, `game_test.dart`).
+* [ ] **Eliminate Coverage Catch-Alls:** Surgically extract the individual widget tests from `screens_coverage_test.dart` and migrate them into the dedicated feature presentation tests (e.g., `players_screen_test.dart`, `past_game_details_screen_test.dart`), then delete `screens_coverage_test.dart`.
+* [ ] **Refactor Global Database Tests:** Split `firestore_test.dart` into dedicated Repository tests once the Data layer is fully implemented.
+* [ ] **Migrate Widget Flows to Patrol:** Convert the cross-feature widget flow tests (`guest_game_flow_test.dart`, `guest_player_flow_test.dart`, and `app_smoke_test.dart`) into Patrol E2E tests under `patrol_test/` and delete the legacy files.
 
 #### 7.4 Code Cleanup & Dead Code Removal
 

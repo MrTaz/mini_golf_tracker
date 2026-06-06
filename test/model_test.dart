@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
 
 void main() {
   group('Course', () {

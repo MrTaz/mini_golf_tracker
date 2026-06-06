@@ -4,11 +4,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/courses_screen.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/screens/courses_screen.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:mini_golf_tracker/main.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // A Firestore stub that throws permission-denied on every collection access,

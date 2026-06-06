@@ -3,11 +3,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/game_create_screen.dart';
-import 'package:mini_golf_tracker/players_screen.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/features/game_setup/presentation/screens/game_create_screen.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_screen.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

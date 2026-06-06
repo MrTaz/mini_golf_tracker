@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/game_inprogress_screen.dart';
-import 'package:mini_golf_tracker/game_start_screen.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/gameplay/presentation/screens/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/features/game_setup/presentation/screens/game_start_screen.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

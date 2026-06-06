@@ -12,12 +12,12 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/database_connection_error.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/core/errors/database_connection_error.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1276,7 +1276,9 @@ void main() {
   // ════════════════════════════════════════════════════════════════════════════
 
   group('Player.createPlayer edge cases', () {
-    test('updates owner_id to guest when ownerId is empty and no user is logged in', () async {
+    test(
+        'updates owner_id to guest when ownerId is empty and no user is logged in',
+        () async {
       // Indirectly test via createPlayer with no ownerId
       final p = await Player.createPlayer('EmptyOwner', 'EO',
           email: 'empty@test.com', phoneNumber: '000');

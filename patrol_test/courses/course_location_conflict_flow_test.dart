@@ -6,8 +6,8 @@ import 'package:patrol/patrol.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
-import 'package:mini_golf_tracker/add_edit_course_screen.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/screens/add_edit_course_screen.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- MOCK GEOLOCATOR PLATFORM ---

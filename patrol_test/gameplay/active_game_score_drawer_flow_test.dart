@@ -3,14 +3,14 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/game_inprogress_screen.dart';
-import 'package:mini_golf_tracker/past_game_details_screen.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/gameplay/presentation/screens/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/past_game_details_screen.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -60,7 +60,9 @@ void main() {
     );
   }
 
-  patrolTest('Active game score increments and past game details exposes drawer', ($) async {
+  patrolTest(
+      'Active game score increments and past game details exposes drawer',
+      ($) async {
     // 1. Test: active game plus button increments zero score to one
     final game = makeGame();
     await $.pumpWidgetAndSettle(MaterialApp(
@@ -82,7 +84,8 @@ void main() {
       home: PastGameDetailsScreen(passedGame: makeGame(status: 'completed')),
     ));
 
-    final scaffoldState = $.tester.firstState<ScaffoldState>(find.byType(Scaffold));
+    final scaffoldState =
+        $.tester.firstState<ScaffoldState>(find.byType(Scaffold));
     scaffoldState.openDrawer();
     await $.pump();
     await $.pump(const Duration(milliseconds: 500));

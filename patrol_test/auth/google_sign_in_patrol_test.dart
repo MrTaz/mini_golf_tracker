@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/login_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 void main() {
@@ -61,7 +61,9 @@ void main() {
 
       // Tap the "Sign in with Google" button
       // FlutterLogin uses standard icons for social buttons
-      await $(find.byWidgetPredicate((widget) => widget is FaIcon && widget.icon?.codePoint == FontAwesomeIcons.google.codePoint)).tap();
+      await $(find.byWidgetPredicate((widget) =>
+          widget is FaIcon &&
+          widget.icon?.codePoint == FontAwesomeIcons.google.codePoint)).tap();
       await $.pumpAndSettle();
 
       // Interact with the native OS Google account selector pop-up
@@ -106,7 +108,8 @@ class FakeGoogleSignInAccount implements GoogleSignInAccount {
   });
 
   @override
-  GoogleSignInAuthentication get authentication => FakeGoogleSignInAuthentication();
+  GoogleSignInAuthentication get authentication =>
+      FakeGoogleSignInAuthentication();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -139,7 +142,8 @@ class MockGoogleSignIn implements GoogleSignIn {
   }) async {}
 
   @override
-  Future<GoogleSignInAccount> authenticate({List<String> scopeHint = const []}) async {
+  Future<GoogleSignInAccount> authenticate(
+      {List<String> scopeHint = const []}) async {
     if (_mockUser == null) {
       throw Exception('Sign in cancelled');
     }

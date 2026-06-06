@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
-import 'package:mini_golf_tracker/game_inprogress_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/game_create_screen.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
+import 'package:mini_golf_tracker/features/gameplay/presentation/screens/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/game_setup/presentation/screens/game_create_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 
@@ -24,7 +24,9 @@ void main() {
     UserProvider().setAuthInstanceForTesting(mockAuth);
   });
 
-  patrolTest('Concurrency Guardrails: active game warning dialog interrupts flow', ($) async {
+  patrolTest(
+      'Concurrency Guardrails: active game warning dialog interrupts flow',
+      ($) async {
     // Inject an active game
     final activeGame = Game(
       id: 'active_game_1',
@@ -45,7 +47,8 @@ void main() {
       scheduledTime: DateTime.now(),
       status: 'started',
     );
-    SharedPreferences.setMockInitialValues({'active_game_1': jsonEncode(activeGame.toJson())});
+    SharedPreferences.setMockInitialValues(
+        {'active_game_1': jsonEncode(activeGame.toJson())});
 
     // Pump the GameCreateScreen directly under a MaterialApp to strictly simulate E2E UI actions.
     await $.pumpWidgetAndSettle(
@@ -84,7 +87,7 @@ void main() {
     // Enter game name strictly via UI TextFormField
     await $(TextFormField).at(0).enterText('New Game Attempt');
     await $.pump();
-    
+
     // Tap the 'Create Game' button to trigger the game startup flow
     final createBtn = find.widgetWithText(ElevatedButton, 'Create Game');
     // Ensure button is visible
@@ -111,7 +114,7 @@ void main() {
     await $(createBtn).tap();
     await $.pump(const Duration(milliseconds: 500));
     await $.pumpAndSettle();
-    
+
     await $('Continue').tap();
     await $.pump(const Duration(milliseconds: 500));
     await $.pumpAndSettle();

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/login_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_facebook_auth_platform_interface/flutter_facebook_auth_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -60,7 +60,10 @@ void main() {
       expect($('Putt Scorer - Please login'), findsOneWidget);
 
       // Tap the Facebook Sign-In button
-      await $(find.byWidgetPredicate((widget) => widget is FaIcon && widget.icon?.codePoint == FontAwesomeIcons.facebookF.codePoint)).tap();
+      await $(find.byWidgetPredicate((widget) =>
+              widget is FaIcon &&
+              widget.icon?.codePoint == FontAwesomeIcons.facebookF.codePoint))
+          .tap();
       await $.pumpAndSettle();
 
       // Interact with the Meta/Facebook web-view or native authorization pop-up
@@ -68,7 +71,8 @@ void main() {
         await $.native.tap(Selector(textContains: 'Continue as'));
         await $.pumpAndSettle();
       } catch (e) {
-        debugPrint('Native Facebook Continue prompt tap simulated/resolved: $e');
+        debugPrint(
+            'Native Facebook Continue prompt tap simulated/resolved: $e');
       }
 
       // Verify that the login resolves and successfully routes to the Dashboard screen
@@ -169,7 +173,8 @@ class SocialMockFirebaseAuth implements FirebaseAuth {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockFacebookAuthPlatform extends FacebookAuthPlatform with MockPlatformInterfaceMixin {
+class MockFacebookAuthPlatform extends FacebookAuthPlatform
+    with MockPlatformInterfaceMixin {
   MockFacebookAuthPlatform();
 
   static MockFacebookAuthPlatform? _instance;

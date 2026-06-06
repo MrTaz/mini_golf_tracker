@@ -4,10 +4,10 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/players_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -51,9 +51,9 @@ void main() {
       await $.pumpAndSettle();
 
       // 4. Fill in only Nickname, leaving Player Name, Email, and Phone blank.
-      await $(find.widgetWithText(TextFormField, 'Nickname')).enterText('QuickNick');
+      await $(find.widgetWithText(TextFormField, 'Nickname'))
+          .enterText('QuickNick');
       await $.pumpAndSettle();
-
 
       // 6. Tap "Add Player" button to save.
       await $('Add Player').tap();

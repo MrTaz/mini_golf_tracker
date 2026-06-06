@@ -4,27 +4,27 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_golf_tracker/app_drawer_widget.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/widgets/app_drawer_widget.dart';
 import 'package:mini_golf_tracker/main.dart';
 import 'package:mini_golf_tracker/main.dart' as app;
-import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/player.dart';
-import 'package:mini_golf_tracker/course.dart';
-import 'package:mini_golf_tracker/game.dart';
-import 'package:mini_golf_tracker/player_game_info.dart';
-import 'package:mini_golf_tracker/game_inprogress_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
+import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
+import 'package:mini_golf_tracker/features/gameplay/data/models/player_game_info.dart';
+import 'package:mini_golf_tracker/features/gameplay/presentation/screens/game_inprogress_screen.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_core_platform_interface/test.dart';
-import 'package:mini_golf_tracker/utilities.dart';
+import 'package:mini_golf_tracker/core/utils/utilities.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
-import 'package:mini_golf_tracker/claim_account_screen.dart';
-import 'package:mini_golf_tracker/players_screen.dart';
-import 'package:mini_golf_tracker/home_screen.dart';
-import 'package:mini_golf_tracker/dashboard_screen.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/claim_account_screen.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/home_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/dashboard_screen.dart';
 
 class SimpleMockGeolocator extends GeolocatorPlatform {
   @override
@@ -324,12 +324,16 @@ void main() {
     });
   });
 
-  testWidgets('defaultBindingInitializer uses WidgetsFlutterBinding when in test env', (tester) async {
+  testWidgets(
+      'defaultBindingInitializer uses WidgetsFlutterBinding when in test env',
+      (tester) async {
     isFlutterTestEnvironment = true;
     expect(() => defaultBindingInitializer(), returnsNormally);
   });
 
-  testWidgets('defaultBindingInitializer attempts to use MarionetteBinding when not in test env', (tester) async {
+  testWidgets(
+      'defaultBindingInitializer attempts to use MarionetteBinding when not in test env',
+      (tester) async {
     isFlutterTestEnvironment = false;
     final originalInit = initializeMarionetteBinding;
     initializeMarionetteBinding = (collector) {};
@@ -343,7 +347,9 @@ void main() {
     isFlutterTestEnvironment = true;
   });
 
-  testWidgets('initializeMarionetteBinding throws AssertionError when called in test env', (tester) async {
+  testWidgets(
+      'initializeMarionetteBinding throws AssertionError when called in test env',
+      (tester) async {
     final collector = PrintLogCollector();
     expect(() => initializeMarionetteBinding(collector), throwsAssertionError);
   });

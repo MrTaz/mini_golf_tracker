@@ -2,13 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/login_screen.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
+import 'package:mini_golf_tracker/features/auth/presentation/screens/login_screen.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
 
 void main() {
   late MockFirebaseAuth mockAuth;
@@ -29,10 +29,12 @@ void main() {
     addTearDown($.tester.view.resetDevicePixelRatio);
 
     // Create an UNCLAIMED player in DB for test@example.com
-    await Player.createPlayer('Test User', 'Tester', email: 'test@example.com', ownerId: 'some-other-person-id');
+    await Player.createPlayer('Test User', 'Tester',
+        email: 'test@example.com', ownerId: 'some-other-person-id');
 
     // Pre-create user in mock auth so signing in doesn't fail
-    await mockAuth.createUserWithEmailAndPassword(email: 'test@example.com', password: 'password123');
+    await mockAuth.createUserWithEmailAndPassword(
+        email: 'test@example.com', password: 'password123');
     await mockAuth.signOut();
 
     await $.pumpWidgetAndSettle(

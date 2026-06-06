@@ -6,14 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
-import 'package:mini_golf_tracker/userprovider.dart';
-import 'package:mini_golf_tracker/player.dart';
+import 'package:mini_golf_tracker/core/providers/userprovider.dart';
+import 'package:mini_golf_tracker/features/players/data/models/player.dart';
 import 'package:mini_golf_tracker/main.dart';
-import 'package:mini_golf_tracker/players_screen.dart';
-import 'package:mini_golf_tracker/past_games_screen.dart';
-import 'package:mini_golf_tracker/dashboard_screen.dart';
+import 'package:mini_golf_tracker/features/players/presentation/screens/players_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/past_games_screen.dart';
+import 'package:mini_golf_tracker/features/navigation/presentation/screens/dashboard_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 
@@ -65,9 +65,49 @@ class MockHttpClientResponse extends Fake implements HttpClientResponse {
   }) {
     return Stream<List<int>>.fromIterable([
       [
-        71, 73, 70, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255,
-        33, 249, 4, 1, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 76, 1,
-        0, 59
+        71,
+        73,
+        70,
+        56,
+        57,
+        97,
+        1,
+        0,
+        1,
+        0,
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        255,
+        255,
+        255,
+        33,
+        249,
+        4,
+        1,
+        0,
+        0,
+        0,
+        0,
+        44,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        2,
+        2,
+        76,
+        1,
+        0,
+        59
       ]
     ]).listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
@@ -100,12 +140,73 @@ class FakeAssetBundle extends CachingAssetBundle {
         key.endsWith('.jpeg') ||
         key.endsWith('.gif')) {
       return ByteData.sublistView(Uint8List.fromList(<int>[
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-        0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
+        0x82,
       ]));
     }
     throw FlutterError('Asset not found: $key');
@@ -157,14 +258,16 @@ void main() {
       // Helper to open drawer and wait for the FutureBuilder to load the list tiles
       Future<void> openDrawerAndWait() async {
         final scaffoldFinder = find.byType(Scaffold);
-        final scaffoldState = $.tester.firstState<ScaffoldState>(scaffoldFinder);
+        final scaffoldState =
+            $.tester.firstState<ScaffoldState>(scaffoldFinder);
         scaffoldState.openDrawer();
         await $.pump();
         await $.pump(const Duration(milliseconds: 500));
 
         // Wait for the drawer's FutureBuilder to complete and list tiles to appear
         int retries = 0;
-        while (find.byKey(const Key('drawer-friends')).evaluate().isEmpty && retries < 20) {
+        while (find.byKey(const Key('drawer-friends')).evaluate().isEmpty &&
+            retries < 20) {
           await $.pump(const Duration(milliseconds: 100));
           retries++;
         }

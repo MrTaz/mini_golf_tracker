@@ -10,11 +10,11 @@ import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:mini_golf_tracker/add_edit_course_screen.dart';
-import 'package:mini_golf_tracker/courses_screen.dart';
-import 'package:mini_golf_tracker/database_connection.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/screens/add_edit_course_screen.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/screens/courses_screen.dart';
+import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mini_golf_tracker/map_picker_screen.dart';
+import 'package:mini_golf_tracker/features/courses/presentation/screens/map_picker_screen.dart';
 
 // --- MOCK HTTP OVERRIDES FOR IMAGE LOADING ---
 class MockHttpOverrides extends HttpOverrides {
@@ -32,7 +32,8 @@ class MockHttpClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri url) async => MockHttpClientRequest();
 
   @override
-  Future<HttpClientRequest> openUrl(String method, Uri url) async => MockHttpClientRequest();
+  Future<HttpClientRequest> openUrl(String method, Uri url) async =>
+      MockHttpClientRequest();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -112,9 +113,49 @@ class MockHttpClientResponse implements HttpClientResponse {
   }) {
     return Stream<List<int>>.fromIterable([
       [
-        71, 73, 70, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255,
-        33, 249, 4, 1, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 76, 1,
-        0, 59
+        71,
+        73,
+        70,
+        56,
+        57,
+        97,
+        1,
+        0,
+        1,
+        0,
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        255,
+        255,
+        255,
+        33,
+        249,
+        4,
+        1,
+        0,
+        0,
+        0,
+        0,
+        44,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        2,
+        2,
+        76,
+        1,
+        0,
+        59
       ]
     ]).listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
@@ -231,7 +272,8 @@ void main() {
     );
   }
 
-  patrolTest('Course creation flow with map picker and location name', ($) async {
+  patrolTest('Course creation flow with map picker and location name',
+      ($) async {
     await $.pumpWidgetAndSettle(createWidgetUnderTest());
 
     await $(FloatingActionButton).tap();
