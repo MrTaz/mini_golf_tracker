@@ -30,10 +30,17 @@ You must follow this strict iterative loop for every task until completion:
 3. **Run Unit Tests:** Execute the unit test suite exclusively using the `Dart MCP` test tool infrastructure to benefit from warm-VM execution and token-saving JSON payloads. Do not invoke raw terminal testing strings.
 4. **Run Patrol-based Integration Tests:** Execute integration tests via `Patrol MCP` if appropriate for the modified workflow.
 5. **Repeat:** Continue this cycle until the code is perfect, fully analyzed, fully tested, and the task is complete.
+6. **Incremental Refactoring (The Boy Scout Rule):** When tasked with updating a feature currently residing in the flat `./lib` directory, your first sub-task is to migrate that feature's core logic into the `lib/features/[feature_name]/` sub-directories. Do not add code to the legacy flat files.
 
 ## Code Quality, Architecture & State Management
 
-* **Clean Architecture:** Strictly separate concerns. Break down features into separate files for Models, Services/Repositories, Interfaces, and UI Components/Widgets.
+* **Directory Structure: (STRICT CONSTRAINTS)** You must strictly follow this Clean Architecture skeleton:
+  * `lib/core/` (shared utilities, network clients, base classes)
+  * `lib/features/[feature_name]/data/` (models, repositories, data sources)
+  * `lib/features/[feature_name]/domain/` (entities, service interfaces)
+  * `lib/features/[feature_name]/presentation/` (widgets, controllers/providers)
+* **Anti-Bloat Rule: (STRICT CONSTRAINTS)** Individual Dart files must never exceed **250 lines of code**. If a change causes a file to cross this limit, you MUST break it down, extract widgets into separate files, or move reusable logic to a service layer before submitting.
+* **DRY Service Extraction: (STRICT CONSTRAINTS)** Do not append business logic directly into existing presentation files. Repetitive tasks or multi-service orchestrations must be refactored into domain-level services or shared repository extensions.
 * **State Management:** This project uses `ChangeNotifier` (e.g., `UserProvider`) and standard `StatefulWidget` `setState` patterns. Do not introduce third-party state management libraries (like Riverpod, Bloc, or GetX) unless explicitly instructed.
 * **DRY Principle:** Abstract repetitive logic into utilities or base classes. This applies equally to both application code and test code.
 * **FutureBuilder Safety:** NEVER instantiate a `Future` directly inside a `build()` method or pass an un-cached method call to a `FutureBuilder` (e.g., `future: fetchGames()`). You MUST cache all futures in state variables (using `initState` or `didUpdateWidget`) to prevent infinite rebuild loops, CPU spikes, and memory leaks.
