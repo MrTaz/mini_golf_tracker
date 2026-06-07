@@ -203,7 +203,7 @@ void main() {
 
       try {
         helper1();
-        expect(loggedMessage, contains('always_scrollable_overscroll_ph...'));
+        expect(loggedMessage, contains('always_scrollable_overscroll_phy...'));
       } finally {
         Utilities.removeLogListener(listener);
         Utilities.isMobile = originalIsMobile;
