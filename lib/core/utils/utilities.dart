@@ -99,7 +99,7 @@ class Utilities {
         final match = RegExp(r'\(([^)]+):(\d+):(\d+)\)').firstMatch(callerInfo);
         if (match != null) {
           final fullPath = match.group(1) ?? 'unknown';
-          final fileName = fullPath.split('/').last;
+          final fileName = fullPath.replaceAll('\\', '/').split('/').last;
           fileNameToShow = fileName.length > 35
               ? '${fileName.substring(0, 32)}...'
               : fileName;

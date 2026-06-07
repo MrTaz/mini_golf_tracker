@@ -94,6 +94,7 @@ void main() {
         'par_strokes': {
           '1': '3',
           '2.0': '4.0',
+          '3': 5.0,
         },
         'latitude': '42.3601',
         'longitude': '-71.0589',
@@ -104,6 +105,7 @@ void main() {
       expect(course.numberOfHoles, 9);
       expect(course.parStrokes[1], 3);
       expect(course.parStrokes[2], 4);
+      expect(course.parStrokes[3], 5);
       expect(course.latitude, 42.3601);
       expect(course.longitude, -71.0589);
     });

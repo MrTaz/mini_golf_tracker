@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mini_golf_tracker/core/network/database_connection.dart';
 import 'package:mini_golf_tracker/features/courses/data/models/course.dart';
 import 'package:mini_golf_tracker/features/gameplay/data/models/game.dart';
@@ -1155,5 +1156,52 @@ void main() {
       expect(find.text('You are not playing!'), findsNothing);
       expect(find.byType(GameInprogressScreen), findsOneWidget);
     });
+
+    testWidgets('Start: catches database error when saving to database on game start', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final creator = _authPlayer(id: 'creator-uid');
+      await UserProvider().login(creator);
+
+      final game = Game(
+        id: 'game-id-creator',
+        name: 'Creator Game',
+        course: Course(
+          id: 'c1',
+          name: 'Windy Hills',
+          numberOfHoles: 18,
+          parStrokes: {1: 3, 2: 4},
+        ),
+        players: [
+          PlayerGameInfo(
+              playerId: 'creator-uid', gameId: 'game-id-creator', scores: []),
+          PlayerGameInfo(playerId: 'p2', gameId: 'game-id-creator', scores: []),
+        ],
+        scheduledTime: DateTime(2026, 5, 17, 10, 0),
+      );
+
+      await tester.pumpWidget(_testApp(
+        home: GameStartScreen(unstartedGame: game),
+      ));
+
+      // Inject failing firestore
+      DatabaseConnection.setFirestoreInstanceForTesting(MockFirestoreWithError());
+
+      await tester.tap(find.text('Start the game!'));
+      await tester.pumpAndSettle();
+
+      // The game should still start (navigates to GameInprogressScreen) even if DB save fails
+      expect(find.byType(GameInprogressScreen), findsOneWidget);
+    });
   });
+}
+
+class MockFirestoreWithError extends FakeFirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String collectionPath) {
+    throw Exception('Simulated database error');
+  }
 }

@@ -188,10 +188,24 @@ void main() {
     test('truncates file name when length > 35', () {
       final originalIsMobile = Utilities.isMobile;
       Utilities.isMobile = false;
+      String? loggedMessage;
+      void listener(String msg) {
+        loggedMessage = msg;
+      }
+      Utilities.addLogListener(listener);
+
+      void helper2() {
+        Utilities.debugPrintWithCallerInfo('test long filename truncation');
+      }
+      void helper1() {
+        helper2();
+      }
+
       try {
-        expect(() => Utilities.debugPrintWithCallerInfo('test long filename truncation'),
-            returnsNormally);
+        helper1();
+        expect(loggedMessage, contains('always_scrollable_overscroll_ph...'));
       } finally {
+        Utilities.removeLogListener(listener);
         Utilities.isMobile = originalIsMobile;
       }
     });

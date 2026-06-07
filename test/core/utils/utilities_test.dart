@@ -81,11 +81,18 @@ void main() {
       void listener(String msg) {
         loggedMessage = msg;
       }
-
       Utilities.addLogListener(listener);
-      try {
+
+      void helper2() {
         Utilities.debugPrintWithCallerInfo('listener test desktop');
-        expect(loggedMessage, contains('listener test desktop'));
+      }
+      void helper1() {
+        helper2();
+      }
+
+      try {
+        helper1();
+        expect(loggedMessage, contains('utilities_test.dart'));
       } finally {
         Utilities.removeLogListener(listener);
         Utilities.isMobile = originalIsMobile;
